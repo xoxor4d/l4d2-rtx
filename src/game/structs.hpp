@@ -2751,15 +2751,7 @@ namespace components
 
 	struct CCvar_vtbl
 	{
-		bool(__thiscall* Connect)(void*, void* (__cdecl*)(const char*, int*)); // IAppSystem* this
-		void(__thiscall* Disconnect)(void*);
-		void* (__thiscall* QueryInterface)(void*, const char*);
-		int(__thiscall* Init)(void*); // InitReturnVal_t
-		void(__thiscall* Shutdown)(void*);
-		const void* (__thiscall* GetDependencies)(void*); // AppSystemInfo_t
-		int(__thiscall* GetTier)(void*); // AppSystemTier_t
-		void(__thiscall* Reconnect)(void*, void* (__cdecl*)(const char*, int*), const char*); // ^
-		int(__thiscall* AllocateDLLIdentifier)(CCvar*);
+		DWORD pad[6];
 		void(__thiscall* RegisterConCommand)(CCvar*, ConCommandBase*);
 		void(__thiscall* UnregisterConCommand)(CCvar*, ConCommandBase*);
 		void(__thiscall* UnregisterConCommands)(CCvar*, int);

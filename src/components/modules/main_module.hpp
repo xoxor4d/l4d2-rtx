@@ -7,6 +7,8 @@ namespace components
 	public:
 		main_module();
 		~main_module();
+
+		static void force_cvars();
 	private:
 	};
 }

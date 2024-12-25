@@ -60,11 +60,7 @@ int wmain(int argc, wchar_t* argv[])
 	const DWORD flags = CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED;
 
 	// first arg has to be the executable name
-	//std::wstring command_line = L"left4dead2.exe -novid -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1";
-
-	std::wstring command_line = L"left4dead2.exe -novid -insecure -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1"
-								"+r_WaterDrawRefraction 0 +r_WaterDrawReflection 0 +cl_brushfastpath 0 +cl_tlucfastpath 0 +cl_modelfastpath 0 +mat_queue_mode 0 +mat_softwarelighting 0 +mat_parallaxmap 0 +mat_frame_sync_enable 0"
-								"+mat_displacementmap 0 +mat_drawflat 0 +mat_normalmaps 0 +r_3dsky 0 +mat_fullbright 1 +mat_softwareskin 1 +mat_fastnobump 1 +mat_disable_bloom 1 +mat_depthfeather_enable 0 +mat_force_vertexfog 1 +fog_override 1 +fog_enable 0";
+	std::wstring command_line = L"left4dead2.exe -novid -insecure -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1";
 
 	// get launcher arguments
 	for (int i = 1; i < argc; ++i) // skip the launcher name

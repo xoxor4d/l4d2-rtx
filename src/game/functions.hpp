@@ -35,6 +35,12 @@ namespace game
 	inline IDirect3DDevice9* get_d3d_device() { return reinterpret_cast<IDirect3DDevice9*>(*(DWORD*)(RENDERER_BASE + 0xD3EE8)); }
 	inline components::IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50)); }
 
+	inline components::CCvar* get_icvar() { return reinterpret_cast<components::CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
+
+	extern void cvar_uncheat(const char* name);
+	extern void cvar_uncheat_and_set_int(const char* name, int val);
+	extern void cvar_uncheat_and_set_float(const char* name, float val);
+
 	/**
 	 * Creates an external console
 	 */
