@@ -1,0 +1,82 @@
+name: Build-Release
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build binary
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        configuration:
+          - Release
+
+    steps:
+      - name: Wait for previous workflows
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out files
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+          lfs: false
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Generate project files
+        run: tools/premake5 vs2022
+
+      - name: Set up problem matching
+        uses: ammaraskar/msvc-problem-matcher@master
+
+      - name: Build ${{matrix.configuration}}-binaries-p2-rtx
+        run: msbuild /m /v:minimal /p:Configuration=${{matrix.configuration}} /p:Platform=Win32 build/p2-rtx.sln
+
+      - name: Move build files 
+        run: |
+          move build/bin/${{matrix.configuration}}/p2-rtx.dll ./assets/
+          move build/bin/${{matrix.configuration}}/p2-rtx.pdb ./assets/
+          move build/bin/${{matrix.configuration}}/p2-rtx-launcher.exe ./assets/
+          move build/bin/${{matrix.configuration}}/p2-rtx-launcher.pdb ./assets/
+
+      - name: Upload ${{matrix.configuration}}-binaries-p2-rtx
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.configuration}}-binaries-p2-rtx
+          path: |
+            ./assets/
+
+  webbook:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag String
+        id: tag
+        run: |
+            echo "GIT_TAG=`echo $(git describe --tags --dirty --always)`" >> $GITHUB_ENV
+          
+            git describe --tags --dirty --always
+            # …
+        
+      - uses: tsickert/discord-webhook@v4.0.0
+        with:
+          webhook-url: ${{ secrets.WEBHOOK_URL }}
+          username: "GitHub Workflow"
+          avatar-url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+          embed-author-icon-url: "https://cdn2.steamgriddb.com/icon/9eac560d661140becf2386e61f0c3aa7/32/256x256.png"
+          embed-author-name: "p2-rtx/develop"
+          embed-author-url: "https://github.com/xoxor4d/p2-rtx"
+          embed-title: "Successful build (release)"
+          embed-color: 0x119bcf
+          embed-description: "${{ env.GIT_TAG }} - [Workflow Link](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
