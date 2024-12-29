@@ -296,10 +296,19 @@ namespace components
 			if (ctx.info.shader_name == "Infected")
 			{
 				//ctx.modifiers.do_not_render = true;
-				if (const auto basemap2 = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[5]); basemap2)
+
+				// gradient
+				if (const auto tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[5]); tex)
 				{
-					ctx.save_texture(dev, 0);
-					dev->SetTexture(1, basemap2);
+					ctx.save_texture(dev, 1);
+					dev->SetTexture(1, tex);
+				}
+
+				// detail
+				if (const auto tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[4]); tex)
+				{
+					//ctx.save_texture(dev, 0);
+					dev->SetTexture(2, tex);
 				}
 
 				//if (ctx.info.shader_name == "Infected")
