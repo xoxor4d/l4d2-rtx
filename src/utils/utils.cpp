@@ -348,4 +348,70 @@ namespace utils
 		return seed ^ (*ptr + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 	}
 
+	bool shader_dump_vs(IDirect3DVertexShader9* vs, const std::string& file_path, const std::string& file_name)
+	{
+		if (vs && !file_path.empty() && !file_name.empty())
+		{
+			std::filesystem::create_directories(file_path);
+
+			UINT vs_size = 0;
+			if (FAILED(vs->GetFunction(nullptr, &vs_size)) || vs_size == 0) {
+				return false;
+			}
+
+			std::vector<BYTE> vs_data(vs_size);
+			if (FAILED(vs->GetFunction(vs_data.data(), &vs_size))) {
+				return false;
+			}
+
+			std::ofstream vs_shader_file(file_path + "vs_" + file_name + ".bin", std::ios::binary);
+			if (vs_shader_file.is_open())
+			{
+				vs_shader_file.write(reinterpret_cast<const char*>(vs_data.data()), vs_size);
+				vs_shader_file.close();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool shader_dump_ps(IDirect3DPixelShader9* ps, const std::string& file_path, const std::string& file_name)
+	{
+		if (ps && !file_path.empty() && !file_name.empty())
+		{
+			std::filesystem::create_directories(file_path);
+
+			UINT ps_size = 0;
+			if (FAILED(ps->GetFunction(nullptr, &ps_size)) || ps_size == 0) {
+				return false;
+			}
+
+			std::vector<BYTE> ps_data(ps_size);
+			if (FAILED(ps->GetFunction(ps_data.data(), &ps_size))) {
+				return false;
+			}
+
+			std::ofstream ps_shader_file(file_path + "ps_" + file_name + ".bin", std::ios::binary);
+			if (ps_shader_file.is_open())
+			{
+				ps_shader_file.write(reinterpret_cast<const char*>(ps_data.data()), ps_size);
+				ps_shader_file.close();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	uint32_t pack_2f_in_dword(float f1, float f2)
+	{
+		f1 = std::clamp(f1, 0.0f, 1.0f);
+		f2 = std::clamp(f2, 0.0f, 1.0f);
+
+		const auto u16_1 = static_cast<uint16_t>(std::round(f1 * 65535.0f));
+		const auto u16_2 = static_cast<uint16_t>(std::round(f2 * 65535.0f));
+		return (static_cast<uint32_t>(u16_1) << 16) | u16_2;
+	}
 }
+

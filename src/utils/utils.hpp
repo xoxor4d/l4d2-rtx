@@ -106,6 +106,11 @@ namespace utils
 	uint32_t hash32_combine(uint32_t seed, int val);
 	uint32_t hash32_combine(uint32_t seed, float val);
 
+	bool shader_dump_vs(IDirect3DVertexShader9* vs, const std::string& file_path, const std::string& file_name);
+	bool shader_dump_ps(IDirect3DPixelShader9* ps, const std::string& file_path, const std::string& file_name);
+
+	uint32_t pack_2f_in_dword(float f1, float f2);
+
 	class benchmark
 	{
 	public:

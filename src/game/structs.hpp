@@ -841,7 +841,7 @@ namespace components
 	struct IMaterialVar_vtbl
 	{
 		ITexture* (__thiscall* GetTextureValue)(IMaterialVar*);
-		bool(__thiscall* IsTextureValueInternalEnvCubemap)(IMaterialVar*);
+		//bool(__thiscall* IsTextureValueInternalEnvCubemap)(IMaterialVar*); // nope
 		const char* (__fastcall* GetName)(IMaterialVar*);
 		unsigned __int16(__thiscall* GetNameAsSymbol)(IMaterialVar*);
 		void(__thiscall* SetFloatValue)(IMaterialVar*, float);

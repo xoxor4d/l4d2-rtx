@@ -292,16 +292,128 @@ namespace components
 				}
 			}
 
-			if (ctx.info.material_name.contains("models/infected/"))
+			//if (ctx.info.material_name.contains("models/infected/"))
+			if (ctx.info.shader_name == "Infected")
 			{
 				//ctx.modifiers.do_not_render = true;
-				/*if (const auto basemap2 = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[0]); basemap2)
+				if (const auto basemap2 = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[5]); basemap2)
 				{
 					ctx.save_texture(dev, 0);
-					dev->SetTexture(0, basemap2);
+					dev->SetTexture(1, basemap2);
+				}
+
+				//if (ctx.info.shader_name == "Infected")
+				{
+					float enable = 1.0f;
+					ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
+					dev->SetRenderState((D3DRENDERSTATETYPE)149, *reinterpret_cast<DWORD*>(&enable));
+
+					float uv_transform[4] = {}; // xy = sprite, zw = gradient z:skin - w:cloth
+					dev->GetPixelShaderConstantF(10, uv_transform, 1); // g_vGradSelect
+
+					float grad_select[4] = {};
+					dev->GetPixelShaderConstantF(3, grad_select, 1); // g_vGradSelect
+
+					float blood_color[4] = {};
+					dev->GetPixelShaderConstantF(4, blood_color, 1); // g_cBloodColor_WaterFogOORange
+
+
+					// skin tint
+					int skin_index = (int)(16.0f * uv_transform[2]); // 0-7
+					//ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
+					//dev->SetRenderState((D3DRENDERSTATETYPE)196, skin_index);
+
+					// cloth tint
+					int cloth_index = (int)(16.0f * uv_transform[3]);
+
+					// 8-15 -> bring to 0-7 range
+					if (cloth_index >= 8) {
+						cloth_index -= 8;
+					}
+
+					//ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
+					//dev->SetRenderState((D3DRENDERSTATETYPE)197, cloth_index);
+
+					// pack into single RS
+					// 0/1/2..7: skin --- 00/10/20...70: cloth
+					ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
+					dev->SetRenderState((D3DRENDERSTATETYPE)196, skin_index + (cloth_index * 10));
+
+					// g_vGradSelect - pack two floats into one RS
+					ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
+					dev->SetRenderState((D3DRENDERSTATETYPE)197, utils::pack_2f_in_dword(grad_select[0], grad_select[1]));
+
+					// sprite index - pack two floats into one RS
+					ctx.save_rs(dev, (D3DRENDERSTATETYPE)177);
+					dev->SetRenderState((D3DRENDERSTATETYPE)177, utils::pack_2f_in_dword(uv_transform[0], uv_transform[1]));
+
+				}
+
+				/*auto parms = ctx.info.material->vftable->GetShaderParams(ctx.info.material);
+				const auto count = ctx.info.material->vftable->ShaderParamCount(ctx.info.material);
+
+				for (auto i = 0u; i < count; i++)
+				{
+					auto p = parms[i];
+					const auto str = p->vftable->GetName(p);
+					const auto vint = p->vftable->GetIntValueInternal(p);
+					const auto vfloat = p->vftable->GetFloatValueInternal(p);
+					const auto vvec = p->vftable->GetVecValueInternal1(p);
+					int xxx = 1;
 				}*/
 
-				int x = 1;
+				//float enable = 1.0f;
+
+				//ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
+				//dev->SetRenderState((D3DRENDERSTATETYPE)149, *reinterpret_cast<DWORD*>(&enable));
+
+
+				//IMaterialVar* var_out = nullptr;
+				//if (has_materialvar(ctx.info.material, "$skintintgradient", &var_out))
+				//{
+				//	if (var_out) 
+				//	{
+				//		const auto varstr = var_out->vftable->GetName(var_out);
+				//		int var = var_out->vftable->GetIntValueInternal(var_out);
+				//		//var = 6;
+				//		ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
+				//		dev->SetRenderState((D3DRENDERSTATETYPE)196, var);  
+				//	}
+
+				//	
+
+				//}
+
+				//if (has_materialvar(ctx.info.material, "$colortintgradient", &var_out))
+				//{
+				//	if (var_out)
+				//	{
+				//		int var = var_out->vftable->GetIntValueInternal(var_out);
+
+				//		if (var >= 8) {
+				//			var -= 8;
+				//		}
+
+				//		if (var)
+				//		{
+				//			int x = 1;
+				//		}
+
+				//		//var = 2;
+				//		ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
+				//		dev->SetRenderState((D3DRENDERSTATETYPE)197, var);
+				//	}
+				//}
+
+				//if (has_materialvar(ctx.info.material, "$sheetindex", &var_out))
+				//{
+				//	if (var_out)
+				//	{
+				//		const int var = var_out->vftable->GetIntValueInternal(var_out);
+				//		ctx.save_rs(dev, (D3DRENDERSTATETYPE)177);
+				//		dev->SetRenderState((D3DRENDERSTATETYPE)177, var);
+				//	}
+				//}
 			}
 
 			ctx.save_vs(dev);

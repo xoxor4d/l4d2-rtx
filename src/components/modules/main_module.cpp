@@ -49,6 +49,23 @@ namespace components
 
 	void main_module::force_cvars()
 	{
+		// z_wound_client_disabled
+		// z_skip_wounds
+		// z_randomskins
+		// z_randombodygroups
+		// z_infected_tinting
+		// z_infected_decals
+		// z_infected_damage_cutouts
+		// z_gibs_per_frame
+		// z_forcezombiemodel --- z_forcezombiemodelname
+
+		//game::cvar_uncheat_and_set_int("z_randomskins", 0);
+		//game::cvar_uncheat_and_set_int("z_randombodygroups", 0);
+		//game::cvar_uncheat_and_set_int("z_infected_tinting", 0);
+		game::cvar_uncheat_and_set_int("z_infected_damage_cutouts", 0);
+		game::cvar_uncheat_and_set_int("z_skip_wounds", 1);
+		game::cvar_uncheat_and_set_int("z_wound_client_disabled", 1);
+
 		game::cvar_uncheat_and_set_int("r_staticprop_lod", 0);
 		game::cvar_uncheat_and_set_int("r_lod", 0);
 		game::cvar_uncheat_and_set_int("r_lod_switch_scale", 1); // hidden cvar
