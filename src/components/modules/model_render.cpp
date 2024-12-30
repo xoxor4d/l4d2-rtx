@@ -8,8 +8,13 @@ namespace components
 	namespace tex_addons
 	{
 		LPDIRECT3DTEXTURE9 glass_shards;
-		LPDIRECT3DTEXTURE9 black_shader;
+		LPDIRECT3DTEXTURE9 black;
 		LPDIRECT3DTEXTURE9 white;
+	}
+
+	namespace tex_infected
+	{
+		entry_s bphf_tanktop_jeans;
 	}
 
 	void model_render::init_texture_addons(bool release)
@@ -17,15 +22,15 @@ namespace components
 		if (release)
 		{
 			if (tex_addons::glass_shards) tex_addons::glass_shards->Release();
-			if (tex_addons::black_shader) tex_addons::black_shader->Release();
+			if (tex_addons::black) tex_addons::black->Release();
 			if (tex_addons::white) tex_addons::white->Release();
 			return;
 		}
 
 		const auto dev = game::get_d3d_device();
-		D3DXCreateTextureFromFileA(dev, "portal2-rtx\\textures\\glass_shards.png", &tex_addons::glass_shards);
-		D3DXCreateTextureFromFileA(dev, "portal2-rtx\\textures\\black_shader.png", &tex_addons::black_shader);
-		D3DXCreateTextureFromFileA(dev, "portal2-rtx\\textures\\white.dds", &tex_addons::white);
+		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\glass_shards.png", &tex_addons::glass_shards);
+		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\black.png", &tex_addons::black);
+		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\white.dds", &tex_addons::white);
 	}
 
 	// check for specific material var and return it in 'out_var'
@@ -78,19 +83,17 @@ namespace components
 		}
 	}
 
-	// uses unused Renderstate 149 to tweak the emissive intensity of remix legacy materials
-	// ~ currently req. runtime changes
-	void set_remix_emissive_intensity(IDirect3DDevice9* dev, prim_fvf_context& ctx, float intensity)
+	enum REMIX_MODIFIER : std::uint32_t
 	{
-		ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
-		dev->SetRenderState((D3DRENDERSTATETYPE)149, *reinterpret_cast<DWORD*>(&intensity));
-	}
+		NONE = 0,
+		INFECTED = 1 << 0,
+		//EMISSIVE_TWEAK = 1 << 1,
+	};
 
 	// set remix texture categories - RemixInstanceCategories
 	// ~ currently req. runtime changes
 	void set_remix_texture_categories(IDirect3DDevice9* dev, prim_fvf_context& ctx, const std::uint32_t& cat)
 	{
-		
 		ctx.save_rs(dev, (D3DRENDERSTATETYPE)42);
 		dev->SetRenderState((D3DRENDERSTATETYPE)42, cat);
 	}
@@ -253,14 +256,15 @@ namespace components
 
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
-		// TODO: fix this asap
-		if (static bool runtime_hack_once = false; !runtime_hack_once)
+		/*if (static bool runtime_hack_once = false; !runtime_hack_once)
 		{
 			runtime_hack_once = true;
 			set_remix_emissive_intensity(dev, ctx, 0.0f);
-		}
+		}*/
 
-		// player model - gun - grabable stuff
+		// shader: VertexLitGeneric (infected - player model - viewmodel - dynamic props)
+		// > models/weapons/melee/crowbar
+		// > models/props_junk/wood_palletcrate001a
 		if (mesh->m_VertexFormat == 0xa0003)
 		{
 			//ctx.modifiers.do_not_render = true;
@@ -273,15 +277,15 @@ namespace components
 				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 			}
-			else if (ctx.info.material_name.contains("models/props_destruction/glass_")) 
-			{
-				//ctx.modifiers.do_not_render = true;
-				if (tex_addons::glass_shards)
-				{
-					ctx.save_texture(dev, 0);
-					dev->SetTexture(0, tex_addons::glass_shards);
-				}
-			}
+			//else if (ctx.info.material_name.contains("models/props_destruction/glass_")) 
+			//{
+			//	//ctx.modifiers.do_not_render = true;
+			//	if (tex_addons::glass_shards)
+			//	{
+			//		ctx.save_texture(dev, 0);
+			//		dev->SetTexture(0, tex_addons::glass_shards);
+			//	}
+			//}
 			// models/player/chell/gambler_eyeball_ l/r
 			else if (ctx.info.material_name.contains("_eyeball_"))
 			{
@@ -292,7 +296,6 @@ namespace components
 				}
 			}
 
-			//if (ctx.info.material_name.contains("models/infected/"))
 			if (ctx.info.shader_name == "Infected")
 			{
 				//ctx.modifiers.do_not_render = true;
@@ -311,53 +314,68 @@ namespace components
 					dev->SetTexture(2, tex);
 				}
 
-				//if (ctx.info.shader_name == "Infected")
-				{
-					float enable = 1.0f;
-					ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
-					dev->SetRenderState((D3DRENDERSTATETYPE)149, *reinterpret_cast<DWORD*>(&enable));
+				
 
-					float uv_transform[4] = {}; // xy = sprite, zw = gradient z:skin - w:cloth
-					dev->GetPixelShaderConstantF(10, uv_transform, 1); // g_vGradSelect
+				ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
+				dev->SetRenderState((D3DRENDERSTATETYPE)149, INFECTED);
 
-					float grad_select[4] = {};
-					dev->GetPixelShaderConstantF(3, grad_select, 1); // g_vGradSelect
+				float uv_transform[4] = {}; // xy = sprite, zw = gradient z:skin - w:cloth
+				dev->GetPixelShaderConstantF(10, uv_transform, 1); // g_vGradSelect
 
-					float blood_color[4] = {};
-					dev->GetPixelShaderConstantF(4, blood_color, 1); // g_cBloodColor_WaterFogOORange
+				float grad_select[4] = {};
+				dev->GetPixelShaderConstantF(3, grad_select, 1); // g_vGradSelect
+
+				float blood_color[4] = {};
+				dev->GetPixelShaderConstantF(4, blood_color, 1); // g_cBloodColor_WaterFogOORange
 
 
-					// skin tint
-					int skin_index = (int)(16.0f * uv_transform[2]); // 0-7
-					//ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
-					//dev->SetRenderState((D3DRENDERSTATETYPE)196, skin_index);
+				// skin tint
+				int skin_index = (int)(16.0f * uv_transform[2]); // 0-7
 
-					// cloth tint
-					int cloth_index = (int)(16.0f * uv_transform[3]);
+				// cloth tint
+				int cloth_index = (int)(16.0f * uv_transform[3]);
 
-					// 8-15 -> bring to 0-7 range
-					if (cloth_index >= 8) {
-						cloth_index -= 8;
-					}
-
-					//ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
-					//dev->SetRenderState((D3DRENDERSTATETYPE)197, cloth_index);
-
-					// pack into single RS
-					// 0/1/2..7: skin --- 00/10/20...70: cloth
-					ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
-					dev->SetRenderState((D3DRENDERSTATETYPE)196, skin_index + (cloth_index * 10));
-
-					// g_vGradSelect - pack two floats into one RS
-					ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
-					dev->SetRenderState((D3DRENDERSTATETYPE)197, utils::pack_2f_in_dword(grad_select[0], grad_select[1]));
-
-					// sprite index - pack two floats into one RS
-					ctx.save_rs(dev, (D3DRENDERSTATETYPE)177);
-					dev->SetRenderState((D3DRENDERSTATETYPE)177, utils::pack_2f_in_dword(uv_transform[0], uv_transform[1]));
-
+				// 8-15 -> bring to 0-7 range
+				if (cloth_index >= 8) {
+					cloth_index -= 8;
 				}
 
+				// pack into single RS
+				// 0/1/2..7: skin --- 00/10/20...70: cloth
+				ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
+				dev->SetRenderState((D3DRENDERSTATETYPE)196, skin_index + (cloth_index * 10));
+
+
+				// g_vGradSelect - pack two floats into one RS
+				ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
+				dev->SetRenderState((D3DRENDERSTATETYPE)197, utils::pack_2f_in_dword(grad_select[0], grad_select[1]));
+
+
+				// sprite index - pack two floats into one RS
+				ctx.save_rs(dev, (D3DRENDERSTATETYPE)177);
+				dev->SetRenderState((D3DRENDERSTATETYPE)177, utils::pack_2f_in_dword(uv_transform[0], uv_transform[1]));
+
+				float roughness_boost = 1.0f; // less = more reflections
+				float normal_boost = 3.0f;
+				if (ctx.info.material_name.contains("head")) 
+				{
+					normal_boost = 6.0f;
+					roughness_boost = 0.9f;
+				}
+
+				
+				if (ctx.info.material_name.contains("wet")) {
+					roughness_boost = 0.2f;
+				} else if (ctx.info.material_name.contains("swamp")) {
+					roughness_boost = 0.6f;
+				}
+
+				// normal boost & roughness boost - pack two floats into one RS
+				ctx.save_rs(dev, (D3DRENDERSTATETYPE)169);
+				dev->SetRenderState((D3DRENDERSTATETYPE)169, utils::pack_2f_in_dword(normal_boost, roughness_boost));
+				
+
+				// $skintintgradient - $colortintgradient
 				/*auto parms = ctx.info.material->vftable->GetShaderParams(ctx.info.material);
 				const auto count = ctx.info.material->vftable->ShaderParamCount(ctx.info.material);
 
@@ -370,59 +388,6 @@ namespace components
 					const auto vvec = p->vftable->GetVecValueInternal1(p);
 					int xxx = 1;
 				}*/
-
-				//float enable = 1.0f;
-
-				//ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
-				//dev->SetRenderState((D3DRENDERSTATETYPE)149, *reinterpret_cast<DWORD*>(&enable));
-
-
-				//IMaterialVar* var_out = nullptr;
-				//if (has_materialvar(ctx.info.material, "$skintintgradient", &var_out))
-				//{
-				//	if (var_out) 
-				//	{
-				//		const auto varstr = var_out->vftable->GetName(var_out);
-				//		int var = var_out->vftable->GetIntValueInternal(var_out);
-				//		//var = 6;
-				//		ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
-				//		dev->SetRenderState((D3DRENDERSTATETYPE)196, var);  
-				//	}
-
-				//	
-
-				//}
-
-				//if (has_materialvar(ctx.info.material, "$colortintgradient", &var_out))
-				//{
-				//	if (var_out)
-				//	{
-				//		int var = var_out->vftable->GetIntValueInternal(var_out);
-
-				//		if (var >= 8) {
-				//			var -= 8;
-				//		}
-
-				//		if (var)
-				//		{
-				//			int x = 1;
-				//		}
-
-				//		//var = 2;
-				//		ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
-				//		dev->SetRenderState((D3DRENDERSTATETYPE)197, var);
-				//	}
-				//}
-
-				//if (has_materialvar(ctx.info.material, "$sheetindex", &var_out))
-				//{
-				//	if (var_out)
-				//	{
-				//		const int var = var_out->vftable->GetIntValueInternal(var_out);
-				//		ctx.save_rs(dev, (D3DRENDERSTATETYPE)177);
-				//		dev->SetRenderState((D3DRENDERSTATETYPE)177, var);
-				//	}
-				//}
 			}
 
 			ctx.save_vs(dev);
@@ -431,9 +396,12 @@ namespace components
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX6);
 		}
 
+		// shader: VertexLitGeneric
+		// > models/props_downtown/pipes_rooftop
+		// > models/props_foliage/urban_trees_branches03_small
 		else if (mesh->m_VertexFormat == 0xa0103)
 		{
-			lookat_vertex_decl(dev);
+			//lookat_vertex_decl(dev);
 
 			ctx.save_vs(dev);
 			dev->SetVertexShader(nullptr);
@@ -441,7 +409,9 @@ namespace components
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX3);
 		}
 
-		// world geo - floor / walls --- "LightmappedGeneric"
+		// shader: LightmappedGeneric (world geo)
+		// > plaster/plaster_ext_20c
+		// > concrete/concrete_floor_10
 		else if (mesh->m_VertexFormat == 0x480003)
 		{
 			//ctx.modifiers.do_not_render = true;
@@ -451,6 +421,10 @@ namespace components
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 		}
 
+		// shader: screenspace_general_dx9, Engine_Post_dx9, Sky_HDR_DX9, DecalModulate_dx9 ..
+		// > dev/lumcompare
+		// > skybox/sky_l4d_c1_1_hdrrt
+		// > decals/blood3_subrect
 		else if (mesh->m_VertexFormat == 0x80001)
 		{
 			//ctx.modifiers.do_not_render = true;
@@ -459,7 +433,21 @@ namespace components
 			// -> fullscreen color transitions (damage etc.) and also "enables" the crosshair
 			// -> takes ~ 0.8ms on a debug build
 
-			if (ctx.info.shader_name.starts_with("Engine_")) // Engine_Post
+			//if (!ctx.info.shader_name.contains("Sky")) {
+			//	set_remix_texture_categories(dev, ctx, WorldMatte);
+			//	//ctx.modifiers.with_high_gamma = true;
+			//}
+
+			if (ctx.info.shader_name.starts_with("DecalMod"))
+			{
+				//lookat_vertex_decl(dev);
+				ctx.save_vs(dev);
+				dev->SetVertexShader(nullptr);
+				dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			}
+
+			else if (ctx.info.shader_name.starts_with("Engine_")) // Engine_Post
 			{
 				// do not fog HUD elements :D
 				dev->SetRenderState(D3DRS_FOGENABLE, FALSE);
@@ -569,18 +557,29 @@ namespace components
 			//lookat_vertex_decl(dev);
 		}
 
-		// UnlitGeneric
-		else if (mesh->m_VertexFormat == 0x80003 || mesh->m_VertexFormat == 0x80007)
+		// shader: VertexLitGeneric (stride 0x20)
+		// > decals/wood/wood3
+		// > decals/metal/metal04
+		else if (mesh->m_VertexFormat == 0x80003)
+		{
+			//ctx.modifiers.do_not_render = true;
+			lookat_vertex_decl(dev);
+		}
+
+		// shader: UnlitGeneric (stride 0x30)
+		// > __fontpage_additive, vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
+		// > vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
+		else if (mesh->m_VertexFormat == 0x80007)
 		{
 			//ctx.modifiers.do_not_render = true;
 
 			// always render UI and world ui with high gamma
-			ctx.modifiers.with_high_gamma = true; 
+			ctx.modifiers.with_high_gamma = true;  
 
 			// early out if vgui_white
 			if (ctx.info.material_name != "vgui_white" && ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f)
 			{
-				bool is_world_ui_text = ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name == "vgui__fontpage";
+				bool is_world_ui_text = ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name == "__fontpage";
 
 				if (is_world_ui_text) {
 					set_remix_texture_categories(dev, ctx, WorldUI);
@@ -660,11 +659,12 @@ namespace components
 			}
 		}
 
-		// Terrain Decals:
-		// WorldVertexTransition_DX9
+		// shader: LightmappedGeneric, WorldVertexTransition_DX9 (terrain decals)
+		// > buildings/blend_roof_01
+		// > decals/burn02a
 		else if (mesh->m_VertexFormat == 0x480007)
 		{
-			//ctx.modifiers.do_not_render = true;
+			ctx.modifiers.do_not_render = false;
 
 			if (ctx.info.shader_name == "WorldVertexTransition_DX9") {
 				ctx.modifiers.dual_render_with_basetexture2 = true;
@@ -691,10 +691,12 @@ namespace components
 			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 		}
 
+		// shader: DecalModulate_dx9
+		// > decals/bloodstain_002
 		else if (mesh->m_VertexFormat == 0x80005) // stride 0x20
 		{
 			//ctx.modifiers.do_not_render = true;
-			bool mod_shader = true;
+			bool mod_shader = true; 
 
 			// render bik using shaders
 			/*if (ctx.info.material_name.starts_with("videobik") || ctx.info.material_name.starts_with("media/"))
@@ -713,7 +715,8 @@ namespace components
 			}
 		}
 
-		// simpleshadow
+		// shader: Shadow
+		// > decals/simpleshadow
 		else if (mesh->m_VertexFormat == 0x6c0005)
 		{
 			ctx.modifiers.do_not_render = true;
@@ -722,15 +725,17 @@ namespace components
 			dev->SetFVF(D3DFVF_XYZB1 | D3DFVF_TEX5); // stride 48
 		}
 
-		// hanging cables - requires vertex shader - verts not modified on the cpu
+		// shader: SplineRope (hanging cables - requires vertex shader - verts not modified on the cpu)
+		// > cable/cable
 		else if (mesh->m_VertexFormat == 0x24900005)
 		{
 			//ctx.modifiers.do_not_render = true;
 			ctx.save_texture(dev, 0);
-			dev->SetTexture(0, tex_addons::black_shader);
+			dev->SetTexture(0, tex_addons::black);
 		}
 
-		// Cable_DX9 - particle/smoker_tongue_beam
+		// shader: Cable_DX9
+		// > particle/smoker_tongue_beam
 		else if (mesh->m_VertexFormat == 0x480035)
 		{
 			//ctx.modifiers.do_not_render = true;
@@ -738,29 +743,37 @@ namespace components
 		}
 
 
-		// SpriteCard shader
-		else if (mesh->m_VertexFormat == 0x114900005) // stride 96 
+		// shader: SpriteCard - stride 0x60
+		// > particle/smoke1/smoke1
+		// > particle/fire_burning_character/fire_burning_character
+		else if (mesh->m_VertexFormat == 0x114900005)
 		{
+			//ctx.modifiers.do_not_render = true;
 			int x = 1;
 		}
 
-		// SpriteCard - spark
+		// shader: SpriteCard (spark) - stride 0x60
+		// > particle/beam_flashlight
 		else if (mesh->m_VertexFormat == 0x124900005)
 		{
+			//ctx.modifiers.do_not_render = true;
 			int x = 1;
 		}
 
-		// SpriteCard vista smoke
+		// shader: Spritecard (vista smoke) - stride 0x90
 		// Client::C_OP_RenderSprites::Render - UV's handled in 'fix_sprite_card_texcoords_mid_hk'
+		// > particle/vistasmokev1/vistasmokev4_nearcull
 		else if (mesh->m_VertexFormat == 0x24914900005)
 		{
+			//ctx.modifiers.do_not_render = true; 
 			int x = 1;
 		}
 
 		// Sprite shader
 		else if (mesh->m_VertexFormat == 0x914900005)
 		{
-			int x = 1;
+			//ctx.modifiers.do_not_render = true;
+			int x = 1; 
 		}
 
 		else
@@ -898,8 +911,8 @@ namespace components
 				dev->SetRenderState(D3DRS_ALPHABLENDENABLE, 1);
 
 				// picking up / moving a cube affects this and causes flickering on the blended surface
-				//dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				//dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+				dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 				// can be used to lighten up the albedo and add a little more alpha
 				dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_RGBA(0, 0, 0, 30));
@@ -997,6 +1010,7 @@ namespace components
 		}
 	}
 
+	// # TODO: call tex_infected::release_all on map unload
 
 	// #
 	// #
