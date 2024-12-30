@@ -378,6 +378,11 @@ namespace components
 			dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
 			dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
 		}
+
+		//g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
+
+		//// CM_LeafArea :: get current area the camera is in
+		//g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf);
 	}
 
 	HOOK_RETN_PLACE_DEF(skyboxview_draw_internal_retn);
@@ -394,6 +399,79 @@ namespace components
 			jmp		skyboxview_draw_internal_retn;
 		}
 	}
+
+
+
+
+	/**
+	 * Force visibility of a specific node
+	 * @param node_index	The node to force vis for
+	 * @param player_node	The node the player is currently in
+	 */
+	void force_node_vis(int node_index, bool hide = false)
+	{
+		const auto world = game::get_hoststate_worldbrush_data();
+		const auto root_node = &world->nodes[0];
+
+		int next_node_index = node_index;
+		while (next_node_index >= 0)
+		{
+			const auto node = &world->nodes[next_node_index];
+
+			if (!hide)
+			{
+				// node was already set to current visframe, do not continue
+				if (node->visframe == game::get_visframecount()) {
+					break;
+				}
+
+				// force node vis
+				node->visframe = game::get_visframecount();
+			}
+			else
+			{
+				// nodes already hidden
+				if (node->visframe == 0) {
+					break;
+				}
+
+				node->visframe = 0;
+			}
+
+			// we only need to traverse to the root node
+			if (node == root_node) {
+				break;
+			}
+
+			next_node_index = &node->parent[0] - root_node;
+		}
+	}
+
+	/**
+	 * Force visibility of a specific leaf
+	 * @param leaf_index   The leaf to force vis for
+	 * @param player_node  The node the player is currently in
+	 */
+	void force_leaf_vis(int leaf_index, bool hide = false)
+	{
+		const auto world = game::get_hoststate_worldbrush_data();
+		auto leaf_node = &world->leafs[leaf_index];
+		auto parent_node_index = &leaf_node->parent[0] - &world->nodes[0];
+
+		if (!hide)
+		{
+			// force leaf vis
+			leaf_node->visframe = game::get_visframecount();
+		}
+		else
+		{
+			leaf_node->visframe = 0;
+		}
+
+		// force nodes
+		force_node_vis(parent_node_index, hide);
+	}
+
 
 	// Stub before calling 'R_CullNode' in 'R_RecursiveWorldNode'
 	// Return 0 to NOT cull the node
@@ -458,6 +536,19 @@ namespace components
 				const auto curr_leaf = &world->leafs[g_current_leaf];
 				//game::debug_add_text_overlay(&curr_leaf->m_vecCenter.x, 0.0f, utils::va("Leaf: %i", g_current_leaf));
 				main_module::debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, api::DEBUG_REMIX_LINE_COLOR::GREEN);
+			}
+		}
+
+		if (game::get_viewid() != VIEW_3DSKY)
+		//if (!g_player_current_area_override || g_player_current_area_override->cull_mode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		{
+			for (auto i = 0; i < world->numleafs; i++)  
+			{
+				if (auto& l = world->leafs[i];
+					(int)l.area == g_current_area)
+				{
+					force_leaf_vis(i);
+				}
 			}
 		}
 	}
@@ -556,6 +647,7 @@ namespace components
 
 		game::cvar_uncheat_and_set_int("r_threaded_particles", 0);
 		game::cvar_uncheat_and_set_int("r_entityclips", 0);
+		game::cvar_uncheat_and_set_int("r_PortalTestEnts", 0);
 
 		game::cvar_uncheat_and_set_int("cl_fastdetailsprites", 0);
 		game::cvar_uncheat_and_set_int("cl_brushfastpath", 0);
@@ -660,10 +752,10 @@ namespace components
 		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick();
 		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
 
-		// 1EADED
-		utils::hook::nop(CLIENT_BASE + 0x1D3F33, 6);
-		utils::hook(CLIENT_BASE + 0x1D3F33, skyboxview_draw_internal_stub).install()->quick();
-		HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F39);
+		// not needed
+		//utils::hook::nop(CLIENT_BASE + 0x1D3F33, 6);
+		//utils::hook(CLIENT_BASE + 0x1D3F33, skyboxview_draw_internal_stub).install()->quick();
+		//HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F39);
 
 		// #
 		// culling

@@ -39,6 +39,8 @@ namespace game
 	inline components::CCvar* get_icvar() { return reinterpret_cast<components::CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 
 	inline Vector* get_current_view_origin() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x501344); }
+	inline int get_visframecount() { return *reinterpret_cast<int*>(ENGINE_BASE + 0x6AFDD8); }
+	inline view_id get_viewid() { return *reinterpret_cast<view_id*>(CLIENT_BASE + 0x6DF6CC); }
 
 	extern void con_add_command(ConCommand* cmd, const char* name, void(__cdecl* callback)(), const char* desc);
 	extern void cvar_uncheat(const char* name);

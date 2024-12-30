@@ -499,22 +499,22 @@ namespace components
 		cplane_t* planes;
 		int numleafs;
 		mleaf_t* leafs;
-		//int numleafwaterdata;
-		//mleafwaterdata_t* leafwaterdata;
-		//int numvertexes;
-		//mvertex_t* vertexes;
-		//int numoccluders;
-		//doccluderdata_t* occluders;
-		//int numoccluderpolys;
-		//doccluderpolydata_t* occluderpolys;
-		//int numoccludervertindices;
-		//int* occludervertindices;
-		//int numvertnormalindices;
-		//unsigned __int16* vertnormalindices;
-		//int numvertnormals;
-		//Vector* vertnormals;
-		//int numnodes;
-		//mnode_t* nodes;
+		int numleafwaterdata;
+		mleafwaterdata_t* leafwaterdata;
+		int numvertexes;
+		mvertex_t* vertexes;
+		int numoccluders;
+		doccluderdata_t* occluders;
+		int numoccluderpolys;
+		doccluderpolydata_t* occluderpolys;
+		int numoccludervertindices;
+		int* occludervertindices;
+		int numvertnormalindices;
+		unsigned __int16* vertnormalindices;
+		int numvertnormals;
+		Vector* vertnormals;
+		int numnodes;
+		mnode_t* nodes;
 		//unsigned __int16* m_LeafMinDistToWater;
 		//int numtexinfo;
 		//mtexinfo_t* texinfo;
@@ -562,7 +562,7 @@ namespace components
 	};
 	STATIC_ASSERT_OFFSET(worldbrushdata_t, planes, 0x8);
 	STATIC_ASSERT_OFFSET(worldbrushdata_t, numleafs, 0xC);
-	//STATIC_ASSERT_OFFSET(worldbrushdata_t, m_pAreaPortals, 0xC8);
+	STATIC_ASSERT_OFFSET(worldbrushdata_t, nodes, 0x50);
 
 	struct brushdata_t
 	{
