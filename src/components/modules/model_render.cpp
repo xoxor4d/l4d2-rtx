@@ -29,7 +29,7 @@ namespace components
 
 		const auto dev = game::get_d3d_device();
 		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\glass_shards.png", &tex_addons::glass_shards);
-		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\black.png", &tex_addons::black);
+		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\black.dds", &tex_addons::black);
 		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\white.dds", &tex_addons::white);
 	}
 
@@ -254,6 +254,11 @@ namespace components
 			}
 		}
 
+		// needed for 3d skybox
+		dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
 		/*if (static bool runtime_hack_once = false; !runtime_hack_once)
@@ -433,10 +438,19 @@ namespace components
 			// -> fullscreen color transitions (damage etc.) and also "enables" the crosshair
 			// -> takes ~ 0.8ms on a debug build
 
-			//if (!ctx.info.shader_name.contains("Sky")) {
-			//	set_remix_texture_categories(dev, ctx, WorldMatte);
-			//	//ctx.modifiers.with_high_gamma = true;
-			//}
+			//ctx.save_view_transform(dev);
+			//ctx.save_projection_transform(dev);
+			//
+			/*dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+			dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);*/
+
+			/*if (!ctx.info.shader_name.contains("Sky"))
+			{
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+			}*/
 
 			if (ctx.info.shader_name.starts_with("DecalMod"))
 			{
@@ -540,19 +554,24 @@ namespace components
 				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);*/
 			}
+			else if (ctx.info.shader_name.contains("Sky"))
+			{
+				ctx.modifiers.do_not_render = false;
+			}
+			//ctx.modifiers.do_not_render = true;
 
 			// sky ff "works" but visuals are messed up
 			// setting view/proj here would render 3d sky?
-			else
-			{
-				int x = 1;
-				//ctx.save_vs(dev);
-				//dev->SetVertexShader(nullptr);
-				//dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
-				//dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-				//dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-				//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-			}
+			//else
+			//{
+			//	//int x = 1;
+			//	//ctx.save_vs(dev);
+			//	//dev->SetVertexShader(nullptr);
+			//	//dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
+			//	dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			//	dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+			//	dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+			//}
 
 			//lookat_vertex_decl(dev);
 		}
@@ -664,7 +683,7 @@ namespace components
 		// > decals/burn02a
 		else if (mesh->m_VertexFormat == 0x480007)
 		{
-			ctx.modifiers.do_not_render = false;
+			//ctx.modifiers.do_not_render = true;
 
 			if (ctx.info.shader_name == "WorldVertexTransition_DX9") {
 				ctx.modifiers.dual_render_with_basetexture2 = true;
@@ -731,7 +750,7 @@ namespace components
 		{
 			//ctx.modifiers.do_not_render = true;
 			ctx.save_texture(dev, 0);
-			dev->SetTexture(0, tex_addons::black);
+			dev->SetTexture(0, tex_addons::black); 
 		}
 
 		// shader: Cable_DX9
@@ -739,7 +758,8 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x480035)
 		{
 			//ctx.modifiers.do_not_render = true;
-			int x = 1;
+			ctx.save_texture(dev, 0);
+			dev->SetTexture(0, tex_addons::black);
 		}
 
 
@@ -1331,6 +1351,9 @@ namespace components
 		XASSERT(tbl_hk::model_renderer::table.init(tbl_hk::model_renderer::_interface) == false);
 		XASSERT(tbl_hk::model_renderer::table.hook(&tbl_hk::model_renderer::DrawModelExecute::Detour, tbl_hk::model_renderer::DrawModelExecute::Index) == false);
  		*/
+
+		// init addon textures
+		init_texture_addons();
 
 		utils::hook(RENDERER_BASE + 0xBEFA, cmeshdx8_renderpass_pre_draw_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(cmeshdx8_renderpass_pre_draw_retn_addr, RENDERER_BASE + 0xBEFF);

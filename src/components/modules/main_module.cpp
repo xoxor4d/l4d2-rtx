@@ -2,6 +2,225 @@
 
 namespace components
 {
+	int g_current_leaf = -1;
+	int g_current_area = -1;
+
+	namespace api
+	{
+		bool m_initialized = false;
+		remixapi_Interface bridge = {};
+
+		remixapi_MaterialHandle remix_debug_line_materials[3];
+		remixapi_MeshHandle remix_debug_line_list[128] = {};
+		std::uint32_t remix_debug_line_amount = 0u;
+		std::uint64_t remix_debug_last_line_hash = 0u;
+		bool remix_debug_node_vis = false; // show/hide debug vis of bsp nodes/leafs
+
+		void begin_scene_callback()
+		{
+			if (api::remix_debug_line_amount)
+			{
+				for (auto l = 1u; l < api::remix_debug_line_amount + 1; l++)
+				{
+					if (api::remix_debug_line_list[l])
+					{
+						remixapi_Transform t0 = {};
+						t0.matrix[0][0] = 1.0f;
+						t0.matrix[1][1] = 1.0f;
+						t0.matrix[2][2] = 1.0f;
+
+						const remixapi_InstanceInfo inst =
+						{
+							.sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO,
+							.pNext = nullptr,
+							.categoryFlags = 0,
+							.mesh = api::remix_debug_line_list[l],
+							.transform = t0,
+							.doubleSided = true
+						};
+
+						api::bridge.DrawInstance(&inst);
+					}
+				}
+			}
+		}
+
+		// called on device->Present
+		void on_present_callback()
+		{
+			// Draw current node/leaf as HUD
+			if (api::remix_debug_node_vis && main_module::d3d_font)
+			{
+				RECT rect;
+
+				//if (!map_settings::get_map_name().empty())
+				//{
+				//	SetRect(&rect, 20, 100, 512, 512);
+				//	main_module::d3d_font->DrawTextA
+				//	(
+				//		nullptr,
+				//		map_settings::get_map_name().c_str(),
+				//		-1,       // text length (-1 = null-terminated)
+				//		&rect,
+				//		DT_NOCLIP,
+				//		D3DCOLOR_XRGB(255, 255, 255)
+				//	);
+				//}
+
+				if (g_current_area != -1)
+				{
+					SetRect(&rect, 20, 125, 512, 512);
+					auto text = utils::va("Area: %d", g_current_area);
+					main_module::d3d_font->DrawTextA
+					(
+						nullptr,
+						text,
+						-1,       // text length (-1 = null-terminated)
+						&rect,
+						DT_NOCLIP,
+						D3DCOLOR_XRGB(255, 255, 255)
+					);
+				}
+
+				if (g_current_leaf != -1)
+				{
+					SetRect(&rect, 20, 145, 512, 512);
+					auto text = utils::va("Leaf: %d", g_current_leaf);
+					main_module::d3d_font->DrawTextA
+					(
+						nullptr,
+						text,
+						-1,       // text length (-1 = null-terminated)
+						&rect,
+						DT_NOCLIP,
+						D3DCOLOR_XRGB(50, 255, 20)
+					);
+				}
+			}
+		}
+
+		// called once from the main_module constructor
+		void init()
+		{
+			const auto status = remixapi::bridge_initRemixApi(&api::bridge);
+			if (status == REMIXAPI_ERROR_CODE_SUCCESS)
+			{
+				m_initialized = true;
+				remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, nullptr, on_present_callback);
+			}
+		}
+
+		void create_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, const float scale)
+		{
+			if (!v_out || !i_out)
+			{
+				return;
+			}
+
+			auto make_vertex = [&](float x, float y, float z, float u, float v)
+				{
+					const remixapi_HardcodedVertex vert =
+					{
+					  .position = { x, y, z },
+					  .normal = { 0.0f, 0.0f, -1.0f },
+					  .texcoord = { u, v },
+					  .color = 0xFFFFFFFF,
+					};
+					return vert;
+				};
+
+			v_out[0] = make_vertex(-1.0f * scale, 1, -1.0f * scale, 0.0f, 0.0f); // bottom left
+			v_out[1] = make_vertex(-1.0f * scale, 1, 1.0f * scale, 0.0f, 1.0f); // top left
+			v_out[2] = make_vertex(1.0f * scale, 1, -1.0f * scale, 1.0f, 0.0f); // bottom right
+			v_out[3] = make_vertex(1.0f * scale, 1, 1.0f * scale, 1.0f, 1.0f); // top right
+
+			i_out[0] = 0; i_out[1] = 1; i_out[2] = 2;
+			i_out[3] = 3; i_out[4] = 2; i_out[5] = 1;
+		}
+
+		void create_line_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, const Vector& p1, const Vector& p2, const float width)
+		{
+			if (!v_out || !i_out)
+			{
+				return;
+			}
+
+			auto make_vertex = [&](const Vector& pos, float u, float v)
+				{
+					const remixapi_HardcodedVertex vert =
+					{
+					  .position = { pos.x, pos.y, pos.z },
+					  .normal = { 0.0f, 0.0f, -1.0f },
+					  .texcoord = { u, v },
+					  .color = 0xFFFFFFFF,
+					};
+					return vert;
+				};
+
+			Vector up = { 0.0f, 0.0f, 1.0f };
+
+			// dir of the line
+			Vector dir = p2 - p1;
+			dir.Normalize();
+
+			// check if dir is parallel or very close to the up vector
+			if (fabs(DotProduct(dir, up)) > 0.999f)
+			{
+				// if parallel, choose a different up vector
+				up = { 1.0f, 0.0f, 0.0f };
+			}
+
+			Vector perp = dir.Cross(up); // perpendicular vector to line
+			perp.Normalize(); // unit length
+
+			// scale by half width to offset vertices
+			const Vector offset = perp * (width * 0.5f);
+
+			v_out[0] = make_vertex(p1 - offset, 0.0f, 0.0f); // bottom left
+			v_out[1] = make_vertex(p1 + offset, 0.0f, 1.0f); // top left
+			v_out[2] = make_vertex(p2 - offset, 1.0f, 0.0f); // bottom right
+			v_out[3] = make_vertex(p2 + offset, 1.0f, 1.0f); // top right
+
+			i_out[0] = 0; i_out[1] = 1; i_out[2] = 2;
+			i_out[3] = 3; i_out[4] = 2; i_out[5] = 1;
+		}
+
+		void add_debug_line(const Vector& p1, const Vector& p2, const float width, DEBUG_REMIX_LINE_COLOR color)
+		{
+			if (remix_debug_line_materials[color])
+			{
+				remix_debug_line_amount++;
+				remixapi_HardcodedVertex verts[4] = {};
+				uint32_t indices[6] = {};
+				api::create_line_quad(verts, indices, p1, p2, width);
+
+				remixapi_MeshInfoSurfaceTriangles triangles =
+				{
+				  .vertices_values = verts,
+				  .vertices_count = ARRAYSIZE(verts),
+				  .indices_values = indices,
+				  .indices_count = 6,
+				  .skinning_hasvalue = FALSE,
+				  .skinning_value = {},
+				  .material = remix_debug_line_materials[color],
+				};
+
+				remixapi_MeshInfo info
+				{
+					.sType = REMIXAPI_STRUCT_TYPE_MESH_INFO,
+					.hash = utils::string_hash64(utils::va("line%d", remix_debug_last_line_hash ? remix_debug_last_line_hash : 1)),
+					.surfaces_values = &triangles,
+					.surfaces_count = 1,
+				}; 
+
+				api::bridge.CreateMesh(&info, &remix_debug_line_list[remix_debug_line_amount]);
+				remix_debug_last_line_hash = reinterpret_cast<std::uint64_t>(remix_debug_line_list[remix_debug_line_amount]);
+			}
+		}
+	}
+
+	// ------------------------------------------------------
+
 	void on_renderview()
 	{
 		auto enginerender = game::get_engine_renderer();
@@ -14,6 +233,15 @@ namespace components
 
 			float colProj[4][4] = {};
 			utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
+
+			/*auto pos = game::get_current_view_origin();
+			D3DXMATRIX world =
+			{
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				pos->x, pos->y, pos->z, 1.0f
+			};*/
 
 			dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
 			dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
@@ -29,6 +257,72 @@ namespace components
 		}
 
 		main_module::force_cvars();
+
+
+		// CM_PointLeafnum :: get current leaf
+		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
+
+		// CM_LeafArea :: get current area the camera is in
+		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); 
+
+
+		// api debug lines
+		if (!api::remix_debug_line_materials[0])
+		{
+			remixapi_MaterialInfo info
+			{
+				.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO,
+				.hash = utils::string_hash64("linemat0"),
+				.albedoTexture = L"",
+				.normalTexture = L"",
+				.tangentTexture = L"",
+				.emissiveTexture = L"",
+				.emissiveIntensity = 1.0f,
+				.emissiveColorConstant = { 1.0f, 0.0f, 0.0f },
+			};
+
+			info.albedoTexture = L"";
+			info.normalTexture = L"";
+			info.tangentTexture = L"";
+			info.emissiveTexture = L"";
+
+			remixapi_MaterialInfoOpaqueEXT ext = {};
+			{
+				ext.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO_OPAQUE_EXT;
+				ext.useDrawCallAlphaState = 1;
+				ext.opacityConstant = 1.0f;
+				ext.roughnessTexture = L"";
+				ext.metallicTexture = L"";
+				ext.heightTexture = L"";
+			}
+			info.pNext = &ext;
+
+			api::bridge.CreateMaterial(&info, &api::remix_debug_line_materials[0]);
+
+			info.hash = utils::string_hash64("linemat1");
+			info.emissiveColorConstant = { 0.0f, 1.0f, 0.0f };
+			api::bridge.CreateMaterial(&info, &api::remix_debug_line_materials[1]);
+
+			info.hash = utils::string_hash64("linemat3");
+			info.emissiveColorConstant = { 0.0f, 1.0f, 1.0f };
+			api::bridge.CreateMaterial(&info, &api::remix_debug_line_materials[2]);
+		}
+
+		// destroy all lines added the prev. frame
+		if (api::remix_debug_line_amount)
+		{
+			for (auto& line : api::remix_debug_line_list)
+			{
+				if (line)
+				{
+					api::bridge.DestroyMesh(line);
+					line = nullptr;
+				}
+			}
+
+			api::remix_debug_line_amount = 0;
+		}
+
 	}
 
 	HOOK_RETN_PLACE_DEF(cviewrenderer_renderview_retn);
@@ -47,43 +341,188 @@ namespace components
 		}
 	}
 
+	// ##
+	// ##
 
-
-	struct CViewRender
+	void on_skyboxdraw()
 	{
-		char pad[0x3E8];
-		FadeData_t m_FadeData;
-	};
+		auto enginerender = game::get_engine_renderer();
+		const auto dev = game::get_d3d_device();
 
-	// cpu_level + 1
-	FadeData_t g_aFadeData[] =
-	{
-		// pxmin  pxmax    width   scale
-		{  0.0f,   0.0f,  1280.0f,  1.0f },
-		{ 10.0f,  15.0f,   800.0f,  1.0f },
-		{  5.0f,  10.0f,  1024.0f,  1.0f },
-		{  0.0f,   0.0f,  1280.0f,  0.1f },
-		{ 36.0f, 144.0f,   720.0f,  1.0f },
-		{  0.0f,   0.0f,  1280.0f,  1.0f },
-	};
+		auto mat = game::get_material_system();
+		auto ctx = mat->vtbl->GetRenderContext(mat);
 
-	void init_fade_data_hk(CViewRender* view_render)
-	{
-		view_render->m_FadeData = g_aFadeData[3];
-	}
+		VMatrix viewm = {};
+		ctx->vtbl->GetMatrix2(ctx, MATERIAL_VIEW, &viewm);
 
-	HOOK_RETN_PLACE_DEF(init_fade_data_retn);
-	__declspec(naked) void init_fade_data_stub()
-	{
-		__asm
+		// setup main camera
 		{
-			push	esi; // CViewRender (this)
-			call	init_fade_data_hk;
-			add		esp, 4;
-			jmp		init_fade_data_retn;
+			float colView[4][4] = {};
+			utils::row_major_to_column_major(enginerender->m_matrixView.m[0], colView[0]);
+
+			float colProj[4][4] = {};
+			utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
+
+			/*auto pos = game::get_current_view_origin();
+			auto render_pos = reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
+
+			D3DXMATRIX world =
+			{
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				pos->x, pos->y, pos->z, 1.0f
+			};*/
+
+			dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
+			dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
+			dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
 		}
 	}
 
+	HOOK_RETN_PLACE_DEF(skyboxview_draw_internal_retn);
+	__declspec(naked) void skyboxview_draw_internal_stub()
+	{
+		__asm
+		{
+			pushad;
+			call	on_skyboxdraw;
+			popad;
+
+			// og
+			mov     eax, [edx + 0xC4];
+			jmp		skyboxview_draw_internal_retn;
+		}
+	}
+
+	// Stub before calling 'R_CullNode' in 'R_RecursiveWorldNode'
+	// Return 0 to NOT cull the node
+	int r_cullnode_wrapper(mnode_t* node)
+	{
+		// disable frustum culling for now
+		return 0;
+
+		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
+		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) {
+			return 0;
+		}
+
+		// ^ R_CullNode would cull the node if we reach this point
+		// MODE: force all leafs/nodes in CURRENT area
+		//if (!g_player_current_area_override || cmode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		{
+			// force draw this node/leaf if it's within the forced area
+			if ((int)node->area == g_current_area) {
+				return 0;
+			}
+		}
+
+		// cull node
+		return 1;
+	}
+
+	HOOK_RETN_PLACE_DEF(r_cullnode_cull_retn);
+	HOOK_RETN_PLACE_DEF(r_cullnode_skip_retn);
+	__declspec(naked) void r_cullnode_stub()
+	{
+		__asm
+		{
+			pushad;
+			push	ebx;
+			call	r_cullnode_wrapper; // return 0 to not jump
+			add		esp, 4;
+			test	eax, eax;
+			jz		SKIP; // jump if eax = 0
+			popad;
+
+			add     esp, 4; // og
+			jmp		r_cullnode_cull_retn;
+
+		SKIP:
+			popad;
+			add     esp, 4; // og
+			jmp		r_cullnode_skip_retn;
+		}
+	}
+
+
+	void pre_recursive_world_node()
+	{
+		const auto world = game::get_hoststate_worldbrush_data();
+
+		// show leaf index as 3D text
+		if (g_current_leaf < world->numleafs)
+		{
+			if (api::remix_debug_node_vis)
+			{
+				const auto curr_leaf = &world->leafs[g_current_leaf];
+				//game::debug_add_text_overlay(&curr_leaf->m_vecCenter.x, 0.0f, utils::va("Leaf: %i", g_current_leaf));
+				main_module::debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, api::DEBUG_REMIX_LINE_COLOR::GREEN);
+			}
+		}
+	}
+
+	HOOK_RETN_PLACE_DEF(pre_recursive_world_node_retn);
+	__declspec(naked) void pre_recursive_world_node_stub()
+	{
+		__asm
+		{
+			pushad;
+			call	pre_recursive_world_node;
+			popad;
+
+			// og
+			mov     edx, [eax + 0x50];
+			mov     ecx, ebx;
+			jmp		pre_recursive_world_node_retn;
+		}
+	}
+
+	/**
+	 * Draw a wireframe box using the remix api
+	 * @param center		Center of the cube
+	 * @param half_diagonal Half diagonal distance of the box
+	 * @param width			Line width
+	 * @param color			Line color
+	 */
+	void main_module::debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, const float width, const api::DEBUG_REMIX_LINE_COLOR& color)
+	{
+		Vector min, max;
+		Vector corners[8];
+
+		// calculate min and max positions based on the center and half diagonal
+		min = center - half_diagonal;
+		max = center + half_diagonal;
+
+		// get the corners of the cube
+		corners[0] = Vector(min.x, min.y, min.z);
+		corners[1] = Vector(min.x, min.y, max.z);
+		corners[2] = Vector(min.x, max.y, min.z);
+		corners[3] = Vector(min.x, max.y, max.z);
+		corners[4] = Vector(max.x, min.y, min.z);
+		corners[5] = Vector(max.x, min.y, max.z);
+		corners[6] = Vector(max.x, max.y, min.z);
+		corners[7] = Vector(max.x, max.y, max.z);
+
+		// define the edges
+		Vector lines[12][2];
+		lines[0][0] = corners[0];	lines[0][1] = corners[1]; // Edge 1
+		lines[1][0] = corners[0];	lines[1][1] = corners[2]; // Edge 2
+		lines[2][0] = corners[0];	lines[2][1] = corners[4]; // Edge 3
+		lines[3][0] = corners[1];	lines[3][1] = corners[3]; // Edge 4
+		lines[4][0] = corners[1];	lines[4][1] = corners[5]; // Edge 5
+		lines[5][0] = corners[2];	lines[5][1] = corners[3]; // Edge 6
+		lines[6][0] = corners[2];	lines[6][1] = corners[6]; // Edge 7
+		lines[7][0] = corners[3];	lines[7][1] = corners[7]; // Edge 8
+		lines[8][0] = corners[4];	lines[8][1] = corners[5]; // Edge 9
+		lines[9][0] = corners[4];	lines[9][1] = corners[6]; // Edge 10
+		lines[10][0] = corners[5];	lines[10][1] = corners[7]; // Edge 11
+		lines[11][0] = corners[6];	lines[11][1] = corners[7]; // Edge 12
+
+		for (auto e = 0u; e < 12; e++) {
+			api::add_debug_line(lines[e][0], lines[e][1], width, color);
+		}
+	}
 
 	void main_module::force_cvars()
 	{
@@ -173,6 +612,11 @@ namespace components
 		game::cvar_uncheat_and_set_int("fog_enable", 0);
 	}
 
+	ConCommand xo_debug_toggle_node_vis_cmd{};
+	void xo_debug_toggle_node_vis_fn()
+	{
+		api::remix_debug_node_vis = !api::remix_debug_node_vis;
+	}
 
 	main_module::main_module()
 	{
@@ -181,13 +625,76 @@ namespace components
 			game::root_path = path; utils::erase_substring(game::root_path, "left4dead2.exe");
 		}
 
+		// init remixAPI
+		api::init();
+
+		{ // init d3d font
+			D3DXFONT_DESC desc =
+			{
+				18,                  // Height
+				0,                   // Width (0 = default)
+				FW_NORMAL,           // Weight (FW_BOLD, FW_LIGHT, etc.)
+				1,                   // Mip levels
+				FALSE,               // Italic
+				DEFAULT_CHARSET,     // Charset
+				OUT_DEFAULT_PRECIS,  // Output Precision
+				CLIP_DEFAULT_PRECIS, // Clipping Precision
+				DEFAULT_PITCH,       // Pitch and Family
+				TEXT("Arial")        // Typeface
+			};
+
+			D3DXCreateFontIndirect(game::get_d3d_device(), &desc, &d3d_font);
+		}
+
+
+		// #
+		// commands
+
+		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
+
+
+		// #
+		// events
+
 		// CViewRender::RenderView :: "start" of current frame (after CViewRender::DrawMonitors)
 		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick();
 		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
 
-		// CViewRender::InitFadeData :: manually set fade data and not rely on cpu_level
-		/*utils::hook(CLIENT_BASE + 0x1DFC33, init_fade_data_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(init_fade_data_retn, CLIENT_BASE + 0x1DFC59);*/
+		// 1EADED
+		utils::hook::nop(CLIENT_BASE + 0x1D3F33, 6);
+		utils::hook(CLIENT_BASE + 0x1D3F33, skyboxview_draw_internal_stub).install()->quick();
+		HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F39);
+
+		// #
+		// culling
+
+		// stub before calling 'R_RecursiveWorldNode' to override node/leaf vis
+		utils::hook(ENGINE_BASE + 0xD1648, pre_recursive_world_node_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(pre_recursive_world_node_retn, ENGINE_BASE + 0xD164D);
+
+		// ^ :: while( ... node->contents < -1 .. ) -> jl to jle
+		utils::hook::set<BYTE>(ENGINE_BASE + 0xCD7E5, 0x7E);
+
+		// ^ :: while( ... !R_CullNode) - wrapper function to impl. additional culling control (force areas/leafs + use frustum culling when needed)
+		utils::hook(ENGINE_BASE + 0xCD7E8, r_cullnode_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(r_cullnode_cull_retn, ENGINE_BASE + 0xCD935);
+		HOOK_RETN_PLACE(r_cullnode_skip_retn, ENGINE_BASE + 0xCD7F8);
+
+		// ^ :: backface check -> je to jl
+		utils::hook::nop(ENGINE_BASE + 0xCD8C1, 2); // okay - draws a little more but not so heavy on perf.
+
+		// ^ :: backface check -> jnz to je
+		utils::hook::set<BYTE>(ENGINE_BASE + 0xCD8CB, 0x74); // ^
+
+		// R_DrawLeaf :: backface check (emissive lamps) plane normal >= -0.00999f
+		utils::hook::nop(ENGINE_BASE + 0xCD4E7, 6); // ^ 
+
+		// CBrushBatchRender::DrawOpaqueBrushModel :: :: backface check - nop 'if ( bShadowDepth )' to disable culling
+		utils::hook::nop(ENGINE_BASE + 0xD2250, 2);
+
+		// CClientLeafSystem::ExtractCulledRenderables :: disable 'engine->CullBox' check to disable entity culling in leafs
+		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)
+		utils::hook::set<BYTE>(CLIENT_BASE + 0xBDA76, 0xEB);
 	}
 
 	main_module::~main_module()

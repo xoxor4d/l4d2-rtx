@@ -494,72 +494,75 @@ namespace components
 	struct worldbrushdata_t
 	{
 		int numsubmodels;
-		int nWorldFaceCount;
+		//int nWorldFaceCount;
 		int numplanes;
 		cplane_t* planes;
 		int numleafs;
 		mleaf_t* leafs;
-		int numleafwaterdata;
-		mleafwaterdata_t* leafwaterdata;
-		int numvertexes;
-		mvertex_t* vertexes;
-		int numoccluders;
-		doccluderdata_t* occluders;
-		int numoccluderpolys;
-		doccluderpolydata_t* occluderpolys;
-		int numoccludervertindices;
-		int* occludervertindices;
-		int numvertnormalindices;
-		unsigned __int16* vertnormalindices;
-		int numvertnormals;
-		Vector* vertnormals;
-		int numnodes;
-		mnode_t* nodes;
-		unsigned __int16* m_LeafMinDistToWater;
-		int numtexinfo;
-		mtexinfo_t* texinfo;
-		int numtexdata;
-		csurface_t* texdata;
-		int numDispInfos;
-		void* hDispInfos;
-		int numsurfaces;
-		void* surfaces1; // msurface1_t
-		void* surfaces2; // msurface2_t
-		void* surfacelighting; // msurfacelighting_t
-		msurfacenormal_t* surfacenormals;
-		unsigned __int16* m_pSurfaceBrushes;
-		dfacebrushlist_t* m_pSurfaceBrushList;
-		int numvertindices;
-		unsigned __int16* vertindices;
-		int nummarksurfaces;
-		void** marksurfaces; // msurface2_t
-		void* lightdata; // ColorRGBExp32
-		int m_nLightingDataSize;
-		int numworldlights;
-		void* worldlights; // dworldlight_t
-		void* shadowzbuffers;
-		int numprimitives;
-		mprimitive_t* primitives;
-		int numprimverts;
-		mprimvert_t* primverts;
-		int numprimindices;
-		unsigned __int16* primindices;
-		int m_nAreas;
-		void* m_pAreas; // darea_t
-		int m_nAreaPortals;
-		void* m_pAreaPortals; // dareaportal_t
-		int m_nClipPortalVerts;
-		Vector* m_pClipPortalVerts;
-		void* m_pCubemapSamples; // mcubemapsample_t
-		int m_nCubemapSamples;
-		int m_nDispInfoReferences;
-		unsigned __int16* m_pDispInfoReferences;
-		void* m_pLeafAmbient; // dleafambientindex_t
-		void* m_pAmbientSamples; // dleafambientlighting_t
-		bool m_bUnloadedAllLightmaps;
-		void* m_pLightingDataStack; // CMemoryStack
-		int m_nBSPFileSize;
+		//int numleafwaterdata;
+		//mleafwaterdata_t* leafwaterdata;
+		//int numvertexes;
+		//mvertex_t* vertexes;
+		//int numoccluders;
+		//doccluderdata_t* occluders;
+		//int numoccluderpolys;
+		//doccluderpolydata_t* occluderpolys;
+		//int numoccludervertindices;
+		//int* occludervertindices;
+		//int numvertnormalindices;
+		//unsigned __int16* vertnormalindices;
+		//int numvertnormals;
+		//Vector* vertnormals;
+		//int numnodes;
+		//mnode_t* nodes;
+		//unsigned __int16* m_LeafMinDistToWater;
+		//int numtexinfo;
+		//mtexinfo_t* texinfo;
+		//int numtexdata;
+		//csurface_t* texdata;
+		//int numDispInfos;
+		//void* hDispInfos;
+		//int numsurfaces;
+		//void* surfaces1; // msurface1_t
+		//void* surfaces2; // msurface2_t
+		//void* surfacelighting; // msurfacelighting_t
+		//msurfacenormal_t* surfacenormals;
+		//unsigned __int16* m_pSurfaceBrushes;
+		//dfacebrushlist_t* m_pSurfaceBrushList;
+		//int numvertindices;
+		//unsigned __int16* vertindices;
+		//int nummarksurfaces;
+		//void** marksurfaces; // msurface2_t
+		//void* lightdata; // ColorRGBExp32
+		//int m_nLightingDataSize;
+		//int numworldlights;
+		//void* worldlights; // dworldlight_t
+		//void* shadowzbuffers;
+		//int numprimitives;
+		//mprimitive_t* primitives;
+		//int numprimverts;
+		//mprimvert_t* primverts;
+		//int numprimindices;
+		//unsigned __int16* primindices;
+		//int m_nAreas;
+		//void* m_pAreas; // darea_t
+		//int m_nAreaPortals;
+		//void* m_pAreaPortals; // dareaportal_t
+		//int m_nClipPortalVerts;
+		//Vector* m_pClipPortalVerts;
+		//void* m_pCubemapSamples; // mcubemapsample_t
+		//int m_nCubemapSamples;
+		//int m_nDispInfoReferences;
+		//unsigned __int16* m_pDispInfoReferences;
+		//void* m_pLeafAmbient; // dleafambientindex_t
+		//void* m_pAmbientSamples; // dleafambientlighting_t
+		//bool m_bUnloadedAllLightmaps;
+		//void* m_pLightingDataStack; // CMemoryStack
+		//int m_nBSPFileSize;
 	};
+	STATIC_ASSERT_OFFSET(worldbrushdata_t, planes, 0x8);
+	STATIC_ASSERT_OFFSET(worldbrushdata_t, numleafs, 0xC);
+	//STATIC_ASSERT_OFFSET(worldbrushdata_t, m_pAreaPortals, 0xC8);
 
 	struct brushdata_t
 	{

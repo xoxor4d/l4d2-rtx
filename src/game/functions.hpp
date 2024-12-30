@@ -35,11 +35,19 @@ namespace game
 	inline IDirect3DDevice9* get_d3d_device() { return reinterpret_cast<IDirect3DDevice9*>(*(DWORD*)(RENDERER_BASE + 0xD3EE8)); }
 	inline components::IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50)); }
 	inline components::IMaterialSystem* get_material_system() { return reinterpret_cast<components::IMaterialSystem*>(*(DWORD*)(CLIENT_BASE + 0x88B7F0)); }
+	inline components::worldbrushdata_t* get_hoststate_worldbrush_data() { return reinterpret_cast<components::worldbrushdata_t*>(*(DWORD*)(ENGINE_BASE + 0x42FFB8)); }
 	inline components::CCvar* get_icvar() { return reinterpret_cast<components::CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 
+	inline Vector* get_current_view_origin() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x501344); }
+
+	extern void con_add_command(ConCommand* cmd, const char* name, void(__cdecl* callback)(), const char* desc);
 	extern void cvar_uncheat(const char* name);
 	extern void cvar_uncheat_and_set_int(const char* name, int val);
 	extern void cvar_uncheat_and_set_float(const char* name, float val);
+
+
+	// CM_PointLeafnum
+	inline int get_leaf_from_position(const Vector& pos) { return utils::hook::call<int(__cdecl)(const float*)>(ENGINE_BASE + 0x14B130)(&pos.x); }
 
 	/**
 	 * Creates an external console
