@@ -746,10 +746,27 @@ namespace components
 		// shader: SpriteCard - stride 0x60
 		// > particle/smoke1/smoke1
 		// > particle/fire_burning_character/fire_burning_character
+		// > particle/blood_splatter/bloodsplatter (hud)
 		else if (mesh->m_VertexFormat == 0x114900005)
 		{
 			//ctx.modifiers.do_not_render = true;
-			int x = 1;
+			ctx.save_tss(dev, D3DTSS_COLOROP);
+			ctx.save_tss(dev, D3DTSS_COLORARG2);
+			dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+			dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+
+			ctx.save_tss(dev, D3DTSS_ALPHAARG2);
+			ctx.save_tss(dev, D3DTSS_ALPHAOP);
+			dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+
+			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+
+			if (ctx.info.material_name.starts_with("particle/blood_s"))
+			{
+				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+			}
 		}
 
 		// shader: SpriteCard (spark) - stride 0x60
@@ -763,10 +780,14 @@ namespace components
 		// shader: Spritecard (vista smoke) - stride 0x90
 		// Client::C_OP_RenderSprites::Render - UV's handled in 'fix_sprite_card_texcoords_mid_hk'
 		// > particle/vistasmokev1/vistasmokev4_nearcull
-		else if (mesh->m_VertexFormat == 0x24914900005)
+		else if (mesh->m_VertexFormat == 0x24914900005) 
 		{
-			//ctx.modifiers.do_not_render = true; 
-			int x = 1;
+			//ctx.modifiers.do_not_render = true;
+
+			ctx.save_tss(dev, D3DTSS_ALPHAARG2); 
+			ctx.save_tss(dev, D3DTSS_ALPHAOP); 
+			dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 		}
 
 		// Sprite shader
@@ -1010,7 +1031,295 @@ namespace components
 		}
 	}
 
-	// # TODO: call tex_infected::release_all on map unload
+
+
+
+	/**
+	 * Called right before unlocking the sprite mesh. m_nCurrentVertex should match m_nVertexCount
+	 */
+	void fix_sprite_card_texcoords_mid_hk(CMeshBuilder* builder, [[maybe_unused]] int type)
+	{
+		const auto dev = game::get_d3d_device();
+		auto renderer = game::get_engine_renderer();
+
+		/*const auto mat = game::get_material_system();
+		if (mat)
+		{
+			auto ctx = mat->vtbl->GetRenderContext(mat);
+
+			VMatrix m2w;
+			ctx->vtbl->GetMatrix2(ctx, MATERIAL_VIEW, &m2w); 
+			auto x = 1; 
+		}*/
+
+		const auto eye = renderer->vftable->ViewOrigin(renderer);
+
+		bool use_crop = false;
+		bool use_dualsequence = false;
+
+		float startfadesize = 0.0f;
+		float endfadesize = 0.0f;
+
+
+		BufferedState_t buffer_state;
+		std::string mat_name;
+
+		auto shaderapi = game::get_shaderapi();
+		if (shaderapi)
+		{
+			shaderapi->vtbl->GetBufferedState(shaderapi, nullptr, &buffer_state);
+			if (auto m = shaderapi->vtbl->GetBoundMaterial(shaderapi, nullptr); m) {
+				mat_name = m->vftable->GetName(m);
+			}
+
+			if (const auto material = shaderapi->vtbl->GetBoundMaterial(shaderapi, nullptr);
+				material)
+			{
+				//const auto name = material->vftable->GetName(material);
+				IMaterialVar* var_out = nullptr;
+				if (has_materialvar(material, "$CROPFACTOR", &var_out))
+				{
+					if (var_out) {
+						use_crop = var_out->vftable->GetVecValueInternal1(var_out)[0] != 1.0f || var_out->vftable->GetVecValueInternal1(var_out)[1] != 1.0f;
+					}
+				}
+
+				if (has_materialvar(material, "$DUALSEQUENCE", &var_out))
+				{
+					if (var_out) {
+						use_dualsequence = var_out->vftable->GetIntValueInternal(var_out) != 0;
+					}
+				}
+
+				if (has_materialvar(material, "$STARTFADESIZE", &var_out))
+				{
+					if (var_out) {
+						startfadesize = var_out->vftable->GetFloatValueInternal(var_out);
+					}
+				}
+
+				if (has_materialvar(material, "$ENDFADESIZE", &var_out))
+				{
+					if (var_out) {
+						endfadesize = var_out->vftable->GetFloatValueInternal(var_out);
+					}
+				}
+			}
+		}
+
+
+		bool has_fade = startfadesize <= 1.0f || endfadesize <= 1.0f;
+		bool no_near_fade = false;
+
+		bool vista_test = false;
+
+		if (mat_name == "particle/vistasmokev1/vistasmokev4_nearcull")
+		{
+			int x = 1;
+			vista_test = true;
+		}
+		else if (mat_name == "particle/smoke1/smoke1")
+		{
+			if (!has_fade)
+			{
+				startfadesize = 3.0f;
+				//endfadesize = 5.5f;
+				has_fade = true;
+				no_near_fade = true;
+			}
+
+		}
+
+		/*bool modulate_alpha = false;
+		{
+			DWORD dest_blend;
+			dev->GetRenderState(D3DRS_DESTBLEND, &dest_blend);
+
+			if ((D3DBLEND)dest_blend == D3DBLEND_ONE) {
+				modulate_alpha = true;
+			}
+		}*/
+
+		float g_vCropFactor[4] = {};
+		dev->GetVertexShaderConstantF(15, g_vCropFactor, 1);
+
+		float SizeParms[4] = {};
+		dev->GetVertexShaderConstantF(56, SizeParms, 1);
+
+		float SizeParms2[4] = {};
+		dev->GetVertexShaderConstantF(57, SizeParms2, 1);
+
+		// meshBuilder positions are set to the last vertex it created
+		for (auto v = builder->m_VertexBuilder.m_nVertexCount; v > 0; v--)
+		{
+			const auto v_pos_in_src_buffer = v * builder->m_VertexBuilder.m_VertexSize_Position; 
+
+			const auto src_vPos = reinterpret_cast<Vector*>(((DWORD)builder->m_VertexBuilder.m_pCurrPosition - v_pos_in_src_buffer));
+
+			
+
+			//const auto dest_pos = reinterpret_cast<Vector*>(src_vParms);
+			const auto src_vTint = reinterpret_cast<D3DCOLOR*>(((DWORD)builder->m_VertexBuilder.m_pCurrColor - v_pos_in_src_buffer));
+
+			const auto src_tc0 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[0] - v_pos_in_src_buffer));
+			const auto dest_tc = reinterpret_cast<Vector2D*>(src_tc0);
+
+			//const auto src_tc1 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[1] + v_pos_in_src_buffer));
+			const auto src_tc2 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[2] - v_pos_in_src_buffer));
+			const auto src_tc3 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[3] - v_pos_in_src_buffer));
+			const auto src_tc4 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[4] - v_pos_in_src_buffer));
+			const auto src_tc5 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[5] - v_pos_in_src_buffer));
+			const auto src_tc6 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[6] - v_pos_in_src_buffer));
+			const auto src_tc7 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[7] - v_pos_in_src_buffer));
+
+			if (use_crop)
+			{
+				dest_tc->x = std::lerp(src_tc0->z, src_tc0->x, src_tc3->x * g_vCropFactor[0] + g_vCropFactor[2]);
+				dest_tc->y = std::lerp(src_tc0->w, src_tc0->y, src_tc3->y * g_vCropFactor[1] + g_vCropFactor[3]);
+			}
+			else
+			{
+				dest_tc->x = std::lerp(src_tc0->z, src_tc0->x, src_tc3->x);
+				dest_tc->y = std::lerp(src_tc0->w, src_tc0->y, src_tc3->y);
+			}
+
+			if (use_dualsequence)
+			{
+#if 0
+				Vector2D lerpold = { src->tc3.x, src->tc3.y };
+				Vector2D lerpnew = { src->tc3.x, src->tc3.y };
+
+				if (bZoomSeq2)
+				{
+					lerpold.x = getlerpscaled(src->tc3.x, OLDFRM_SCALE_START, OLDFRM_SCALE_END, src->tc7.x);
+					lerpold.y = getlerpscaled(src->tc3.y, OLDFRM_SCALE_START, OLDFRM_SCALE_END, src->tc7.x);
+					lerpnew.x = getlerpscaled(src->tc3.x, 1.0f, OLDFRM_SCALE_START, src->tc7.x);
+					lerpnew.y = getlerpscaled(src->tc3.y, 1.0f, OLDFRM_SCALE_START, src->tc7.x);
+				}
+
+				// src->tc7.x = blendfactor between tc5 lerpold and tc6 lerpnew
+				if (src->tc7.x < 0.5f)
+				{
+					src->tc0.x = std::lerp(src->tc5.z, src->tc5.x, lerpold.x);
+					src->tc0.y = std::lerp(src->tc5.w, src->tc5.y, lerpold.y);
+				}
+				else
+				{
+					src->tc0.x = std::lerp(src->tc6.z, src->tc6.x, lerpnew.x);
+					src->tc0.y = std::lerp(src->tc6.w, src->tc6.y, lerpnew.y);
+				}
+#endif
+				if (src_tc7->x < 1.0f)
+				{
+					dest_tc->x = std::lerp(src_tc5->z, src_tc5->x, src_tc3->x);
+					dest_tc->y = std::lerp(src_tc5->w, src_tc5->y, src_tc3->y);
+				}
+				else
+				{
+					dest_tc->x = std::lerp(src_tc6->z, src_tc6->x, src_tc3->x);
+					dest_tc->y = std::lerp(src_tc6->w, src_tc6->y, src_tc3->y);
+				}
+			}
+
+			if (has_fade)
+			{
+				float r = static_cast<float>((*src_vTint >> 16) & 0xFF) / 255.0f * 1.0f;
+				float g = static_cast<float>((*src_vTint >> 8) & 0xFF) / 255.0f * 1.0f;
+				float b = static_cast<float>((*src_vTint >> 0) & 0xFF) / 255.0f * 1.0f;
+				float a = static_cast<float>((*src_vTint >> 24) & 0xFF) / 255.0f * 1.0f;
+
+				const float RADIUS = src_tc2->z;
+				auto l = (*src_vPos - *eye).Length();
+
+				float normalizedSize = RADIUS / l;
+				float nearFadeFactor = no_near_fade ? 0.0f : std::clamp<float>((normalizedSize - startfadesize) / (endfadesize - startfadesize), 0.0f, 1.0f);
+
+				float farFadeFactor = std::clamp<float>(((startfadesize - normalizedSize) / startfadesize), 0.0f, 1.0f);
+
+				float fadeFactor = std::max<float>(nearFadeFactor, farFadeFactor);
+
+				Vector4D tint = { r, g, b, a };
+				tint = tint * (1.0f - fadeFactor); // Fades from 1 (visible) to 0 (invisible)
+
+#if 0
+				const float MINIMUM_SIZE_FACTOR = SizeParms[0];
+				const float MAXIMUM_SIZE_FACTOR = SizeParms[1];
+				const float START_FADE_SIZE_FACTOR = SizeParms[2];
+				const float END_FADE_SIZE_FACTOR = SizeParms[3];
+
+				const float START_FAR_FADE = SizeParms2[0];
+				const float FAR_FADE_FACTOR = SizeParms2[1];
+
+				const float RADIUS = /*use_dualsequence ? src_tc7->z :*/ src_tc2->z;
+				//const float RADIUS = 30000.0f;
+
+				float rad = RADIUS; // RADIUS
+				auto l = (*src_vPos - *eye).Length();
+				rad = std::max<float>(rad, MINIMUM_SIZE_FACTOR * l);
+
+				Vector4D tint = { r, g, b, a }; 
+
+				// now, perform fade out
+				if (rad > START_FADE_SIZE_FACTOR * l)
+				{
+					if (rad > END_FADE_SIZE_FACTOR * l)
+					{
+						tint = { 0.0f, 0.0f, 0.0f, 0.0f };
+						rad = 0;											// cull so we emit 0-sized sprite
+					}
+					else
+					{
+						const float t = 1.0f - (rad - START_FADE_SIZE_FACTOR * l) / (END_FADE_SIZE_FACTOR * l - START_FADE_SIZE_FACTOR * l);
+						tint = tint * t;
+					}
+				}
+
+				// perform far fade
+				float ttt = (l - START_FAR_FADE) * FAR_FADE_FACTOR;
+				float tscale = 1.0f - std::min<float>(1.0f, std::max<float>(0.0f, ttt));
+				tint = tint * tscale;
+
+				if (tscale <= 0) {
+					rad = 0; // cull so we emit 0-sized sprite
+				}
+
+				rad = std::min<float>(rad, MAXIMUM_SIZE_FACTOR * l); 
+
+				/*if (l > rad / 2)
+				{
+					if (l < rad * 2)
+					{
+						tint = tint * std::lerp(rad / 2.0f, rad, l);
+					}
+				}*/
+#endif
+
+				*src_vTint = D3DCOLOR_COLORVALUE(tint.x, tint.y, tint.z, tint.w);
+				//*src_vTint = (*src_vTint & 0x00FFFFFF) | (static_cast<unsigned char>(a * 255.0f) << 24);
+			}
+
+			
+		}
+	}
+
+	HOOK_RETN_PLACE_DEF(RenderSpriteCardNew_retn_addr);
+	void __declspec(naked) RenderSpriteCardNew_stub()
+	{
+		__asm
+		{
+			pushad;
+			push	0;
+			lea     eax, [ebp - 0x238];
+			push	eax; // builder
+			call	fix_sprite_card_texcoords_mid_hk;
+			add		esp, 8;
+			popad;
+
+			// og
+			mov     ecx, [ebp - 0x184];
+			jmp		RenderSpriteCardNew_retn_addr;
+		}
+	}
 
 	// #
 	// #
@@ -1028,6 +1337,11 @@ namespace components
 
 		utils::hook(RENDERER_BASE + 0xC05A, cmeshdx8_renderpass_post_draw_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(cmeshdx8_renderpass_post_draw_retn_addr, RENDERER_BASE + 0xC0E1);
+
+		// C_OP_RenderSprites::Render :: fix SpriteCard UV's
+		utils::hook::nop(CLIENT_BASE + 0x3C9F1F, 6);
+		utils::hook(CLIENT_BASE + 0x3C9F1F, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, CLIENT_BASE + 0x3C9F25);
 	}
 }
 

@@ -47,6 +47,44 @@ namespace components
 		}
 	}
 
+
+
+	struct CViewRender
+	{
+		char pad[0x3E8];
+		FadeData_t m_FadeData;
+	};
+
+	// cpu_level + 1
+	FadeData_t g_aFadeData[] =
+	{
+		// pxmin  pxmax    width   scale
+		{  0.0f,   0.0f,  1280.0f,  1.0f },
+		{ 10.0f,  15.0f,   800.0f,  1.0f },
+		{  5.0f,  10.0f,  1024.0f,  1.0f },
+		{  0.0f,   0.0f,  1280.0f,  0.1f },
+		{ 36.0f, 144.0f,   720.0f,  1.0f },
+		{  0.0f,   0.0f,  1280.0f,  1.0f },
+	};
+
+	void init_fade_data_hk(CViewRender* view_render)
+	{
+		view_render->m_FadeData = g_aFadeData[3];
+	}
+
+	HOOK_RETN_PLACE_DEF(init_fade_data_retn);
+	__declspec(naked) void init_fade_data_stub()
+	{
+		__asm
+		{
+			push	esi; // CViewRender (this)
+			call	init_fade_data_hk;
+			add		esp, 4;
+			jmp		init_fade_data_retn;
+		}
+	}
+
+
 	void main_module::force_cvars()
 	{
 		// z_wound_client_disabled
@@ -62,9 +100,10 @@ namespace components
 		//game::cvar_uncheat_and_set_int("z_randomskins", 0);
 		//game::cvar_uncheat_and_set_int("z_randombodygroups", 0);
 		//game::cvar_uncheat_and_set_int("z_infected_tinting", 0);
-		game::cvar_uncheat_and_set_int("z_infected_damage_cutouts", 0);
-		game::cvar_uncheat_and_set_int("z_skip_wounds", 1);
-		game::cvar_uncheat_and_set_int("z_wound_client_disabled", 1);
+
+		//game::cvar_uncheat_and_set_int("z_infected_damage_cutouts", 0);
+		//game::cvar_uncheat_and_set_int("z_skip_wounds", 1);
+		//game::cvar_uncheat_and_set_int("z_wound_client_disabled", 1);
 
 		game::cvar_uncheat_and_set_int("r_staticprop_lod", 0);
 		game::cvar_uncheat_and_set_int("r_lod", 0);
@@ -75,8 +114,6 @@ namespace components
 
 		game::cvar_uncheat_and_set_int("r_WaterDrawRefraction", 0); // fix weird culling behaviour near water surfaces
 		game::cvar_uncheat_and_set_int("r_WaterDrawReflection", 0); // perf?
-
-		game::cvar_uncheat_and_set_int("r_ClipAreaFrustums", 0); // needed for R_CullNode Mode 2
 
 		game::cvar_uncheat_and_set_int("r_threaded_particles", 0);
 		game::cvar_uncheat_and_set_int("r_entityclips", 0);
@@ -93,7 +130,7 @@ namespace components
 		game::cvar_uncheat_and_set_int("mat_displacementmap", 0);
 		game::cvar_uncheat_and_set_int("mat_drawflat", 0);
 		game::cvar_uncheat_and_set_int("mat_normalmaps", 0);
-		game::cvar_uncheat_and_set_int("r_3dsky", 0);
+		game::cvar_uncheat_and_set_int("r_3dsky", 1);
 		game::cvar_uncheat_and_set_int("r_skybox_draw_last", 0);
 		game::cvar_uncheat_and_set_int("r_flashlightrender", 0); // fix emissive "bug" when moon portal opens on finale4 
 		game::cvar_uncheat_and_set_int("mat_fullbright", 1);
@@ -105,23 +142,27 @@ namespace components
 		// graphic settings
 
 		// lvl 0
-		game::cvar_uncheat_and_set_int("cl_particle_fallback_base", 3); // 0 = render portalgun viewmodel effects
-		game::cvar_uncheat_and_set_int("cl_particle_fallback_multiplier", 2);
-		//game::cvar_uncheat_and_set_int("cl_footstep_fx", 0); // does not exist
+		game::cvar_uncheat_and_set_int("cl_particle_fallback_base", 0);//3); // 0 = render portalgun viewmodel effects
+		game::cvar_uncheat_and_set_int("cl_particle_fallback_multiplier", 1); //2);
+		
 		game::cvar_uncheat_and_set_int("cl_impacteffects_limit_general", 10);
 		game::cvar_uncheat_and_set_int("cl_impacteffects_limit_exit", 3);
 		game::cvar_uncheat_and_set_int("cl_impacteffects_limit_water", 2);
 		game::cvar_uncheat_and_set_int("mat_depthfeather_enable", 0);
-		game::cvar_uncheat_and_set_int("mat_force_vertexfog", 1); // does not exist
+
+		game::cvar_uncheat_and_set_int("r_shadowrendertotexture", 0);
+		game::cvar_uncheat_and_set_int("r_shadowfromworldlights", 0);
+
+		game::cvar_uncheat_and_set_int("mat_force_vertexfog", 1);
+		game::cvar_uncheat_and_set_int("cl_footstep_fx", 1);
+		game::cvar_uncheat_and_set_int("cl_ragdoll_self_collision", 1);
+		game::cvar_uncheat_and_set_int("cl_ragdoll_maxcount", 24);
 
 		game::cvar_uncheat_and_set_int("cl_detaildist", 1024);
 		game::cvar_uncheat_and_set_int("cl_detailfade", 400);
 		game::cvar_uncheat_and_set_int("r_drawmodeldecals", 1);
 		game::cvar_uncheat_and_set_int("r_decalstaticprops", 1);
 		game::cvar_uncheat_and_set_int("cl_player_max_decal_count", 32);
-		game::cvar_uncheat_and_set_int("r_paintblob_force_single_pass", 1);
-		game::cvar_uncheat_and_set_int("r_paintblob_max_number_of_threads", 1);
-		game::cvar_uncheat_and_set_float("r_paintblob_highres_cube", 1.0);
 
 		// lvl 3
 		game::cvar_uncheat_and_set_int("r_decals", 2048);
@@ -143,6 +184,10 @@ namespace components
 		// CViewRender::RenderView :: "start" of current frame (after CViewRender::DrawMonitors)
 		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick();
 		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
+
+		// CViewRender::InitFadeData :: manually set fade data and not rely on cpu_level
+		/*utils::hook(CLIENT_BASE + 0x1DFC33, init_fade_data_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(init_fade_data_retn, CLIENT_BASE + 0x1DFC59);*/
 	}
 
 	main_module::~main_module()

@@ -34,7 +34,7 @@ namespace game
 	inline components::CRender* get_engine_renderer() { return reinterpret_cast<components::CRender*>(ENGINE_BASE + 0x601F00); }
 	inline IDirect3DDevice9* get_d3d_device() { return reinterpret_cast<IDirect3DDevice9*>(*(DWORD*)(RENDERER_BASE + 0xD3EE8)); }
 	inline components::IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50)); }
-
+	inline components::IMaterialSystem* get_material_system() { return reinterpret_cast<components::IMaterialSystem*>(*(DWORD*)(CLIENT_BASE + 0x88B7F0)); }
 	inline components::CCvar* get_icvar() { return reinterpret_cast<components::CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 
 	extern void cvar_uncheat(const char* name);

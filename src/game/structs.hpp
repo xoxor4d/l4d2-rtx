@@ -3336,6 +3336,50 @@ namespace components
 		//CUtlVector<CStaticProp, CUtlMemory<CStaticProp, int> > m_StaticProps;
 		CStaticProp_vec m_StaticProps;
 	};
+
+	// -----
+
+	struct IMatRenderContext_vtbl;
+	struct IMatRenderContext
+	{
+		IMatRenderContext_vtbl* vtbl;
+	};
+
+	enum MaterialMatrixMode_t : __int32
+	{
+		MATERIAL_VIEW = 0x0,
+		MATERIAL_PROJECTION = 0x1,
+		MATERIAL_MATRIX_UNUSED0 = 0x2,
+		MATERIAL_MATRIX_UNUSED1 = 0x3,
+		MATERIAL_MATRIX_UNUSED2 = 0x4,
+		MATERIAL_MATRIX_UNUSED3 = 0x5,
+		MATERIAL_MATRIX_UNUSED4 = 0x6,
+		MATERIAL_MATRIX_UNUSED5 = 0x7,
+		MATERIAL_MATRIX_UNUSED6 = 0x8,
+		MATERIAL_MATRIX_UNUSED7 = 0x9,
+		MATERIAL_MODEL = 0xA,
+		NUM_MATRIX_MODES = 0xB,
+	};
+
+	struct IMatRenderContext_vtbl
+	{
+		int pad[29];
+		void(__thiscall* GetMatrix1)(IMatRenderContext*, MaterialMatrixMode_t, matrix3x4_t*);
+		void(__thiscall* GetMatrix2)(IMatRenderContext*, MaterialMatrixMode_t, VMatrix*);
+	};
+
+	struct IMaterialSystem_vtbl;
+	struct IMaterialSystem
+	{
+		IMaterialSystem_vtbl* vtbl;
+	};
+
+	struct IMaterialSystem_vtbl
+	{
+		char pad[0x180];
+		IMatRenderContext* (__thiscall* GetRenderContext)(IMaterialSystem*);
+	};
+
 }
 
 
