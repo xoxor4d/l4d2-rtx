@@ -17,7 +17,6 @@ namespace components
 		bool remix_debug_node_vis = false; // show/hide debug vis of bsp nodes/leafs
 
 		remix_light_s flashlight = {};
-		
 
 		void begin_scene_callback()
 		{
@@ -50,6 +49,11 @@ namespace components
 			if (flashlight.handle) {
 				bridge.DrawLightInstance(flashlight.handle);
 			}
+		}
+
+		void end_scene_callback()
+		{
+			imgui::endscene_stub();
 		}
 
 		// called on device->Present
@@ -113,7 +117,7 @@ namespace components
 			if (status == REMIXAPI_ERROR_CODE_SUCCESS)
 			{
 				m_initialized = true;
-				remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, nullptr, on_present_callback);
+				remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, end_scene_callback, on_present_callback);
 			}
 		}
 
@@ -238,10 +242,10 @@ namespace components
 				api::flashlight.handle = nullptr;
 			}
 
-			auto origin = *game::get_current_view_origin();
-			auto fwd = *game::get_current_view_forward();
-			auto rt = *game::get_current_view_right();
-			auto up = *game::get_current_view_up();
+			auto camera_origin = *game::get_current_view_origin();
+			auto camera_fwd = *game::get_current_view_forward();
+			auto camera_rt = *game::get_current_view_right();
+			auto camera_up = *game::get_current_view_up();
 
 			auto& info = api::flashlight.info;
 			auto& ext = api::flashlight.ext;
@@ -251,16 +255,14 @@ namespace components
 			ext.pNext = nullptr;
 			//ext.position = remixapi_Float3D{ 0.0f, 0.0f, 0.0f };
 
-			const float forwardDistance = 100.0f; // Distance in front of the camera
-			const float verticalOffset = 0.0f;   // Offset along the up vector (positive = up, negative = down)
-			const float horizontalOffset = 0.0f;
+			const auto* im = imgui::get();
 
-			Vector lightorg = origin
-				+ (fwd * forwardDistance)
-				+ (up * verticalOffset)
-				+ (rt * horizontalOffset);
+			Vector light_org = camera_origin
+				+ (camera_fwd * im->m_flashlight_fwd_offset)
+				+ (camera_up * im->m_flashlight_vert_offset)
+				+ (camera_rt * im->m_flashlight_horz_offset);
 
-			ext.position = lightorg.ToRemixFloat3D();
+			ext.position = light_org.ToRemixFloat3D();
 
 			//ext.position.x = origin->x + fwd->Dot(dir_offset);
 			//ext.position.y = origin->y + rt->Dot(dir_offset);
@@ -801,7 +803,6 @@ namespace components
 
 			D3DXCreateFontIndirect(game::get_d3d_device(), &desc, &d3d_font);
 		}
-
 
 		// #
 		// commands

@@ -13,6 +13,7 @@ using namespace components;
 namespace glob
 {
 	extern bool spawned_external_console;
+	extern HWND main_window;
 }
 
 namespace game

@@ -3,6 +3,8 @@
 // surface dual render (displacement with blending) gets invisible when skinned objects are moved?
 // eg terrain gets invisible if cube is picked up?
 
+#define ENABLE_3D_SKY 0
+
 namespace components
 {
 	namespace tex_addons
@@ -188,9 +190,9 @@ namespace components
 			UINT ofs = 0; dev->GetStreamSource(0, &b, &ofs, &stride);
 		}
 
-		DWORD bufferedstateaddr = RENDERER_BASE + 0x19530;
-		auto x = reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50));
-		auto y = reinterpret_cast<components::IShaderAPIDX8*>((RENDERER_BASE + 0xC9C54));
+		//DWORD bufferedstateaddr = RENDERER_BASE + 0x19530;
+		//auto x = reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50));
+		//auto y = reinterpret_cast<components::IShaderAPIDX8*>((RENDERER_BASE + 0xC9C54));
 
 		auto& ctx = model_render::primctx;
 		const auto shaderapi = game::get_shaderapi();
@@ -254,10 +256,12 @@ namespace components
 			}
 		}
 
+#if ENABLE_3D_SKY
 		// needed for 3d skybox
 		dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+#endif
 
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
@@ -793,8 +797,8 @@ namespace components
 		// > particle/beam_flashlight
 		else if (mesh->m_VertexFormat == 0x124900005)
 		{
-			//ctx.modifiers.do_not_render = true;
-			int x = 1;
+			ctx.modifiers.do_not_render = false;
+			//int x = 1;
 		}
 
 		// shader: Spritecard (vista smoke) - stride 0x90
@@ -813,17 +817,18 @@ namespace components
 		// Sprite shader
 		else if (mesh->m_VertexFormat == 0x914900005)
 		{
-			//ctx.modifiers.do_not_render = true;
-			int x = 1; 
+			ctx.modifiers.do_not_render = false;
+			//int x = 1; 
 		}
 
-		else
+		else 
 		{
-			//ctx.modifiers.do_not_render = true;
-			int break_me = 1;  
+			ctx.modifiers.do_not_render = false;
+			//int break_me = 1;  
 		}
 
-		int break_me = 1;
+		//ctx.modifiers.do_not_render = false;
+		//int break_me = 1;
 	}
 
 	HOOK_RETN_PLACE_DEF(cmeshdx8_renderpass_pre_draw_retn_addr);
@@ -1131,14 +1136,14 @@ namespace components
 		bool has_fade = startfadesize <= 1.0f || endfadesize <= 1.0f;
 		bool no_near_fade = false;
 
-		bool vista_test = false;
+		/*bool vista_test = false;
 
 		if (mat_name == "particle/vistasmokev1/vistasmokev4_nearcull")
 		{
 			int x = 1;
 			vista_test = true;
 		}
-		else if (mat_name == "particle/smoke1/smoke1")
+		else*/ if (mat_name == "particle/smoke1/smoke1")
 		{
 			if (!has_fade)
 			{
@@ -1187,7 +1192,7 @@ namespace components
 			//const auto src_tc1 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[1] + v_pos_in_src_buffer));
 			const auto src_tc2 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[2] - v_pos_in_src_buffer));
 			const auto src_tc3 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[3] - v_pos_in_src_buffer));
-			const auto src_tc4 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[4] - v_pos_in_src_buffer));
+			//const auto src_tc4 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[4] - v_pos_in_src_buffer));
 			const auto src_tc5 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[5] - v_pos_in_src_buffer));
 			const auto src_tc6 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[6] - v_pos_in_src_buffer));
 			const auto src_tc7 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[7] - v_pos_in_src_buffer));

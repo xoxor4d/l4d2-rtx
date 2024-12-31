@@ -92,14 +92,13 @@ void init_fail_msg_post()
 DWORD WINAPI find_window_loop(LPVOID)
 {
 	std::uint32_t T = 0;
-	HWND main_window = nullptr;
 
 	// wait for window creation
-	while (!main_window)
+	while (!glob::main_window)
 	{
 		// get main window hwnd
-		if (!main_window) {
-			 main_window = FindWindowA(nullptr, "Left 4 Dead 2 - Direct3D 9");
+		if (!glob::main_window) {
+			glob::main_window = FindWindowA(nullptr, "Left 4 Dead 2 - Direct3D 9");
 		}
 
 		Sleep(100); T += 100;
@@ -135,9 +134,9 @@ DWORD WINAPI find_window_loop(LPVOID)
 #endif
 		
 #ifdef GIT_DESCRIBE
-	SetWindowTextA(main_window, utils::va("Left 4 Dead 2 - RTX - %s", GIT_DESCRIBE));
+	SetWindowTextA(glob::main_window, utils::va("Left 4 Dead 2 - RTX - %s", GIT_DESCRIBE));
 #else
-	SetWindowTextA(main_window, "Left 4 Dead 2 - RTX");
+	SetWindowTextA(glob::main_window, "Left 4 Dead 2 - RTX");
 #endif
 
 	loader::initialize();

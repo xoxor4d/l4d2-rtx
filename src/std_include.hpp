@@ -7,6 +7,12 @@
 // enable/disable benchmark logic
 //#define BENCHMARK
 
+#ifdef DEBUG
+	#define USE_IMGUI 1
+#else
+	#define USE_IMGUI 0
+#endif
+
 // Version number
 #include <version.hpp>
 
@@ -46,7 +52,21 @@
 
 #include "MinHook.h"
 #include "toml.hpp"
+
+#if USE_IMGUI
+	#pragma warning(push)
+	#pragma warning(disable: 6011)
+	#pragma warning(disable: 28182)
+	#include "imgui.h"
+	#include <backends/imgui_impl_dx9.h>
+	#include <backends/imgui_impl_win32.h>
+	#include <misc/cpp/imgui_stdlib.h>
+	#pragma warning(pop)
+#endif
+
 #include "bridge_remix_api.h"
+
+#include "sdk/vgui/surface/c_surface_mgr.hpp"
 
 #include "utils/vector.hpp"
 #include "game/structs.hpp"

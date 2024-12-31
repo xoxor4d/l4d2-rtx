@@ -3,6 +3,7 @@
 namespace glob
 {
 	bool spawned_external_console = false;
+	HWND main_window = nullptr;
 }
 
 namespace game
