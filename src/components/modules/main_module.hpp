@@ -25,6 +25,15 @@ namespace components
 		extern remixapi_MeshHandle remix_debug_line_list[128];
 		extern std::uint32_t remix_debug_line_amount;
 		extern std::uint64_t remix_debug_last_line_hash;
+
+		struct remix_light_s
+		{
+			remixapi_LightHandle handle = nullptr;
+			remixapi_LightInfoSphereEXT ext = {};
+			remixapi_LightInfo info = {};
+		};
+
+		extern remix_light_s flashlight;
 	}
 
 	class main_module : public component

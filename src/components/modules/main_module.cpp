@@ -16,6 +16,9 @@ namespace components
 		std::uint64_t remix_debug_last_line_hash = 0u;
 		bool remix_debug_node_vis = false; // show/hide debug vis of bsp nodes/leafs
 
+		remix_light_s flashlight = {};
+		
+
 		void begin_scene_callback()
 		{
 			if (api::remix_debug_line_amount)
@@ -42,6 +45,10 @@ namespace components
 						api::bridge.DrawInstance(&inst);
 					}
 				}
+			}
+
+			if (flashlight.handle) {
+				bridge.DrawLightInstance(flashlight.handle);
 			}
 		}
 
@@ -221,6 +228,62 @@ namespace components
 
 	// ------------------------------------------------------
 
+	void flashlight_update_init()
+	{
+		if (api::m_initialized)
+		{
+			if (api::flashlight.handle)
+			{
+				api::bridge.DestroyLight(api::flashlight.handle);
+				api::flashlight.handle = nullptr;
+			}
+
+			auto origin = *game::get_current_view_origin();
+			auto fwd = *game::get_current_view_forward();
+			auto rt = *game::get_current_view_right();
+			auto up = *game::get_current_view_up();
+
+			auto& info = api::flashlight.info;
+			auto& ext = api::flashlight.ext;
+
+			
+			ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+			ext.pNext = nullptr;
+			//ext.position = remixapi_Float3D{ 0.0f, 0.0f, 0.0f };
+
+			const float forwardDistance = 100.0f; // Distance in front of the camera
+			const float verticalOffset = 0.0f;   // Offset along the up vector (positive = up, negative = down)
+			const float horizontalOffset = 0.0f;
+
+			Vector lightorg = origin
+				+ (fwd * forwardDistance)
+				+ (up * verticalOffset)
+				+ (rt * horizontalOffset);
+
+			ext.position = lightorg.ToRemixFloat3D();
+
+			//ext.position.x = origin->x + fwd->Dot(dir_offset);
+			//ext.position.y = origin->y + rt->Dot(dir_offset);
+			//ext.position.z = origin->z + up->Dot(dir_offset);
+
+
+			ext.radius = 1.0f;
+			ext.shaping_hasvalue = FALSE;
+			ext.shaping_value = {};
+			//ext.shaping_value.direction = remixapi_Float3D{ pt.direction.x, pt.direction.y, pt.direction.z };
+			//ext.shaping_value.coneAngleDegrees = pt.degrees;
+			//ext.shaping_value.coneSoftness = pt.softness;
+			//ext.shaping_value.focusExponent = pt.exponent;
+
+			info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+			info.pNext = &api::flashlight.ext;
+			info.hash = utils::string_hash64("flashlight");
+			info.radiance = remixapi_Float3D{ 20.0f, 20.0f, 20.0f };
+
+			api::bridge.CreateLight(&api::flashlight.info, &api::flashlight.handle);
+		}
+	}
+
 	void on_renderview()
 	{
 		auto enginerender = game::get_engine_renderer();
@@ -323,6 +386,7 @@ namespace components
 			api::remix_debug_line_amount = 0;
 		}
 
+		flashlight_update_init();
 	}
 
 	HOOK_RETN_PLACE_DEF(cviewrenderer_renderview_retn);
