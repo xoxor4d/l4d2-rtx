@@ -2697,7 +2697,13 @@ namespace components
 		float frametime;
 		int maxClients;
 		int tickcount;
-		// ....
+		float interval_per_tick;
+		float interpolation_amount;
+		int sim_ticks_this_frame;
+		int network_protocol;
+		void* save_data;
+		bool m_bclient;
+		bool m_bremoteclient;
 	};
 
 	struct ViewCustomVisibility_t
@@ -3383,6 +3389,35 @@ namespace components
 		IMatRenderContext* (__thiscall* GetRenderContext)(IMaterialSystem*);
 	};
 
+	struct C_ServerSurvivorBotParent
+	{
+		void* vtbl; //0x0000 
+		char pad_0x0004[0xC]; //0x0004
+		int unk_one; //0x0010 
+		char pad_0x0014[0x60]; //0x0014
+		const char* classname_player; //0x0074 
+		char pad_0x0078[0x54]; //0x0078
+		int has_flashlight_0xCC; //0x00CC flag 4 = flashlight
+		char pad_0x00D0[0x20]; //0x00D0
+		int et_flags_0xf0; //0x00F0 
+		char pad_0x00F4[0x144]; //0x00F4
+		int aliveflag_or_so; //0x0238 
+		char pad_0x023C[0x10]; //0x023C
+		const char* modelname; //0x024C 
+		char pad_0x0250[0x28]; //0x0250
+		VMatrix transform_matrix; //0x0278 
+		char pad_0x02B8[0x14]; //0x02B8
+		Vector origin; //0x02CC 
+		Vector velocity; //0x02D8 
+		char pad_0x02E4[0xA4]; //0x02E4
+		Vector origin2; //0x0388 
+		Vector angles; //0x0394 
+		char pad_0x03A0[0x3CA0]; //0x03A0
+	};
+	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, has_flashlight_0xCC, 0xCC);
+	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, modelname, 0x24C);
+	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, transform_matrix, 0x278);
+	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, origin, 0x2CC);
 }
 
 

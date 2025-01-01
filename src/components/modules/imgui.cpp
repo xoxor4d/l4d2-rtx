@@ -35,6 +35,16 @@ namespace components
 		}
 	}
 
+	void show_cursor(bool show)
+	{
+		if (show) {
+			while (ShowCursor(TRUE) < 0);
+		}
+		else {
+			while (ShowCursor(FALSE) >= 0);
+		}
+	}
+
 	bool imgui::input_message(const UINT message_type, const WPARAM wparam, const LPARAM lparam)
 	{
 		if (message_type == WM_KEYUP && wparam == VK_F5) 
@@ -43,8 +53,10 @@ namespace components
 
 			// reset cursor to center when closing the menu to not affect player angles
 			// ! not when game input is already locked (menu)
-			if (ImGui::GetIO().MouseDrawCursor && !m_menu_active) {
+			if (ImGui::GetIO().MouseDrawCursor && !m_menu_active) 
+			{
 				center_cursor();
+				ImGui::GetIO().MouseDrawCursor = false;
 			}
 		}
 
@@ -63,11 +75,29 @@ namespace components
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
+		if (ImGui::CollapsingHeader("Player Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::DragFloat("Forward Offset", &m_flashlight_fwd_offset, 0.1f);
 			ImGui::DragFloat("Horizontal Offset", &m_flashlight_horz_offset, 0.1f);
 			ImGui::DragFloat("Vertical Offset", &m_flashlight_vert_offset, 0.1f);
+
+			ImGui::DragFloat("Intensity", &m_flashlight_intensity, 0.1f);
+			ImGui::DragFloat("Radius", &m_flashlight_radius, 0.1f);
+
+			ImGui::Checkbox("Custom Direction", &m_flashlight_use_custom_dir);
+			ImGui::DragFloat3("Direction", &m_flashlight_direction.x, 0.01f, 0, 0, "%.2f");
+			ImGui::DragFloat("Spot Angle", &m_flashlight_angle, 0.1f);
+			ImGui::DragFloat("Spot Softness", &m_flashlight_softness, 0.1f);
+			ImGui::DragFloat("Spot Expo", &m_flashlight_exp, 0.1f);
+		}
+
+		if (ImGui::CollapsingHeader("Bot Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::PushID("bot");
+			ImGui::DragFloat("Forward Offset", &m_flashlight_bot_fwd_offset, 0.1f);
+			ImGui::DragFloat("Horizontal Offset", &m_flashlight_bot_horz_offset, 0.1f);
+			ImGui::DragFloat("Vertical Offset", &m_flashlight_bot_vert_offset, 0.1f);
+			ImGui::PopID();
 		}
 
 		ImGui::End();
@@ -96,6 +126,12 @@ namespace components
 					ImGui::GetIO().MouseDrawCursor = im->m_menu_active;
 				}
 
+				if (!im->m_menu_active) {
+					//show_cursor(false);
+					ImGui::GetIO().MouseDrawCursor = false;
+				}
+
+				//ImGui::GetIO().MouseDrawCursor = im->m_menu_active;
 				interfaces::get()->m_surface->set_cursor_always_visible(im->m_menu_active);
 
 				if (im->m_menu_active) {

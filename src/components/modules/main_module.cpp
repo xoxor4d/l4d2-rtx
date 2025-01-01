@@ -16,7 +16,8 @@ namespace components
 		std::uint64_t remix_debug_last_line_hash = 0u;
 		bool remix_debug_node_vis = false; // show/hide debug vis of bsp nodes/leafs
 
-		remix_light_s flashlight = {};
+		//remix_light_s flashlight = {};
+		std::unordered_map<std::string, flashlight_s> m_flashlights;
 
 		void begin_scene_callback()
 		{
@@ -46,8 +47,11 @@ namespace components
 				}
 			}
 
-			if (flashlight.handle) {
-				bridge.DrawLightInstance(flashlight.handle);
+			for (const auto& [n, fl] : m_flashlights)
+			{
+				if (fl.handle) {
+					bridge.DrawLightInstance(fl.handle);
+				}
 			}
 		}
 
@@ -59,6 +63,8 @@ namespace components
 		// called on device->Present
 		void on_present_callback()
 		{
+			main_module::iterate_entities();
+
 			// Draw current node/leaf as HUD
 			if (api::remix_debug_node_vis && main_module::d3d_font)
 			{
@@ -232,59 +238,302 @@ namespace components
 
 	// ------------------------------------------------------
 
+	void draw_players(sdk::c_base_player* entity, int i)
+	{
+		const auto intf = interfaces::get();
+		const auto m_classes = entity->client_class();
+
+		if (!m_classes) {
+			return;
+		}
+
+		switch (m_classes->class_id)
+		{
+			case sdk::ET_CTERRORPLAYER:
+			case sdk::ET_SURVIVORBOT:
+			{
+				sdk::player_info_t info;
+				if (!intf->m_engine->get_player_info(i, &info)) {
+					return;
+				}
+
+				const auto& m_fEffects = entity->read<int>(0xE0);
+				const bool flashlight_enabled = m_fEffects & 4;
+
+				const auto& eyepos = entity->get_eye_pos();
+				const auto& angles = entity->read<Vector>(0x196C); // m_angEyeAngles[0] - DT_CSPlayer 
+
+				Vector fwd, rt, up;
+				utils::vector::AngleVectors(angles, &fwd, &rt, &up);
+
+				auto it = api::m_flashlights.find(info.name);
+				if (it == api::m_flashlights.end())
+				{
+					// add/assign flashlight
+					api::m_flashlights[info.name] =
+					{
+						.def = {
+							.pos = eyepos,
+							.fwd = fwd,
+							.rt = rt,
+							.up = up,
+						},
+						.is_enabled = flashlight_enabled
+					};
+				}
+				else
+				{
+					it->second.def.pos = eyepos;
+					it->second.def.fwd = fwd;
+					it->second.def.rt = rt;
+					it->second.def.up = up;
+					it->second.is_enabled = flashlight_enabled;
+				}
+
+				//const Vector& entity_origin = entity->origin();
+				//game::debug_add_text_overlay(&entity_origin.x, info.name, 0, 1.0f, 0.0f, 0.0f, 1.0f);
+				//game::debug_add_text_overlay(&entity_origin.x, utils::va("Flashlight: %s", flashlight_enabled ? "true" : "false"), 1, 1.0f, 1.0f, 1.0f, 1.0f);
+				//game::debug_add_text_overlay(&entity_origin.x, utils::va("Eye: %.2f %.2f %.2f", eyepos.x, eyepos.y, eyepos.z), 2, 1.0f, 0.8f, 1.0f, 1.0f);
+				//game::debug_add_text_overlay(&entity_origin.x, utils::va("FWD: %.2f %.2f %.2f", fwd.x, fwd.y, fwd.z), 3, 1.0f, 0.7f, 0.9f, 1.0f);
+				//game::debug_add_text_overlay(&entity_origin.x, utils::va("RT: %.2f %.2f %.2f", rt.x, rt.y, rt.z), 4, 1.0f, 0.6f, 0.8f, 1.0f);
+				//game::debug_add_text_overlay(&entity_origin.x, utils::va("UP: %.2f %.2f %.2f", up.x, up.y, up.z), 5, 1.0f, 0.5f, 0.7f, 1.0f); 
+				break;
+			}
+		}
+	}
+
+	//bool fl_enabled = false;
+	//Vector fl_pos, fl_fwd, fl_rt, fl_up;
+
+	void main_module::iterate_entities()
+	{
+		const auto intf = interfaces::get();
+
+		const auto max_ent = intf->m_entity_list->get_max_entity();
+		for (auto i = 0; i < max_ent; i++)
+		{
+ 			if (i == intf->m_engine->get_local_player()) 
+			{
+				if (const auto  entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i)); 
+								entity)
+				{
+					if (sdk::c_client_class* m_classes = entity->client_class(); !m_classes) {
+						continue;
+					}
+
+					sdk::player_info_t info;
+					if (!intf->m_engine->get_player_info(i, &info)) {
+						return;
+					}
+
+					// player
+					const auto& flashlight_enabled = entity->read<bool>(0x14D8);
+					const auto& eyepos = entity->read<Vector>(0x1110);
+					const auto& fwd = entity->read<Vector>(0x111C);
+					const auto& rt = entity->read<Vector>(0x1134);
+					const auto& up = entity->read<Vector>(0x1128);
+
+					auto it = api::m_flashlights.find(info.name);
+					if (it == api::m_flashlights.end())
+					{
+						// add/assign flashlight
+						api::m_flashlights[info.name] =
+						{
+							.def = {
+								.pos = eyepos,
+								.fwd = fwd,
+								.rt = rt,
+								.up = up,
+							},
+							.is_player = true,
+							.is_enabled = flashlight_enabled
+							
+						};
+					}
+					else
+					{
+						it->second.def.pos = eyepos;
+						it->second.def.fwd = fwd;
+						it->second.def.rt = rt;
+						it->second.def.up = up;
+						it->second.is_player = true;
+						it->second.is_enabled = flashlight_enabled;
+					}
+
+					/*api::m_flashlights[0].is_enabled = entity->read<bool>(0x14D8);
+					api::m_flashlights[0].is_player = true;
+					api::m_flashlights[0].def.pos = entity->read<Vector>(0x1110);
+					api::m_flashlights[0].def.fwd = entity->read<Vector>(0x111C);
+					api::m_flashlights[0].def.rt = entity->read<Vector>(0x1134);
+					api::m_flashlights[0].def.up = entity->read<Vector>(0x1128);*/
+				}
+
+				continue;
+			}
+
+			auto entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i));
+
+			if (!entity) {
+				continue;
+			}
+
+			draw_players(entity, i);
+		}
+	}
+
 	void flashlight_update_init()
 	{
 		if (api::m_initialized)
 		{
-			if (api::flashlight.handle)
+			for (auto& [name, fl] : api::m_flashlights)
 			{
-				api::bridge.DestroyLight(api::flashlight.handle);
-				api::flashlight.handle = nullptr;
+				if (fl.handle)
+				{
+					api::bridge.DestroyLight(fl.handle);
+					fl.handle = nullptr;
+				}
+
+				if (fl.is_enabled)
+				{
+					const auto* im = imgui::get();
+
+					auto& info = fl.info;
+					auto& ext = fl.ext;
+
+					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+					ext.pNext = nullptr;
+
+					const Vector light_org = fl.def.pos
+						+ (fl.def.fwd * (fl.is_player ? im->m_flashlight_fwd_offset  : im->m_flashlight_bot_fwd_offset))
+						+ (fl.def.up  * (fl.is_player ? im->m_flashlight_vert_offset : im->m_flashlight_bot_vert_offset))
+						+ (fl.def.rt  * (fl.is_player ? im->m_flashlight_horz_offset : im->m_flashlight_bot_horz_offset));
+
+					ext.position = light_org.ToRemixFloat3D();
+
+					ext.radius = im->m_flashlight_radius;
+					ext.shaping_hasvalue = TRUE;
+					ext.shaping_value = {};
+
+					if (im->m_flashlight_use_custom_dir)
+					{
+						auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
+						ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
+					}
+					else
+					{
+						ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
+					}
+
+					ext.shaping_value.coneAngleDegrees = im->m_flashlight_angle;
+					ext.shaping_value.coneSoftness = im->m_flashlight_softness;
+					ext.shaping_value.focusExponent = im->m_flashlight_exp;
+
+					info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+					info.pNext = &fl.ext;
+					info.hash = utils::string_hash64(utils::va("fl%s", name.c_str()));
+					info.radiance = remixapi_Float3D{ 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity };
+
+					api::bridge.CreateLight(&fl.info, &fl.handle);
+				}
 			}
 
-			auto camera_origin = *game::get_current_view_origin();
-			auto camera_fwd = *game::get_current_view_forward();
-			auto camera_rt = *game::get_current_view_right();
-			auto camera_up = *game::get_current_view_up();
+#if 0
+			if (api::m_flashlights[0].handle)
+			{
+				api::bridge.DestroyLight(api::m_flashlights[0].handle);
+				api::m_flashlights[0].handle = nullptr;
+			}
 
-			auto& info = api::flashlight.info;
-			auto& ext = api::flashlight.ext;
+			if (api::m_flashlights[0].is_enabled)
+			{
+				auto& camera_origin = api::m_flashlights[0].def.pos; //*game::get_current_view_origin();
+				auto& camera_fwd = api::m_flashlights[0].def.fwd; //*game::get_current_view_forward();
+				auto& camera_rt = api::m_flashlights[0].def.rt; //*game::get_current_view_right();
+				auto& camera_up = api::m_flashlights[0].def.up; //*game::get_current_view_up();
 
-			
-			ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-			ext.pNext = nullptr;
-			//ext.position = remixapi_Float3D{ 0.0f, 0.0f, 0.0f };
-
-			const auto* im = imgui::get();
-
-			Vector light_org = camera_origin
-				+ (camera_fwd * im->m_flashlight_fwd_offset)
-				+ (camera_up * im->m_flashlight_vert_offset)
-				+ (camera_rt * im->m_flashlight_horz_offset);
-
-			ext.position = light_org.ToRemixFloat3D();
-
-			//ext.position.x = origin->x + fwd->Dot(dir_offset);
-			//ext.position.y = origin->y + rt->Dot(dir_offset);
-			//ext.position.z = origin->z + up->Dot(dir_offset);
+				auto& info = api::m_flashlights[0].info;
+				auto& ext = api::m_flashlights[0].ext;
 
 
-			ext.radius = 1.0f;
-			ext.shaping_hasvalue = FALSE;
-			ext.shaping_value = {};
-			//ext.shaping_value.direction = remixapi_Float3D{ pt.direction.x, pt.direction.y, pt.direction.z };
-			//ext.shaping_value.coneAngleDegrees = pt.degrees;
-			//ext.shaping_value.coneSoftness = pt.softness;
-			//ext.shaping_value.focusExponent = pt.exponent;
+				ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+				ext.pNext = nullptr;
+				//ext.position = remixapi_Float3D{ 0.0f, 0.0f, 0.0f };
 
-			info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
-			info.pNext = &api::flashlight.ext;
-			info.hash = utils::string_hash64("flashlight");
-			info.radiance = remixapi_Float3D{ 20.0f, 20.0f, 20.0f };
+				const auto* im = imgui::get();
 
-			api::bridge.CreateLight(&api::flashlight.info, &api::flashlight.handle);
+				Vector light_org = camera_origin
+					+ (camera_fwd * im->m_flashlight_fwd_offset)
+					+ (camera_up * im->m_flashlight_vert_offset)
+					+ (camera_rt * im->m_flashlight_horz_offset);
+
+				ext.position = light_org.ToRemixFloat3D();
+
+				//ext.position.x = origin->x + fwd->Dot(dir_offset);
+				//ext.position.y = origin->y + rt->Dot(dir_offset);
+				//ext.position.z = origin->z + up->Dot(dir_offset);
+
+				ext.radius = im->m_flashlight_radius;
+				ext.shaping_hasvalue = TRUE;
+				ext.shaping_value = {};
+
+				if (im->m_flashlight_use_custom_dir)
+				{
+					auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
+					ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
+				}
+				else
+				{
+					ext.shaping_value.direction = camera_fwd.ToRemixFloat3D();
+				}
+
+				ext.shaping_value.coneAngleDegrees = im->m_flashlight_angle;
+				ext.shaping_value.coneSoftness = im->m_flashlight_softness;
+				ext.shaping_value.focusExponent = im->m_flashlight_exp;
+
+				info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+				info.pNext = &api::m_flashlights[0].ext;
+				info.hash = utils::string_hash64("flashlight");
+				info.radiance = remixapi_Float3D{ 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity };
+
+				api::bridge.CreateLight(&api::m_flashlights[0].info, &api::m_flashlights[0].handle);
+			}
+#endif
 		}
 	}
+
+#if 0
+	void on_survivorbot_update(C_ServerSurvivorBotParent* bot)
+	{
+		if (bot)
+		{
+			if (bot->has_flashlight_0xCC & 4)
+			{
+				//game::debug_add_text_overlay(&bot->origin2.x, "Flashlight On", 1, 1.0f, 0.0f, 0.0f, 1.0f);
+				int x = 1;
+			}
+		}
+	}
+
+	HOOK_RETN_PLACE_DEF(survivorbot_update_stub_retn);
+	__declspec(naked) void survivorbot_update_stub()
+	{
+		__asm
+		{
+			// og
+			push    0;
+			mov     ecx, ebx;
+			call    eax;
+
+			pushad;
+			push	ebx;
+			call	on_survivorbot_update;
+			add		esp, 4;
+			popad;
+
+			jmp		survivorbot_update_stub_retn;
+		}
+	}
+#endif
 
 	void on_renderview()
 	{
@@ -852,6 +1101,11 @@ namespace components
 		// CClientLeafSystem::ExtractCulledRenderables :: disable 'engine->CullBox' check to disable entity culling in leafs
 		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)
 		utils::hook::set<BYTE>(CLIENT_BASE + 0xBDA76, 0xEB);
+
+		// SurvivorBot::Update :: On Flashlight On/Off
+		/*utils::hook::nop(SERVER_BASE + 0x39DA4A, 6);
+		utils::hook(SERVER_BASE + 0x39DA4A, survivorbot_update_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(survivorbot_update_stub_retn, SERVER_BASE + 0x39DA50);*/
 	}
 
 	main_module::~main_module()

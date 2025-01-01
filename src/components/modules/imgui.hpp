@@ -25,6 +25,19 @@ namespace components
 		float m_flashlight_horz_offset = 0.0f;
 		float m_flashlight_vert_offset = 0.0f;
 
+		float m_flashlight_bot_fwd_offset = 22.0f;
+		float m_flashlight_bot_horz_offset = 1.0f;
+		float m_flashlight_bot_vert_offset = -4.0f;
+
+		float m_flashlight_intensity = 20000.0f;
+		float m_flashlight_radius = 0.4f;
+
+		bool m_flashlight_use_custom_dir = false;
+		Vector m_flashlight_direction = { 1.0f, 0.0f, 0.0f };
+		float m_flashlight_angle = 21.0f;
+		float m_flashlight_softness = 0.3f;
+		float m_flashlight_exp = 0.8f;
+
 	private:
 	};
 }

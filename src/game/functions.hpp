@@ -32,12 +32,12 @@ namespace game
 	extern const D3DXMATRIX TC_TRANSLATE_TO_CENTER;
 	extern const D3DXMATRIX TC_TRANSLATE_FROM_CENTER_TO_TOP_LEFT;
 
-	inline components::CRender* get_engine_renderer() { return reinterpret_cast<components::CRender*>(ENGINE_BASE + 0x601F00); }
+	inline CRender* get_engine_renderer() { return reinterpret_cast<CRender*>(ENGINE_BASE + 0x601F00); }
 	inline IDirect3DDevice9* get_d3d_device() { return reinterpret_cast<IDirect3DDevice9*>(*(DWORD*)(RENDERER_BASE + 0xD3EE8)); }
-	inline components::IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50)); }
-	inline components::IMaterialSystem* get_material_system() { return reinterpret_cast<components::IMaterialSystem*>(*(DWORD*)(CLIENT_BASE + 0x88B7F0)); }
-	inline components::worldbrushdata_t* get_hoststate_worldbrush_data() { return reinterpret_cast<components::worldbrushdata_t*>(*(DWORD*)(ENGINE_BASE + 0x42FFB8)); }
-	inline components::CCvar* get_icvar() { return reinterpret_cast<components::CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
+	inline IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50)); }
+	inline IMaterialSystem* get_material_system() { return reinterpret_cast<IMaterialSystem*>(*(DWORD*)(CLIENT_BASE + 0x88B7F0)); }
+	inline worldbrushdata_t* get_hoststate_worldbrush_data() { return reinterpret_cast<worldbrushdata_t*>(*(DWORD*)(ENGINE_BASE + 0x42FFB8)); }
+	inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 
 	inline Vector* get_current_view_origin() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x501344); }
 	inline Vector* get_current_view_forward() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A30); }
@@ -48,6 +48,9 @@ namespace game
 	inline view_id get_viewid() { return *reinterpret_cast<view_id*>(CLIENT_BASE + 0x6DF6CC); }
 
 	extern void con_add_command(ConCommand* cmd, const char* name, void(__cdecl* callback)(), const char* desc);
+	extern void debug_add_text_overlay(const float* pos, float duration, const char* text);
+	extern void debug_add_text_overlay(const float* pos, const char* text, int line_offset = 0, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
+
 	extern void cvar_uncheat(const char* name);
 	extern void cvar_uncheat_and_set_int(const char* name, int val);
 	extern void cvar_uncheat_and_set_float(const char* name, float val);

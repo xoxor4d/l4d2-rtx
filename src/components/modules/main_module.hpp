@@ -26,14 +26,35 @@ namespace components
 		extern std::uint32_t remix_debug_line_amount;
 		extern std::uint64_t remix_debug_last_line_hash;
 
-		struct remix_light_s
+
+		struct flashlight_def_s
+		{
+			Vector pos;
+			Vector fwd = { 0.0f, 1.0f, 0.0f };
+			Vector rt;
+			Vector up;
+		};
+
+		struct flashlight_s
+		{
+			remixapi_LightHandle handle = nullptr;
+			remixapi_LightInfoSphereEXT ext = {};
+			remixapi_LightInfo info = {};
+			flashlight_def_s def = {};
+			//std::string_view player_name;
+			bool is_player = false;
+			bool is_enabled = false;
+		};
+		extern std::unordered_map<std::string, flashlight_s> m_flashlights;
+
+
+		/*struct remix_light_s
 		{
 			remixapi_LightHandle handle = nullptr;
 			remixapi_LightInfoSphereEXT ext = {};
 			remixapi_LightInfo info = {};
 		};
-
-		extern remix_light_s flashlight;
+		extern remix_light_s flashlight;*/
 	}
 
 	class main_module : public component
@@ -45,6 +66,7 @@ namespace components
 		static inline std::uint64_t framecount = 0u;
 		static inline LPD3DXFONT d3d_font = nullptr;
 
+		static void iterate_entities();
 		static void debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, float width, const api::DEBUG_REMIX_LINE_COLOR& color);
 		static void force_cvars();
 	private:

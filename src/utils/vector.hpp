@@ -548,23 +548,56 @@ struct Vertex_t
 
 namespace utils::vector
 {
-	inline void AngleVectors(const Vector vAngles, Vector* vForward)
+#define PITCH	0 // up / down
+#define YAW		1 // left / right
+#define ROLL	2 // fall over
+
+	inline void sin_cos(const float angle, float& sine, float& cosine)
+	{
+		sine = std::sinf(angle);
+		cosine = std::cosf(angle);
+	}
+
+	inline void AngleVectors(const Vector& angles, Vector* forward)
 	{
 		float sp, sy, cp, cy;
+		sin_cos(DEG2RADF(angles[YAW]), sp, cp);
+		sin_cos(DEG2RADF(angles[PITCH]), sy, cy);
 
-		const float flX = DEG2RADF(vAngles.x);
-		sp = ::sinf(flX);
-		cp = ::cosf(flX);
-
-		const float flY = DEG2RADF(vAngles.y);
-		sy = ::sinf(flY);
-		cy = ::cosf(flY);
-
-		if (vForward)
+		if (forward)
 		{
-			vForward->x = (cp * cy);
-			vForward->y = (cp * sy);
-			vForward->z = -sp;
+			forward->x = (cp * cy);
+			forward->y = (cp * sy);
+			forward->z = -sp;
+		}
+	}
+
+	inline void AngleVectors(const Vector& angles, Vector* forward, Vector* right, Vector* up)
+	{
+		float sr, sp, sy, cr, cp, cy;
+		sin_cos(DEG2RAD(angles[YAW]), sy, cy);
+		sin_cos(DEG2RAD(angles[PITCH]), sp, cp);
+		sin_cos(DEG2RAD(angles[ROLL]), sr, cr);
+
+		if (forward)
+		{
+			forward->x = cp * cy;
+			forward->y = cp * sy;
+			forward->z = -sp;
+		}
+
+		if (right)
+		{
+			right->x = (-1.0f * sr * sp * cy + -1.0f * cr * -sy);
+			right->y = (-1.0f * sr * sp * sy + -1.0f * cr * cy);
+			right->z = -1.0f * sr * cp;
+		}
+
+		if (up)
+		{
+			up->x = (cr * sp * cy + -sr * -sy);
+			up->y = (cr * sp * sy + -sr * cy);
+			up->z = cr * cp;
 		}
 	}
 
