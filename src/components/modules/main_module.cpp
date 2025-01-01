@@ -5,382 +5,10 @@ namespace components
 	int g_current_leaf = -1;
 	int g_current_area = -1;
 
-	namespace api
-	{
-		bool m_initialized = false;
-		remixapi_Interface bridge = {};
-
-		remixapi_MaterialHandle remix_debug_line_materials[3];
-		remixapi_MeshHandle remix_debug_line_list[128] = {};
-		std::uint32_t remix_debug_line_amount = 0u;
-		std::uint64_t remix_debug_last_line_hash = 0u;
-		bool remix_debug_node_vis = false; // show/hide debug vis of bsp nodes/leafs
-		std::unordered_map<std::string, flashlight_s> m_flashlights;
-
-		void begin_scene_callback()
-		{
-			if (api::remix_debug_line_amount)
-			{
-				for (auto l = 1u; l < api::remix_debug_line_amount + 1; l++)
-				{
-					if (api::remix_debug_line_list[l])
-					{
-						remixapi_Transform t0 = {};
-						t0.matrix[0][0] = 1.0f;
-						t0.matrix[1][1] = 1.0f;
-						t0.matrix[2][2] = 1.0f;
-
-						const remixapi_InstanceInfo inst =
-						{
-							.sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO,
-							.pNext = nullptr,
-							.categoryFlags = 0,
-							.mesh = api::remix_debug_line_list[l],
-							.transform = t0,
-							.doubleSided = true
-						};
-
-						api::bridge.DrawInstance(&inst);
-					}
-				}
-			}
-
-			for (const auto& [n, fl] : m_flashlights)
-			{
-				if (fl.handle) {
-					bridge.DrawLightInstance(fl.handle);
-				}
-			}
-		}
-
-		void end_scene_callback()
-		{
-			imgui::endscene_stub();
-		}
-
-		// called on device->Present
-		void on_present_callback()
-		{
-			main_module::iterate_entities();
-
-			// Draw current node/leaf as HUD
-			if (api::remix_debug_node_vis && main_module::d3d_font)
-			{
-				RECT rect;
-
-				//if (!map_settings::get_map_name().empty())
-				//{
-				//	SetRect(&rect, 20, 100, 512, 512);
-				//	main_module::d3d_font->DrawTextA
-				//	(
-				//		nullptr,
-				//		map_settings::get_map_name().c_str(),
-				//		-1,       // text length (-1 = null-terminated)
-				//		&rect,
-				//		DT_NOCLIP,
-				//		D3DCOLOR_XRGB(255, 255, 255)
-				//	);
-				//}
-
-				if (g_current_area != -1)
-				{
-					SetRect(&rect, 20, 125, 512, 512);
-					auto text = utils::va("Area: %d", g_current_area);
-					main_module::d3d_font->DrawTextA
-					(
-						nullptr,
-						text,
-						-1,       // text length (-1 = null-terminated)
-						&rect,
-						DT_NOCLIP,
-						D3DCOLOR_XRGB(255, 255, 255)
-					);
-				}
-
-				if (g_current_leaf != -1)
-				{
-					SetRect(&rect, 20, 145, 512, 512);
-					auto text = utils::va("Leaf: %d", g_current_leaf);
-					main_module::d3d_font->DrawTextA
-					(
-						nullptr,
-						text,
-						-1,       // text length (-1 = null-terminated)
-						&rect,
-						DT_NOCLIP,
-						D3DCOLOR_XRGB(50, 255, 20)
-					);
-				}
-			}
-		}
-
-		// called once from the main_module constructor
-		void init()
-		{
-			const auto status = remixapi::bridge_initRemixApi(&api::bridge);
-			if (status == REMIXAPI_ERROR_CODE_SUCCESS)
-			{
-				m_initialized = true;
-				remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, end_scene_callback, on_present_callback);
-			}
-		}
-
-		void create_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, const float scale)
-		{
-			if (!v_out || !i_out)
-			{
-				return;
-			}
-
-			auto make_vertex = [&](float x, float y, float z, float u, float v)
-				{
-					const remixapi_HardcodedVertex vert =
-					{
-					  .position = { x, y, z },
-					  .normal = { 0.0f, 0.0f, -1.0f },
-					  .texcoord = { u, v },
-					  .color = 0xFFFFFFFF,
-					};
-					return vert;
-				};
-
-			v_out[0] = make_vertex(-1.0f * scale, 1, -1.0f * scale, 0.0f, 0.0f); // bottom left
-			v_out[1] = make_vertex(-1.0f * scale, 1, 1.0f * scale, 0.0f, 1.0f); // top left
-			v_out[2] = make_vertex(1.0f * scale, 1, -1.0f * scale, 1.0f, 0.0f); // bottom right
-			v_out[3] = make_vertex(1.0f * scale, 1, 1.0f * scale, 1.0f, 1.0f); // top right
-
-			i_out[0] = 0; i_out[1] = 1; i_out[2] = 2;
-			i_out[3] = 3; i_out[4] = 2; i_out[5] = 1;
-		}
-
-		void create_line_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, const Vector& p1, const Vector& p2, const float width)
-		{
-			if (!v_out || !i_out)
-			{
-				return;
-			}
-
-			auto make_vertex = [&](const Vector& pos, float u, float v)
-				{
-					const remixapi_HardcodedVertex vert =
-					{
-					  .position = { pos.x, pos.y, pos.z },
-					  .normal = { 0.0f, 0.0f, -1.0f },
-					  .texcoord = { u, v },
-					  .color = 0xFFFFFFFF,
-					};
-					return vert;
-				};
-
-			Vector up = { 0.0f, 0.0f, 1.0f };
-
-			// dir of the line
-			Vector dir = p2 - p1;
-			dir.Normalize();
-
-			// check if dir is parallel or very close to the up vector
-			if (fabs(DotProduct(dir, up)) > 0.999f)
-			{
-				// if parallel, choose a different up vector
-				up = { 1.0f, 0.0f, 0.0f };
-			}
-
-			Vector perp = dir.Cross(up); // perpendicular vector to line
-			perp.Normalize(); // unit length
-
-			// scale by half width to offset vertices
-			const Vector offset = perp * (width * 0.5f);
-
-			v_out[0] = make_vertex(p1 - offset, 0.0f, 0.0f); // bottom left
-			v_out[1] = make_vertex(p1 + offset, 0.0f, 1.0f); // top left
-			v_out[2] = make_vertex(p2 - offset, 1.0f, 0.0f); // bottom right
-			v_out[3] = make_vertex(p2 + offset, 1.0f, 1.0f); // top right
-
-			i_out[0] = 0; i_out[1] = 1; i_out[2] = 2;
-			i_out[3] = 3; i_out[4] = 2; i_out[5] = 1;
-		}
-
-		void add_debug_line(const Vector& p1, const Vector& p2, const float width, DEBUG_REMIX_LINE_COLOR color)
-		{
-			if (remix_debug_line_materials[color])
-			{
-				remix_debug_line_amount++;
-				remixapi_HardcodedVertex verts[4] = {};
-				uint32_t indices[6] = {};
-				api::create_line_quad(verts, indices, p1, p2, width);
-
-				remixapi_MeshInfoSurfaceTriangles triangles =
-				{
-				  .vertices_values = verts,
-				  .vertices_count = ARRAYSIZE(verts),
-				  .indices_values = indices,
-				  .indices_count = 6,
-				  .skinning_hasvalue = FALSE,
-				  .skinning_value = {},
-				  .material = remix_debug_line_materials[color],
-				};
-
-				remixapi_MeshInfo info
-				{
-					.sType = REMIXAPI_STRUCT_TYPE_MESH_INFO,
-					.hash = utils::string_hash64(utils::va("line%d", remix_debug_last_line_hash ? remix_debug_last_line_hash : 1)),
-					.surfaces_values = &triangles,
-					.surfaces_count = 1,
-				}; 
-
-				api::bridge.CreateMesh(&info, &remix_debug_line_list[remix_debug_line_amount]);
-				remix_debug_last_line_hash = reinterpret_cast<std::uint64_t>(remix_debug_line_list[remix_debug_line_amount]);
-			}
-		}
-	}
-
-	// ------------------------------------------------------
-
-	void main_module::iterate_entities()
-	{
-		const auto intf = interfaces::get();
-		const auto max_ent = intf->m_entity_list->get_max_entity();
-
-		for (auto i = 0; i < max_ent; i++)
-		{
-			if (const auto	entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i));
-							entity)
-			{
-				if (const auto* m_classes = entity->client_class(); 
-								m_classes)
-				{
-					switch (m_classes->class_id)
-					{
-						default:
-							continue;
-
-						case sdk::ET_CTERRORPLAYER:
-						case sdk::ET_SURVIVORBOT:
-						{
-							sdk::player_info_t info;
-							if (!intf->m_engine->get_player_info(i, &info)) {
-								continue;
-							}
-
-							auto update_flashlight = [&](const Vector& pos, const Vector& fwd, const Vector& rt, const Vector& up, bool is_enabled, bool is_player_flag)
-								{
-									auto it = api::m_flashlights.find(info.name);
-									if (it == api::m_flashlights.end())
-									{
-										// insert new flashlight data
-										api::m_flashlights[info.name] =
-										{
-											.def = {.pos = pos, .fwd = fwd, .rt = rt, .up = up },
-											.is_player = is_player_flag,
-											.is_enabled = is_enabled
-										};
-									}
-									else
-									{
-										// update existing flashlight data
-										it->second.def.pos = pos;
-										it->second.def.fwd = fwd;
-										it->second.def.rt = rt;
-										it->second.def.up = up;
-										it->second.is_player = is_player_flag;
-										it->second.is_enabled = is_enabled;
-									}
-								};
-
-
-							const auto is_player = i == intf->m_engine->get_local_player();
-							if (!is_player)
-							{
-								const auto& m_fEffects = entity->read<int>(0xE0);
-								const bool flashlight_enabled = m_fEffects & 4;
-
-								const auto& eyepos = entity->get_eye_pos();
-								const auto& angles = entity->read<Vector>(0x196C); // m_angEyeAngles[0] - DT_CSPlayer 
-
-								Vector fwd, rt, up;
-								utils::vector::AngleVectors(angles, &fwd, &rt, &up);
-
-								update_flashlight(eyepos, fwd, rt, up, flashlight_enabled, false);
-							}
-							else
-							{
-								// player
-								const auto& flashlight_enabled = entity->read<bool>(0x14D8);
-								const auto& eyepos = entity->read<Vector>(0x1110);
-								const auto& fwd = entity->read<Vector>(0x111C);
-								const auto& rt = entity->read<Vector>(0x1134);
-								const auto& up = entity->read<Vector>(0x1128);
-
-								update_flashlight(eyepos, fwd, rt, up, flashlight_enabled, true);
-							}
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	void flashlight_update_init()
-	{
-		if (api::m_initialized)
-		{
-			for (auto& [name, fl] : api::m_flashlights)
-			{
-				if (fl.handle)
-				{
-					api::bridge.DestroyLight(fl.handle);
-					fl.handle = nullptr;
-				}
-
-				if (fl.is_enabled)
-				{
-					const auto* im = imgui::get();
-
-					auto& info = fl.info;
-					auto& ext = fl.ext;
-
-					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-					ext.pNext = nullptr;
-
-					const Vector light_org = fl.def.pos
-						+ (fl.def.fwd * (fl.is_player ? im->m_flashlight_fwd_offset  : im->m_flashlight_bot_fwd_offset))
-						+ (fl.def.up  * (fl.is_player ? im->m_flashlight_vert_offset : im->m_flashlight_bot_vert_offset))
-						+ (fl.def.rt  * (fl.is_player ? im->m_flashlight_horz_offset : im->m_flashlight_bot_horz_offset));
-
-					ext.position = light_org.ToRemixFloat3D();
-
-					ext.radius = im->m_flashlight_radius;
-					ext.shaping_hasvalue = TRUE;
-					ext.shaping_value = {};
-
-					if (im->m_flashlight_use_custom_dir)
-					{
-						auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
-						ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
-					}
-					else
-					{
-						ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
-					}
-
-					ext.shaping_value.coneAngleDegrees = im->m_flashlight_angle;
-					ext.shaping_value.coneSoftness = im->m_flashlight_softness;
-					ext.shaping_value.focusExponent = im->m_flashlight_exp;
-
-					info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
-					info.pNext = &fl.ext;
-					info.hash = utils::string_hash64(utils::va("fl%s", name.c_str()));
-					info.radiance = remixapi_Float3D{ 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity };
-
-					api::bridge.CreateLight(&fl.info, &fl.handle);
-				}
-			}
-		}
-	}
-
 	void on_renderview()
 	{
+		//model_render::get()->m_drew_hud = false;
+
 		auto enginerender = game::get_engine_renderer();
 		const auto dev = game::get_d3d_device();
 
@@ -416,72 +44,13 @@ namespace components
 
 		main_module::force_cvars();
 
-
 		// CM_PointLeafnum :: get current leaf
 		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
 
 		// CM_LeafArea :: get current area the camera is in
 		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); 
 
-
-		// api debug lines
-		if (!api::remix_debug_line_materials[0])
-		{
-			remixapi_MaterialInfo info
-			{
-				.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO,
-				.hash = utils::string_hash64("linemat0"),
-				.albedoTexture = L"",
-				.normalTexture = L"",
-				.tangentTexture = L"",
-				.emissiveTexture = L"",
-				.emissiveIntensity = 1.0f,
-				.emissiveColorConstant = { 1.0f, 0.0f, 0.0f },
-			};
-
-			info.albedoTexture = L"";
-			info.normalTexture = L"";
-			info.tangentTexture = L"";
-			info.emissiveTexture = L"";
-
-			remixapi_MaterialInfoOpaqueEXT ext = {};
-			{
-				ext.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO_OPAQUE_EXT;
-				ext.useDrawCallAlphaState = 1;
-				ext.opacityConstant = 1.0f;
-				ext.roughnessTexture = L"";
-				ext.metallicTexture = L"";
-				ext.heightTexture = L"";
-			}
-			info.pNext = &ext;
-
-			api::bridge.CreateMaterial(&info, &api::remix_debug_line_materials[0]);
-
-			info.hash = utils::string_hash64("linemat1");
-			info.emissiveColorConstant = { 0.0f, 1.0f, 0.0f };
-			api::bridge.CreateMaterial(&info, &api::remix_debug_line_materials[1]);
-
-			info.hash = utils::string_hash64("linemat3");
-			info.emissiveColorConstant = { 0.0f, 1.0f, 1.0f };
-			api::bridge.CreateMaterial(&info, &api::remix_debug_line_materials[2]);
-		}
-
-		// destroy all lines added the prev. frame
-		if (api::remix_debug_line_amount)
-		{
-			for (auto& line : api::remix_debug_line_list)
-			{
-				if (line)
-				{
-					api::bridge.DestroyMesh(line);
-					line = nullptr;
-				}
-			}
-
-			api::remix_debug_line_amount = 0;
-		}
-
-		flashlight_update_init();
+		remix_api::get()->on_renderview();
 	}
 
 	HOOK_RETN_PLACE_DEF(cviewrenderer_renderview_retn);
@@ -503,6 +72,7 @@ namespace components
 	// ##
 	// ##
 
+#if 0
 	void on_skyboxdraw()
 	{
 		auto enginerender = game::get_engine_renderer();
@@ -558,8 +128,66 @@ namespace components
 			jmp		skyboxview_draw_internal_retn;
 		}
 	}
+#endif
 
+	// called on EndScene - remix_api::end_scene_callback()
+	void main_module::iterate_entities()
+	{
+		const auto intf = interfaces::get();
+		const auto max_ent = intf->m_entity_list->get_max_entity();
 
+		for (auto i = 0; i < max_ent; i++)
+		{
+			if (const auto	entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i));
+				entity)
+			{
+				if (const auto* m_classes = entity->client_class();
+					m_classes)
+				{
+					switch (m_classes->class_id)
+					{
+					default:
+						continue;
+
+					case sdk::ET_CTERRORPLAYER:
+					case sdk::ET_SURVIVORBOT:
+					{
+						sdk::player_info_t info;
+						if (!intf->m_engine->get_player_info(i, &info)) {
+							continue;
+						}
+
+						if (const auto is_player = i == intf->m_engine->get_local_player();
+							is_player)
+						{
+							const auto& flashlight_enabled = entity->read<bool>(0x14D8);
+							const auto& eyepos = entity->read<Vector>(0x1110);
+							const auto& fwd = entity->read<Vector>(0x111C);
+							const auto& rt = entity->read<Vector>(0x1134);
+							const auto& up = entity->read<Vector>(0x1128);
+							remix_api::get()->flashlight_create_or_update(info.name, eyepos, fwd, rt, up, flashlight_enabled, true);
+						}
+
+						else // SurvivorBot
+						{
+							const auto& m_fEffects = entity->read<int>(0xE0);
+							const bool flashlight_enabled = m_fEffects & 4;
+
+							const auto& eyepos = entity->get_eye_pos();
+							const auto& angles = entity->read<Vector>(0x196C); // m_angEyeAngles[0] - DT_CSPlayer 
+
+							Vector fwd, rt, up;
+							utils::vector::AngleVectors(angles, &fwd, &rt, &up);
+
+							remix_api::get()->flashlight_create_or_update(info.name, eyepos, fwd, rt, up, flashlight_enabled);
+						}
+						break;
+					}
+					}
+				}
+			}
+		}
+	}
 
 
 	/**
@@ -637,7 +265,7 @@ namespace components
 	int r_cullnode_wrapper(mnode_t* node)
 	{
 		// disable frustum culling for now
-		return 0;
+		//return 0;
 
 		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
 		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) {
@@ -690,11 +318,10 @@ namespace components
 		// show leaf index as 3D text
 		if (g_current_leaf < world->numleafs)
 		{
-			if (api::remix_debug_node_vis)
+			if (remix_api::is_node_debug_enabled())
 			{
 				const auto curr_leaf = &world->leafs[g_current_leaf];
-				//game::debug_add_text_overlay(&curr_leaf->m_vecCenter.x, 0.0f, utils::va("Leaf: %i", g_current_leaf));
-				main_module::debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, api::DEBUG_REMIX_LINE_COLOR::GREEN);
+				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN);
 			}
 		}
 
@@ -725,52 +352,6 @@ namespace components
 			mov     edx, [eax + 0x50];
 			mov     ecx, ebx;
 			jmp		pre_recursive_world_node_retn;
-		}
-	}
-
-	/**
-	 * Draw a wireframe box using the remix api
-	 * @param center		Center of the cube
-	 * @param half_diagonal Half diagonal distance of the box
-	 * @param width			Line width
-	 * @param color			Line color
-	 */
-	void main_module::debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, const float width, const api::DEBUG_REMIX_LINE_COLOR& color)
-	{
-		Vector min, max;
-		Vector corners[8];
-
-		// calculate min and max positions based on the center and half diagonal
-		min = center - half_diagonal;
-		max = center + half_diagonal;
-
-		// get the corners of the cube
-		corners[0] = Vector(min.x, min.y, min.z);
-		corners[1] = Vector(min.x, min.y, max.z);
-		corners[2] = Vector(min.x, max.y, min.z);
-		corners[3] = Vector(min.x, max.y, max.z);
-		corners[4] = Vector(max.x, min.y, min.z);
-		corners[5] = Vector(max.x, min.y, max.z);
-		corners[6] = Vector(max.x, max.y, min.z);
-		corners[7] = Vector(max.x, max.y, max.z);
-
-		// define the edges
-		Vector lines[12][2];
-		lines[0][0] = corners[0];	lines[0][1] = corners[1]; // Edge 1
-		lines[1][0] = corners[0];	lines[1][1] = corners[2]; // Edge 2
-		lines[2][0] = corners[0];	lines[2][1] = corners[4]; // Edge 3
-		lines[3][0] = corners[1];	lines[3][1] = corners[3]; // Edge 4
-		lines[4][0] = corners[1];	lines[4][1] = corners[5]; // Edge 5
-		lines[5][0] = corners[2];	lines[5][1] = corners[3]; // Edge 6
-		lines[6][0] = corners[2];	lines[6][1] = corners[6]; // Edge 7
-		lines[7][0] = corners[3];	lines[7][1] = corners[7]; // Edge 8
-		lines[8][0] = corners[4];	lines[8][1] = corners[5]; // Edge 9
-		lines[9][0] = corners[4];	lines[9][1] = corners[6]; // Edge 10
-		lines[10][0] = corners[5];	lines[10][1] = corners[7]; // Edge 11
-		lines[11][0] = corners[6];	lines[11][1] = corners[7]; // Edge 12
-
-		for (auto e = 0u; e < 12; e++) {
-			api::add_debug_line(lines[e][0], lines[e][1], width, color);
 		}
 	}
 
@@ -867,21 +448,12 @@ namespace components
 		game::cvar_uncheat_and_set_int("fog_enable", 0);
 	}
 
-	ConCommand xo_debug_toggle_node_vis_cmd{};
-	void xo_debug_toggle_node_vis_fn()
-	{
-		api::remix_debug_node_vis = !api::remix_debug_node_vis;
-	}
-
 	main_module::main_module()
 	{
 		{ // init filepath var
 			char path[MAX_PATH]; GetModuleFileNameA(nullptr, path, MAX_PATH);
 			game::root_path = path; utils::erase_substring(game::root_path, "left4dead2.exe");
 		}
-
-		// init remixAPI
-		api::init();
 
 		{ // init d3d font
 			D3DXFONT_DESC desc =
@@ -900,11 +472,6 @@ namespace components
 
 			D3DXCreateFontIndirect(game::get_d3d_device(), &desc, &d3d_font);
 		}
-
-		// #
-		// commands
-
-		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
 
 
 		// #

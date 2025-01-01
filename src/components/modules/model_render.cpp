@@ -524,6 +524,8 @@ namespace components
 
 				// do not render the original mesh
 				ctx.modifiers.do_not_render = true;
+
+				//model_render::get()->m_drew_hud = true;
 			}
 			else if (  ctx.info.material_name.starts_with("engine/occl")
 					|| ctx.info.material_name.starts_with("dev/lumc")) // dev/lumcompare 
@@ -560,6 +562,11 @@ namespace components
 			}
 			else if (ctx.info.shader_name.contains("Sky"))
 			{
+				ctx.save_rs(dev, D3DRS_FOGENABLE);
+				dev->SetRenderState(D3DRS_FOGENABLE, FALSE);
+
+				// this fixes the sky on intros or when no vgui is being drawn
+				dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
 				ctx.modifiers.do_not_render = false;
 			}
 			//ctx.modifiers.do_not_render = true;
@@ -597,10 +604,17 @@ namespace components
 			//ctx.modifiers.do_not_render = true;
 
 			// always render UI and world ui with high gamma
-			ctx.modifiers.with_high_gamma = true;  
+			ctx.modifiers.with_high_gamma = true;
+
+			/*if (ctx.info.buffer_state.m_Transform[2].m[3][3] == 1.0f && 
+				(ctx.info.material_name == "vgui_white" || ctx.info.material_name == "__fontpage"))
+			{
+				set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_WORLD_MATTE);
+				model_render::get()->m_drew_hud = true;
+			}*/
 
 			// early out if vgui_white
-			if (ctx.info.material_name != "vgui_white" && ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f)
+			if (ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name != "vgui_white")
 			{
 				bool is_world_ui_text = ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name == "__fontpage";
 
@@ -1351,6 +1365,8 @@ namespace components
 
 	model_render::model_render()
 	{
+		p_this = this;
+
 		/* tbl_hk::model_renderer::_interface = utils::module_interface.get<tbl_hk::model_renderer::IVModelRender*>("engine.dll", "VEngineModel016");
 
 		XASSERT(tbl_hk::model_renderer::table.init(tbl_hk::model_renderer::_interface) == false);

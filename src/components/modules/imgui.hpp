@@ -34,7 +34,7 @@ namespace components
 
 		bool m_flashlight_use_custom_dir = false;
 		Vector m_flashlight_direction = { 1.0f, 0.0f, 0.0f };
-		float m_flashlight_angle = 21.0f;
+		float m_flashlight_angle = 23.0f;
 		float m_flashlight_softness = 0.3f;
 		float m_flashlight_exp = 0.8f;
 

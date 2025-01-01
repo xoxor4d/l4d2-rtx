@@ -388,7 +388,12 @@ namespace components
 		model_render();
 		~model_render() = default;
 
+		static inline model_render* p_this = nullptr;
+		static model_render* get() { return p_this; }
+
 		static void init_texture_addons(bool release = false);
 		static inline prim_fvf_context primctx {};
+
+		bool m_drew_hud = false;
 	};
 }
