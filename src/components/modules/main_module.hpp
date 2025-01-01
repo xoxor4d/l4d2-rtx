@@ -46,15 +46,6 @@ namespace components
 			bool is_enabled = false;
 		};
 		extern std::unordered_map<std::string, flashlight_s> m_flashlights;
-
-
-		/*struct remix_light_s
-		{
-			remixapi_LightHandle handle = nullptr;
-			remixapi_LightInfoSphereEXT ext = {};
-			remixapi_LightInfo info = {};
-		};
-		extern remix_light_s flashlight;*/
 	}
 
 	class main_module : public component

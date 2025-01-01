@@ -15,8 +15,6 @@ namespace components
 		std::uint32_t remix_debug_line_amount = 0u;
 		std::uint64_t remix_debug_last_line_hash = 0u;
 		bool remix_debug_node_vis = false; // show/hide debug vis of bsp nodes/leafs
-
-		//remix_light_s flashlight = {};
 		std::unordered_map<std::string, flashlight_s> m_flashlights;
 
 		void begin_scene_callback()
@@ -238,146 +236,88 @@ namespace components
 
 	// ------------------------------------------------------
 
-	void draw_players(sdk::c_base_player* entity, int i)
-	{
-		const auto intf = interfaces::get();
-		const auto m_classes = entity->client_class();
-
-		if (!m_classes) {
-			return;
-		}
-
-		switch (m_classes->class_id)
-		{
-			case sdk::ET_CTERRORPLAYER:
-			case sdk::ET_SURVIVORBOT:
-			{
-				sdk::player_info_t info;
-				if (!intf->m_engine->get_player_info(i, &info)) {
-					return;
-				}
-
-				const auto& m_fEffects = entity->read<int>(0xE0);
-				const bool flashlight_enabled = m_fEffects & 4;
-
-				const auto& eyepos = entity->get_eye_pos();
-				const auto& angles = entity->read<Vector>(0x196C); // m_angEyeAngles[0] - DT_CSPlayer 
-
-				Vector fwd, rt, up;
-				utils::vector::AngleVectors(angles, &fwd, &rt, &up);
-
-				auto it = api::m_flashlights.find(info.name);
-				if (it == api::m_flashlights.end())
-				{
-					// add/assign flashlight
-					api::m_flashlights[info.name] =
-					{
-						.def = {
-							.pos = eyepos,
-							.fwd = fwd,
-							.rt = rt,
-							.up = up,
-						},
-						.is_enabled = flashlight_enabled
-					};
-				}
-				else
-				{
-					it->second.def.pos = eyepos;
-					it->second.def.fwd = fwd;
-					it->second.def.rt = rt;
-					it->second.def.up = up;
-					it->second.is_enabled = flashlight_enabled;
-				}
-
-				//const Vector& entity_origin = entity->origin();
-				//game::debug_add_text_overlay(&entity_origin.x, info.name, 0, 1.0f, 0.0f, 0.0f, 1.0f);
-				//game::debug_add_text_overlay(&entity_origin.x, utils::va("Flashlight: %s", flashlight_enabled ? "true" : "false"), 1, 1.0f, 1.0f, 1.0f, 1.0f);
-				//game::debug_add_text_overlay(&entity_origin.x, utils::va("Eye: %.2f %.2f %.2f", eyepos.x, eyepos.y, eyepos.z), 2, 1.0f, 0.8f, 1.0f, 1.0f);
-				//game::debug_add_text_overlay(&entity_origin.x, utils::va("FWD: %.2f %.2f %.2f", fwd.x, fwd.y, fwd.z), 3, 1.0f, 0.7f, 0.9f, 1.0f);
-				//game::debug_add_text_overlay(&entity_origin.x, utils::va("RT: %.2f %.2f %.2f", rt.x, rt.y, rt.z), 4, 1.0f, 0.6f, 0.8f, 1.0f);
-				//game::debug_add_text_overlay(&entity_origin.x, utils::va("UP: %.2f %.2f %.2f", up.x, up.y, up.z), 5, 1.0f, 0.5f, 0.7f, 1.0f); 
-				break;
-			}
-		}
-	}
-
-	//bool fl_enabled = false;
-	//Vector fl_pos, fl_fwd, fl_rt, fl_up;
-
 	void main_module::iterate_entities()
 	{
 		const auto intf = interfaces::get();
-
 		const auto max_ent = intf->m_entity_list->get_max_entity();
+
 		for (auto i = 0; i < max_ent; i++)
 		{
- 			if (i == intf->m_engine->get_local_player()) 
+			if (const auto	entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i));
+							entity)
 			{
-				if (const auto  entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i)); 
-								entity)
+				if (const auto* m_classes = entity->client_class(); 
+								m_classes)
 				{
-					if (sdk::c_client_class* m_classes = entity->client_class(); !m_classes) {
-						continue;
-					}
-
-					sdk::player_info_t info;
-					if (!intf->m_engine->get_player_info(i, &info)) {
-						return;
-					}
-
-					// player
-					const auto& flashlight_enabled = entity->read<bool>(0x14D8);
-					const auto& eyepos = entity->read<Vector>(0x1110);
-					const auto& fwd = entity->read<Vector>(0x111C);
-					const auto& rt = entity->read<Vector>(0x1134);
-					const auto& up = entity->read<Vector>(0x1128);
-
-					auto it = api::m_flashlights.find(info.name);
-					if (it == api::m_flashlights.end())
+					switch (m_classes->class_id)
 					{
-						// add/assign flashlight
-						api::m_flashlights[info.name] =
+						default:
+							continue;
+
+						case sdk::ET_CTERRORPLAYER:
+						case sdk::ET_SURVIVORBOT:
 						{
-							.def = {
-								.pos = eyepos,
-								.fwd = fwd,
-								.rt = rt,
-								.up = up,
-							},
-							.is_player = true,
-							.is_enabled = flashlight_enabled
-							
-						};
-					}
-					else
-					{
-						it->second.def.pos = eyepos;
-						it->second.def.fwd = fwd;
-						it->second.def.rt = rt;
-						it->second.def.up = up;
-						it->second.is_player = true;
-						it->second.is_enabled = flashlight_enabled;
-					}
+							sdk::player_info_t info;
+							if (!intf->m_engine->get_player_info(i, &info)) {
+								continue;
+							}
 
-					/*api::m_flashlights[0].is_enabled = entity->read<bool>(0x14D8);
-					api::m_flashlights[0].is_player = true;
-					api::m_flashlights[0].def.pos = entity->read<Vector>(0x1110);
-					api::m_flashlights[0].def.fwd = entity->read<Vector>(0x111C);
-					api::m_flashlights[0].def.rt = entity->read<Vector>(0x1134);
-					api::m_flashlights[0].def.up = entity->read<Vector>(0x1128);*/
+							auto update_flashlight = [&](const Vector& pos, const Vector& fwd, const Vector& rt, const Vector& up, bool is_enabled, bool is_player_flag)
+								{
+									auto it = api::m_flashlights.find(info.name);
+									if (it == api::m_flashlights.end())
+									{
+										// insert new flashlight data
+										api::m_flashlights[info.name] =
+										{
+											.def = {.pos = pos, .fwd = fwd, .rt = rt, .up = up },
+											.is_player = is_player_flag,
+											.is_enabled = is_enabled
+										};
+									}
+									else
+									{
+										// update existing flashlight data
+										it->second.def.pos = pos;
+										it->second.def.fwd = fwd;
+										it->second.def.rt = rt;
+										it->second.def.up = up;
+										it->second.is_player = is_player_flag;
+										it->second.is_enabled = is_enabled;
+									}
+								};
+
+
+							const auto is_player = i == intf->m_engine->get_local_player();
+							if (!is_player)
+							{
+								const auto& m_fEffects = entity->read<int>(0xE0);
+								const bool flashlight_enabled = m_fEffects & 4;
+
+								const auto& eyepos = entity->get_eye_pos();
+								const auto& angles = entity->read<Vector>(0x196C); // m_angEyeAngles[0] - DT_CSPlayer 
+
+								Vector fwd, rt, up;
+								utils::vector::AngleVectors(angles, &fwd, &rt, &up);
+
+								update_flashlight(eyepos, fwd, rt, up, flashlight_enabled, false);
+							}
+							else
+							{
+								// player
+								const auto& flashlight_enabled = entity->read<bool>(0x14D8);
+								const auto& eyepos = entity->read<Vector>(0x1110);
+								const auto& fwd = entity->read<Vector>(0x111C);
+								const auto& rt = entity->read<Vector>(0x1134);
+								const auto& up = entity->read<Vector>(0x1128);
+
+								update_flashlight(eyepos, fwd, rt, up, flashlight_enabled, true);
+							}
+							break;
+						}
+					}
 				}
-
-				continue;
 			}
-
-			auto entity = reinterpret_cast<sdk::c_base_player*>(intf->m_entity_list->get_client_entity(i));
-
-			if (!entity) {
-				continue;
-			}
-
-			draw_players(entity, i);
 		}
 	}
 
@@ -436,104 +376,8 @@ namespace components
 					api::bridge.CreateLight(&fl.info, &fl.handle);
 				}
 			}
-
-#if 0
-			if (api::m_flashlights[0].handle)
-			{
-				api::bridge.DestroyLight(api::m_flashlights[0].handle);
-				api::m_flashlights[0].handle = nullptr;
-			}
-
-			if (api::m_flashlights[0].is_enabled)
-			{
-				auto& camera_origin = api::m_flashlights[0].def.pos; //*game::get_current_view_origin();
-				auto& camera_fwd = api::m_flashlights[0].def.fwd; //*game::get_current_view_forward();
-				auto& camera_rt = api::m_flashlights[0].def.rt; //*game::get_current_view_right();
-				auto& camera_up = api::m_flashlights[0].def.up; //*game::get_current_view_up();
-
-				auto& info = api::m_flashlights[0].info;
-				auto& ext = api::m_flashlights[0].ext;
-
-
-				ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-				ext.pNext = nullptr;
-				//ext.position = remixapi_Float3D{ 0.0f, 0.0f, 0.0f };
-
-				const auto* im = imgui::get();
-
-				Vector light_org = camera_origin
-					+ (camera_fwd * im->m_flashlight_fwd_offset)
-					+ (camera_up * im->m_flashlight_vert_offset)
-					+ (camera_rt * im->m_flashlight_horz_offset);
-
-				ext.position = light_org.ToRemixFloat3D();
-
-				//ext.position.x = origin->x + fwd->Dot(dir_offset);
-				//ext.position.y = origin->y + rt->Dot(dir_offset);
-				//ext.position.z = origin->z + up->Dot(dir_offset);
-
-				ext.radius = im->m_flashlight_radius;
-				ext.shaping_hasvalue = TRUE;
-				ext.shaping_value = {};
-
-				if (im->m_flashlight_use_custom_dir)
-				{
-					auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
-					ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
-				}
-				else
-				{
-					ext.shaping_value.direction = camera_fwd.ToRemixFloat3D();
-				}
-
-				ext.shaping_value.coneAngleDegrees = im->m_flashlight_angle;
-				ext.shaping_value.coneSoftness = im->m_flashlight_softness;
-				ext.shaping_value.focusExponent = im->m_flashlight_exp;
-
-				info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
-				info.pNext = &api::m_flashlights[0].ext;
-				info.hash = utils::string_hash64("flashlight");
-				info.radiance = remixapi_Float3D{ 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity };
-
-				api::bridge.CreateLight(&api::m_flashlights[0].info, &api::m_flashlights[0].handle);
-			}
-#endif
 		}
 	}
-
-#if 0
-	void on_survivorbot_update(C_ServerSurvivorBotParent* bot)
-	{
-		if (bot)
-		{
-			if (bot->has_flashlight_0xCC & 4)
-			{
-				//game::debug_add_text_overlay(&bot->origin2.x, "Flashlight On", 1, 1.0f, 0.0f, 0.0f, 1.0f);
-				int x = 1;
-			}
-		}
-	}
-
-	HOOK_RETN_PLACE_DEF(survivorbot_update_stub_retn);
-	__declspec(naked) void survivorbot_update_stub()
-	{
-		__asm
-		{
-			// og
-			push    0;
-			mov     ecx, ebx;
-			call    eax;
-
-			pushad;
-			push	ebx;
-			call	on_survivorbot_update;
-			add		esp, 4;
-			popad;
-
-			jmp		survivorbot_update_stub_retn;
-		}
-	}
-#endif
 
 	void on_renderview()
 	{
@@ -969,6 +813,7 @@ namespace components
 		game::cvar_uncheat_and_set_int("cl_tlucfastpath", 0); // 
 		game::cvar_uncheat_and_set_int("cl_modelfastpath", 0); // gain 4-5 fps on some act 4 maps but FF rendering not implemented
 		game::cvar_uncheat_and_set_int("mat_queue_mode", 0); // does improve performance but breaks rendering
+		game::cvar_uncheat_and_set_int("r_queued_ropes", 0);
 		game::cvar_uncheat_and_set_int("mat_softwarelighting", 0);
 		game::cvar_uncheat_and_set_int("mat_parallaxmap", 0);
 		game::cvar_uncheat_and_set_int("mat_frame_sync_enable", 0);
@@ -976,9 +821,12 @@ namespace components
 		game::cvar_uncheat_and_set_int("mat_displacementmap", 0);
 		game::cvar_uncheat_and_set_int("mat_drawflat", 0);
 		game::cvar_uncheat_and_set_int("mat_normalmaps", 0);
+		game::cvar_uncheat_and_set_int("r_flashlightrender", 0); // messes up terrain blending otherwise
+		game::cvar_uncheat_and_set_int("r_flashlightrendermodels", 0);
+		game::cvar_uncheat_and_set_int("r_flashlightrenderworld", 0);
+		game::cvar_uncheat_and_set_int("r_FlashlightDetailProps", 0);
+
 		game::cvar_uncheat_and_set_int("r_3dsky", 1);
-		game::cvar_uncheat_and_set_int("r_skybox_draw_last", 0);
-		game::cvar_uncheat_and_set_int("r_flashlightrender", 0); // fix emissive "bug" when moon portal opens on finale4 
 		game::cvar_uncheat_and_set_int("mat_fullbright", 1);
 		game::cvar_uncheat_and_set_int("mat_softwareskin", 1);
 		game::cvar_uncheat_and_set_int("mat_phong", 1);
@@ -1101,14 +949,8 @@ namespace components
 		// CClientLeafSystem::ExtractCulledRenderables :: disable 'engine->CullBox' check to disable entity culling in leafs
 		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)
 		utils::hook::set<BYTE>(CLIENT_BASE + 0xBDA76, 0xEB);
-
-		// SurvivorBot::Update :: On Flashlight On/Off
-		/*utils::hook::nop(SERVER_BASE + 0x39DA4A, 6);
-		utils::hook(SERVER_BASE + 0x39DA4A, survivorbot_update_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(survivorbot_update_stub_retn, SERVER_BASE + 0x39DA50);*/
 	}
 
 	main_module::~main_module()
-	{
-	}
+	{ }
 }
