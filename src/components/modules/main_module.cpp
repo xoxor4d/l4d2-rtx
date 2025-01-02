@@ -269,7 +269,9 @@ namespace components
 	// Return 0 to NOT cull the node
 	int r_cullnode_wrapper(mnode_t* node)
 	{
-		// disable frustum culling for now
+		if (game::get_viewid() == VIEW_3DSKY) {
+			return utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node);
+		}
 
 		if (imgui::get()->m_disable_cullnode) {
 			return 0;

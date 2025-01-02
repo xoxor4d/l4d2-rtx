@@ -339,49 +339,6 @@ namespace components
 		extern LPDIRECT3DTEXTURE9 white;
 	}
 
-	namespace tex_infected
-	{
-		struct entry_s
-		{
-			LPDIRECT3DTEXTURE9 tex = nullptr;
-			bool initialized = false;
-
-			LPDIRECT3DTEXTURE9 init(const std::string& filename)
-			{
-				if (initialized) {
-					return tex;
-				}
-				
-				const auto hr = D3DXCreateTextureFromFileA(game::get_d3d_device(), (std::string("l4d2-rtx\\textures\\infected\\") + filename).c_str(), &tex);
-				if (SUCCEEDED(hr))
-				{
-					initialized = true;
-					return tex;
-				}
-
-				return nullptr;
-			}
-
-			void release()
-			{
-				if (tex) 
-				{
-					tex->Release();
-					initialized = false;
-				}
-			}
-		};
-
-		// ----
-
-		extern entry_s bphf_tanktop_jeans;
-
-		inline void release_all()
-		{
-			if (bphf_tanktop_jeans.initialized) bphf_tanktop_jeans.release();
-		}
-	}
-
 	class model_render : public component
 	{
 	public:

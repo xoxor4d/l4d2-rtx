@@ -1,9 +1,6 @@
 #include "std_include.hpp"
 
-// surface dual render (displacement with blending) gets invisible when skinned objects are moved?
-// eg terrain gets invisible if cube is picked up?
-
-#define ENABLE_3D_SKY 0
+//#define ENABLE_3D_SKY 1
 
 namespace components
 {
@@ -256,12 +253,15 @@ namespace components
 			}
 		}
 
-#if ENABLE_3D_SKY
-		// needed for 3d skybox
-		dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-#endif
+//#if ENABLE_3D_SKY
+		if (imgui::get()->m_enable_3dsky)
+		{
+			// needed for 3d skybox
+			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+			dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+		}
+//#endif
 
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
