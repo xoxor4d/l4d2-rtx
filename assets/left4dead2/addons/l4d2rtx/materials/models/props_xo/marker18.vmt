@@ -1,0 +1,5 @@
+"VertexlitGeneric"
+{
+    "$basetexture" "models\props_xo\marker18"
+    $selfillum 1
+}
