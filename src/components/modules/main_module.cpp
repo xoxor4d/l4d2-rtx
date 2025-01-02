@@ -6,6 +6,9 @@ namespace components
 	int g_current_leaf = -1;
 	int g_current_area = -1;
 
+	bool g_player_leaf_update = false;
+	map_settings::area_overrides_s* g_player_current_area_override = nullptr; // contains overrides for the current area, nullptr if no overrides exist
+
 	void on_renderview()
 	{
 		//model_render::get()->m_drew_hud = false;
@@ -43,7 +46,18 @@ namespace components
 			dev->SetMaterial(&dmat);
 		}
 
+		// ----
+		// ----
+
+		//choreo_events::on_client_frame();
+		remix_vars::on_client_frame();
+		remix_lights::on_client_frame();
+
 		main_module::force_cvars();
+
+		// TODO - find better spot to call this
+		map_settings::spawn_markers_once();
+		model_render::draw_nocull_markers();
 
 		// CM_PointLeafnum :: get current leaf
 		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
@@ -52,6 +66,25 @@ namespace components
 		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); 
 
 		remix_api::get()->on_renderview();
+
+		// fog
+		if (static bool allow_fog = !flags::has_flag("no_fog"); allow_fog)
+		{
+			const auto& s = map_settings::get_map_settings();
+			if (s.fog_dist > 0.0f)
+			{
+				const float fog_start = 1.0f; // not useful
+				dev->SetRenderState(D3DRS_FOGENABLE, TRUE);
+				dev->SetRenderState(D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR);
+				dev->SetRenderState(D3DRS_FOGSTART, *(DWORD*)&fog_start);
+				dev->SetRenderState(D3DRS_FOGEND, *(DWORD*)&s.fog_dist);
+				dev->SetRenderState(D3DRS_FOGCOLOR, s.fog_color);
+			}
+			else
+			{
+				dev->SetRenderState(D3DRS_FOGENABLE, FALSE);
+			}
+		}
 	}
 
 	HOOK_RETN_PLACE_DEF(cviewrenderer_renderview_retn);
@@ -269,31 +302,67 @@ namespace components
 	// Return 0 to NOT cull the node
 	int r_cullnode_wrapper(mnode_t* node)
 	{
-		if (game::get_viewid() == VIEW_3DSKY) {
+		if (game::get_viewid() == VIEW_3DSKY || game::get_viewid() == VIEW_MONITOR) {
 			return utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node);
 		}
 
-		if (imgui::get()->m_disable_cullnode) {
+		// default culling mode or no culling if cmd was used
+		map_settings::AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_MODE_DEFAULT;
+		int node_index = 0;
+
+		/*if (imgui::get()->m_disable_cullnode) {
+			return 0;
+		}*/
+
+		// check if we have area overrides
+		if (g_player_current_area_override)
+		{
+			// set area cull mode
+			cmode = g_player_current_area_override->cull_mode;
+
+			// calculate index of leaf/node
+			if (node->contents >= 0) { // this is a leaf
+				node_index = (mleaf_t*)node - &game::get_hoststate_worldbrush_data()->leafs[0];
+			}
+			else { // this is a node
+				node_index = node - &game::get_hoststate_worldbrush_data()->nodes[0];
+			}
+
+			// check if this node was forced visible
+			if (!g_player_current_area_override->leafs.contains(node_index))
+			{
+				// if node not forced, iterate all hidden area entries
+				for (const auto& hidden_area : g_player_current_area_override->hide_areas)
+				{
+					// check if node is part of a hidden area but only cull if the player is not in a specified leaf
+					if (hidden_area.areas.contains((std::uint32_t)node->area)
+						&& !hidden_area.when_not_in_leafs.contains(g_current_leaf))
+					{
+						return 1;
+					}
+				}
+
+				// check if this leaf is set to be hidden
+				if (g_player_current_area_override->hide_leafs.contains(node_index)) {
+					return 1;
+				}
+			}
+		}
+
+		// draw node if culling mode is set to 'no culling'
+		if (cmode == map_settings::AREA_CULL_MODE_NO_FRUSTUM) {
 			return 0;
 		}
 
 
-		bool is_leaf = node->contents >= 0;
+		/*bool is_leaf = node->contents >= 0;
 		const auto world = game::get_hoststate_worldbrush_data();
 		int idx = is_leaf ? ((mleaf_t*)node - &world->leafs[0]) : (node - &world->nodes[0]);
-
-		if (idx == 3174)
-		{
-			int x = 1;
-		}
-
 		if (idx == 3152 || idx == 3136)
 		{
 			int x = 1;
 			return 0;
-		}
-
-
+		}*/
 
 		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
 		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) {
@@ -302,15 +371,25 @@ namespace components
 
 		// ^ R_CullNode would cull the node if we reach this point
 		// MODE: force all leafs/nodes in CURRENT area
-		//if (!g_player_current_area_override || cmode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		if (!g_player_current_area_override || cmode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
 		{
-			
-			if (imgui::get()->m_enable_area_forcing) 
-			{
-				// force draw this node/leaf if it's within the forced area
-				if ((int)node->area == g_current_area) {
-					return 0;
-				}
+			// force draw this node/leaf if it's within the forced area
+			if ((int)node->area == g_current_area) {
+				return 0;
+			}
+		}
+
+		// check if we have area overrides
+		if (g_player_current_area_override)
+		{
+			// check if this leaf/node is part of a forced area
+			if (g_player_current_area_override->areas.contains((std::uint32_t)node->area)) {
+				return 0;
+			}
+
+			// check if this leaf/node is force enabled
+			if (g_player_current_area_override->leafs.contains(node_index)) {
+				return 0;
 			}
 		}
 
@@ -355,54 +434,188 @@ namespace components
 	}
 
 
+	// Trigger leaf/node forcing logic and updates 'g_player_current_area_override' when 'pre_recursive_world_node()' gets called
+	void main_module::trigger_vis_logic()
+	{
+		g_player_leaf_update = true;
+		g_player_current_area_override = nullptr;
+	}
+
 	void pre_recursive_world_node()
 	{
-		if (game::get_viewid() != VIEW_3DSKY)
+		if (game::get_viewid() == VIEW_3DSKY || game::get_viewid() == VIEW_MONITOR) {
+			return;
+		}
+
+		const auto world = game::get_hoststate_worldbrush_data();
+		auto& map_settings = map_settings::get_map_settings();
+
+		// draw leaf index
+		if (g_current_leaf < world->numleafs)
 		{
-			const auto world = game::get_hoststate_worldbrush_data();
-
-			// show leaf index as 3D text
-			if (g_current_leaf < world->numleafs)
+			if (remix_api::is_node_debug_enabled())
 			{
-				if (remix_api::is_node_debug_enabled())
-				{
-					const auto curr_leaf = &world->leafs[g_current_leaf];
-					remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN);
-				}
+				const auto curr_leaf = &world->leafs[g_current_leaf];
+				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN);
 			}
+		}
 
+		// #
+		// leaf/node forcing
 
-			//if (!g_player_current_area_override || g_player_current_area_override->cull_mode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		// We have to set all nodes from the target leaf to the root node or the node the the player is in to the current visframe
+		// Otherwise, 'R_RecursiveWorldNode' will never reach the target leaf
+
+		if (!map_settings.area_settings.empty())
+		{
+			//if (leaf_update)
+			//if (g_player_leaf_update)
 			{
-				/*for (auto i = 0; i < world->numnodes; i++)
-				{
-					world->nodes[i].visframe = game::get_visframecount();
-				}*/
+				g_player_current_area_override = nullptr;
 
-				for (auto i = 0; i < world->numleafs; i++) 
+				if (const auto& t = map_settings.area_settings.find(g_current_area);
+					t != map_settings.area_settings.end())
 				{
-					// leaf forcing test of disp
-					if (i == 3152 || i == 3136) 
-					{
-						force_leaf_vis(i);
-					} 
+					g_player_current_area_override = &t->second; // cache
 
-					if (i == 3174) 
+					// force all specified leafs/nodes
+					for (const auto& l : g_player_current_area_override->leafs)
 					{
-						int x = 1;
+						if (l < static_cast<std::uint32_t>(world->numleafs)) {
+							force_leaf_vis(l); // force leaf to be visible
+						}
 					}
 
-					if (imgui::get()->m_enable_area_forcing)
+					// force all leafs/nodes in specified areas
+					if (!g_player_current_area_override->areas.empty())
 					{
-						if (auto& l = world->leafs[i];
-							(int)l.area == g_current_area)
+						for (auto i = 0; i < world->numleafs; i++)
 						{
-							force_leaf_vis(i);
+							if (const auto& l = world->leafs[i];
+								g_player_current_area_override->areas.contains((std::uint32_t)l.area))
+							{
+								force_leaf_vis(i);
+							}
 						}
 					}
 				}
 			}
 		}
+		else {
+			g_player_current_area_override = nullptr;
+		}
+
+		// MODE: force all leafs/nodes in current area
+		if (!g_player_current_area_override || g_player_current_area_override->cull_mode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		{
+			for (auto i = 0; i < world->numleafs; i++)
+			{
+				if (auto& l = world->leafs[i];
+					(int)l.area == g_current_area)
+				{
+					force_leaf_vis(i);
+				}
+			}
+		}
+
+		// leaf transitions
+		if (g_player_leaf_update && !map_settings.leaf_transitions.empty())
+		{
+			for (auto t = map_settings.leaf_transitions.begin(); t != map_settings.leaf_transitions.end();)
+			{
+				bool iterpp = false;
+				bool trigger_transition = false;
+
+				const bool keep_transition = t->mode >= map_settings::ALWAYS_ON_ENTER;
+				const bool trigger_on_enter = t->mode == map_settings::ONCE_ON_ENTER || t->mode == map_settings::ALWAYS_ON_ENTER;
+				const bool trigger_on_leave = t->mode == map_settings::ONCE_ON_LEAVE || t->mode == map_settings::ALWAYS_ON_LEAVE;
+
+				if (t->leafs.contains(g_current_leaf))
+				{
+					if (!t->_state_enter) // first time we enter the leafset
+					{
+						if (trigger_on_enter) {
+							trigger_transition = true;
+						}
+
+						t->_state_enter = true;
+					}
+				}
+
+				// no longer touching any leaf in this set
+				else
+				{
+					if (t->_state_enter) // player just moved out of the leafset
+					{
+						if (trigger_on_leave) {
+							trigger_transition = true;
+						}
+					}
+
+					t->_state_enter = false;
+				}
+
+				if (trigger_transition)
+				{
+					bool can_add_transition = true;
+
+					// do not allow the same transition twice
+					for (const auto& ip : remix_vars::interpolate_stack)
+					{
+						if (ip.identifier == t->hash)
+						{
+							can_add_transition = false;
+							break;
+						}
+					}
+
+					if (can_add_transition)
+					{
+						remix_vars::parse_and_apply_conf_with_lerp(
+							t->config_name,
+							t->hash,
+							t->interpolate_type,
+							t->duration,
+							t->delay_in,
+							t->delay_out);
+
+						if (!keep_transition)
+						{
+							t = map_settings.leaf_transitions.erase(t);
+							iterpp = true; // erase returns the next iterator
+						}
+					}
+				}
+
+				if (!iterpp) {
+					++t;
+				}
+			}
+		}
+#if 0
+		for (auto i = 0; i < world->numleafs; i++) 
+		{
+			// leaf forcing test of disp
+			if (i == 3152 || i == 3136) 
+			{
+				force_leaf_vis(i);
+			} 
+
+			if (i == 3174) 
+			{
+				int x = 1;
+			}
+
+			if (imgui::get()->m_enable_area_forcing)
+			{
+				if (auto& l = world->leafs[i];
+					(int)l.area == g_current_area)
+				{
+					force_leaf_vis(i);
+				}
+			}
+		}
+#endif
 	}
 
 #if USE_BUILD_WORLD_LIST_NOCULL
@@ -430,6 +643,95 @@ namespace components
 			jmp		pre_recursive_world_node_retn;
 		}
 	}
+
+	/**
+	 * Called from CModelLoader::Map_LoadModel
+	 * @param map_name  Name of loading map
+	 */
+	void on_map_load_hk(const char* map_name)
+	{
+		remix_vars::on_map_load();
+		remix_lights::on_map_load();
+		map_settings::on_map_load(map_name);
+		main_module::force_cvars();
+	}
+
+	HOOK_RETN_PLACE_DEF(on_map_load_stub_retn);
+	__declspec(naked) void on_map_load_stub()
+	{
+		__asm
+		{
+			pushad;
+			push    eax;
+			call	on_map_load_hk;
+			add		esp, 4;
+			popad;
+
+			// og
+			lea     ecx, [edi + 0x68];
+			xor		edx, edx;
+			jmp		on_map_load_stub_retn;
+
+		}
+	}
+
+	/**
+	 * Called from Host_Disconnect
+	 * on: disconnect, restart, killserver, stopdemo ...
+	 */
+	void on_host_disconnect_hk()
+	{
+		//choreo_events::reset_all();
+		main_module::trigger_vis_logic();
+
+		// ----------
+
+		map_settings::on_map_unload();
+	}
+
+	HOOK_RETN_PLACE_DEF(on_host_disconnect_retn);
+	__declspec(naked) void on_host_disconnect_stub()
+	{
+		__asm
+		{
+			pushad;
+			call	on_host_disconnect_hk;
+			popad;
+
+			// og
+			mov     ebp, esp;
+			sub     esp, 0x10;
+			jmp		on_host_disconnect_retn;
+		}
+	}
+
+	/**
+	 * Called from Host_Changelevel
+	 * Host_Disconnect is not called when this triggers
+	 */
+	void on_host_change_level_hk()
+	{
+		on_host_disconnect_hk();
+	}
+
+	HOOK_RETN_PLACE_DEF(on_host_change_level_retn);
+	__declspec(naked) void on_host_change_level_stub()
+	{
+		__asm
+		{
+			pushad;
+			call	on_host_change_level_hk;
+			popad;
+
+			// og
+			push    0x60;
+			lea     ecx, [ebp - 0x64];
+			jmp		on_host_change_level_retn;
+		}
+	}
+
+	// #
+	// #
 
 	void main_module::force_cvars()
 	{
@@ -559,6 +861,19 @@ namespace components
 
 		// #
 		// events
+
+		// CModelLoader::Map_LoadModel :: called on map load
+		utils::hook(ENGINE_BASE + 0xEE05C, on_map_load_stub).install()->quick();
+		HOOK_RETN_PLACE(on_map_load_stub_retn, ENGINE_BASE + 0xEE061);
+
+		// Host_Disconnect :: called on map unload
+		utils::hook(ENGINE_BASE + 0x192F11, on_host_disconnect_stub).install()->quick();
+		HOOK_RETN_PLACE(on_host_disconnect_retn, ENGINE_BASE + 0x192F16);
+
+		utils::hook(ENGINE_BASE + 0x18D048, on_host_change_level_stub).install()->quick();
+		HOOK_RETN_PLACE(on_host_change_level_retn, ENGINE_BASE + 0x18D04D);
+
+		// --
 
 		// CViewRender::RenderView :: "start" of current frame (after CViewRender::DrawMonitors)
 		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick();

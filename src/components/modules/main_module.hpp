@@ -16,5 +16,6 @@ namespace components
 
 		static void iterate_entities();
 		static void force_cvars();
+		static void trigger_vis_logic();
 	};
 }

@@ -78,6 +78,16 @@ namespace game
 			(pos, line_offset, 0.0f, r, g, b, a, text);
 	}
 
+	// remove/destroy a given CBaseEntity
+	void cbaseentity_remove(void* cbaseentity_ptr)
+	{
+		if (cbaseentity_ptr)
+		{
+			// UTIL_Remove
+			utils::hook::call<void(__cdecl)(void* cbaseentity)>(SERVER_BASE + 0x2071E0)(cbaseentity_ptr);
+		}
+	}
+
 	void cvar_uncheat(const char* name)
 	{
 		if (const auto ivar = game::get_icvar(); ivar)

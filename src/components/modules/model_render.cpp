@@ -11,11 +11,6 @@ namespace components
 		LPDIRECT3DTEXTURE9 white;
 	}
 
-	namespace tex_infected
-	{
-		entry_s bphf_tanktop_jeans;
-	}
-
 	void model_render::init_texture_addons(bool release)
 	{
 		if (release)
@@ -173,6 +168,71 @@ namespace components
 #endif
 	}
 
+	// draw 'nocull' map_setting marker meshes
+	void model_render::draw_nocull_markers()
+	{
+		const auto& msettings = map_settings::get_map_settings();
+
+		// early out
+		if (msettings.map_markers.empty()) {
+			return;
+		}
+
+		const auto dev = game::get_d3d_device();
+
+		struct vertex {
+			D3DXVECTOR3 position; D3DCOLOR color; float tu, tv;
+		};
+
+		// save & restore after drawing
+		IDirect3DVertexShader9* og_vs = nullptr;
+		dev->GetVertexShader(&og_vs);
+		dev->SetVertexShader(nullptr);
+
+		IDirect3DBaseTexture9* og_tex = nullptr;
+		dev->GetTexture(0, &og_tex);
+		dev->SetTexture(0, tex_addons::white);
+
+		DWORD og_rs;
+		dev->GetRenderState((D3DRENDERSTATETYPE)150, &og_rs);
+
+		dev->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+		D3DXMATRIX mtx = game::IDENTITY;
+
+		for (auto& m : msettings.map_markers)
+		{
+			// ignore normal markers
+			if (!m.no_cull) {
+				continue;
+			}
+
+			const float f_index = static_cast<float>(m.index);
+			const vertex mesh_verts[4] =
+			{
+				D3DXVECTOR3(-1.337f - (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, 0), 0.0f, f_index / 100.0f,
+				D3DXVECTOR3(1.337f + (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, m.index, 0), f_index / 100.0f, 0.0,
+				D3DXVECTOR3(1.337f + (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, 0, m.index), 0.0f, f_index / 100.0f,
+				D3DXVECTOR3(-1.337f - (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, m.index), 0.0f, f_index / 100.0f,
+			};
+
+			mtx.m[3][0] = m.origin[0];
+			mtx.m[3][1] = m.origin[1];
+			mtx.m[3][2] = m.origin[2];
+
+			// set remix texture hash ~req. dxvk-runtime changes - not really needed
+			dev->SetRenderState((D3DRENDERSTATETYPE)150, 100 + m.index);
+
+			dev->SetTransform(D3DTS_WORLD, &mtx);
+			dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, mesh_verts, sizeof(vertex));
+		}
+
+		// restore
+		dev->SetVertexShader(og_vs);
+		dev->SetTexture(0, og_tex);
+		dev->SetRenderState((D3DRENDERSTATETYPE)150, og_rs);
+		dev->SetFVF(NULL);
+		dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
+	}
 
 	// 
 	// main render path for every surface

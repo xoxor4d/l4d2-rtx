@@ -127,13 +127,12 @@ namespace components
 			SPACING_INDENT_END;
 		}
 
-		if (ImGui::CollapsingHeader("Culling", ImGuiTreeNodeFlags_DefaultOpen))
+		if (ImGui::CollapsingHeader("Culling / Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			SPACING_INDENT_BEGIN;
-
 			ImGui::Checkbox("Disable R_CullNode", &m_disable_cullnode);
 			ImGui::Checkbox("Enable Area Forcing", &m_enable_area_forcing);
-
+			ImGui::Checkbox("Enable 3D Sky", &m_enable_3dsky);
 			SPACING_INDENT_END;
 		}
 

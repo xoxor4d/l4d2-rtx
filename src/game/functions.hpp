@@ -50,6 +50,7 @@ namespace game
 	extern void con_add_command(ConCommand* cmd, const char* name, void(__cdecl* callback)(), const char* desc);
 	extern void debug_add_text_overlay(const float* pos, float duration, const char* text);
 	extern void debug_add_text_overlay(const float* pos, const char* text, int line_offset = 0, float r = 1.0f, float g = 1.0f, float b = 1.0f, float a = 1.0f);
+	extern void cbaseentity_remove(void* cbaseentity_ptr);
 
 	extern void cvar_uncheat(const char* name);
 	extern void cvar_uncheat_and_set_int(const char* name, int val);

@@ -348,6 +348,8 @@ namespace components
 		static inline model_render* p_this = nullptr;
 		static model_render* get() { return p_this; }
 
+		static void draw_nocull_markers();
+
 		static void init_texture_addons(bool release = false);
 		static inline prim_fvf_context primctx {};
 
