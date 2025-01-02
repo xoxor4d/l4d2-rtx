@@ -1,4 +1,5 @@
 #include "std_include.hpp"
+#define USE_BUILD_WORLD_LIST_NOCULL 1
 
 namespace components
 {
@@ -203,6 +204,10 @@ namespace components
 		int next_node_index = node_index;
 		while (next_node_index >= 0)
 		{
+			if (node_index == g_current_leaf) {
+				break;
+			}
+
 			const auto node = &world->nodes[next_node_index];
 
 			if (!hide)
@@ -265,7 +270,28 @@ namespace components
 	int r_cullnode_wrapper(mnode_t* node)
 	{
 		// disable frustum culling for now
-		//return 0;
+
+		if (imgui::get()->m_disable_cullnode) {
+			return 0;
+		}
+
+
+		bool is_leaf = node->contents >= 0;
+		const auto world = game::get_hoststate_worldbrush_data();
+		int idx = is_leaf ? ((mleaf_t*)node - &world->leafs[0]) : (node - &world->nodes[0]);
+
+		if (idx == 3174)
+		{
+			int x = 1;
+		}
+
+		if (idx == 3152 || idx == 3136)
+		{
+			int x = 1;
+			return 0;
+		}
+
+
 
 		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
 		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) {
@@ -276,9 +302,13 @@ namespace components
 		// MODE: force all leafs/nodes in CURRENT area
 		//if (!g_player_current_area_override || cmode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
 		{
-			// force draw this node/leaf if it's within the forced area
-			if ((int)node->area == g_current_area) {
-				return 0;
+			
+			if (imgui::get()->m_enable_area_forcing) 
+			{
+				// force draw this node/leaf if it's within the forced area
+				if ((int)node->area == g_current_area) {
+					return 0;
+				}
 			}
 		}
 
@@ -293,18 +323,30 @@ namespace components
 		__asm
 		{
 			pushad;
+#if USE_BUILD_WORLD_LIST_NOCULL
+			push	esi;
+#else
 			push	ebx;
+#endif
 			call	r_cullnode_wrapper; // return 0 to not jump
 			add		esp, 4;
 			test	eax, eax;
 			jz		SKIP; // jump if eax = 0
 			popad;
 
+#if USE_BUILD_WORLD_LIST_NOCULL
+			mov     ecx, [ebp - 4];
+#endif
 			add     esp, 4; // og
 			jmp		r_cullnode_cull_retn;
 
 		SKIP:
 			popad;
+
+#if USE_BUILD_WORLD_LIST_NOCULL
+			mov     ecx, [ebp - 4];
+#endif
+
 			add     esp, 4; // og
 			jmp		r_cullnode_skip_retn;
 		}
@@ -313,32 +355,57 @@ namespace components
 
 	void pre_recursive_world_node()
 	{
-		const auto world = game::get_hoststate_worldbrush_data();
-
-		// show leaf index as 3D text
-		if (g_current_leaf < world->numleafs)
-		{
-			if (remix_api::is_node_debug_enabled())
-			{
-				const auto curr_leaf = &world->leafs[g_current_leaf];
-				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN);
-			}
-		}
-
 		if (game::get_viewid() != VIEW_3DSKY)
-		//if (!g_player_current_area_override || g_player_current_area_override->cull_mode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
 		{
-			for (auto i = 0; i < world->numleafs; i++)  
+			const auto world = game::get_hoststate_worldbrush_data();
+
+			// show leaf index as 3D text
+			if (g_current_leaf < world->numleafs)
 			{
-				if (auto& l = world->leafs[i];
-					(int)l.area == g_current_area)
+				if (remix_api::is_node_debug_enabled())
 				{
-					force_leaf_vis(i);
+					const auto curr_leaf = &world->leafs[g_current_leaf];
+					remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN);
+				}
+			}
+
+
+			//if (!g_player_current_area_override || g_player_current_area_override->cull_mode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+			{
+				/*for (auto i = 0; i < world->numnodes; i++)
+				{
+					world->nodes[i].visframe = game::get_visframecount();
+				}*/
+
+				for (auto i = 0; i < world->numleafs; i++) 
+				{
+					// leaf forcing test of disp
+					if (i == 3152 || i == 3136) 
+					{
+						force_leaf_vis(i);
+					} 
+
+					if (i == 3174) 
+					{
+						int x = 1;
+					}
+
+					if (imgui::get()->m_enable_area_forcing)
+					{
+						if (auto& l = world->leafs[i];
+							(int)l.area == g_current_area)
+						{
+							force_leaf_vis(i);
+						}
+					}
 				}
 			}
 		}
 	}
 
+#if USE_BUILD_WORLD_LIST_NOCULL
+	HOOK_RETN_PLACE_DEF(p_build_world_list_no_cull_func);
+#endif
 	HOOK_RETN_PLACE_DEF(pre_recursive_world_node_retn);
 	__declspec(naked) void pre_recursive_world_node_stub()
 	{
@@ -348,9 +415,16 @@ namespace components
 			call	pre_recursive_world_node;
 			popad;
 
+#if USE_BUILD_WORLD_LIST_NOCULL
+			// og
+			mov     ecx, [edx + 0x50];
+			push	ebx;
+			call	p_build_world_list_no_cull_func;
+#else
 			// og
 			mov     edx, [eax + 0x50];
 			mov     ecx, ebx;
+#endif
 			jmp		pre_recursive_world_node_retn;
 		}
 	}
@@ -413,6 +487,13 @@ namespace components
 		game::cvar_uncheat_and_set_int("mat_phong", 1);
 		game::cvar_uncheat_and_set_int("mat_fastnobump", 1);
 		game::cvar_uncheat_and_set_int("mat_disable_bloom", 1);
+
+
+		// TODO: HACK
+		// remove when displacement-backface culling check is found - currently in use so that
+		// displacements are rendered when leaf is forced
+		game::cvar_uncheat_and_set_int("r_DispWalkable", 1); 
+
 
 		// graphic settings
 
@@ -489,11 +570,33 @@ namespace components
 		// #
 		// culling
 
+		// CDispInfo::Render :: disable 'Frustum_t::CullBox' check
+		utils::hook::nop(ENGINE_BASE + 0xB13E5, 2);
+
+#if USE_BUILD_WORLD_LIST_NOCULL
+		// R_RecursiveWorldNodeNoCull:: use 'R_BuildWorldListNoCull' instead of 'R_RecursiveWorldNode'
+		utils::hook::nop(ENGINE_BASE + 0xD162D, 2);
+
+		// stub before calling 'R_RecursiveWorldNode' to override node/leaf vis
+		utils::hook::nop(ENGINE_BASE + 0xD1635, 9);
+		utils::hook(ENGINE_BASE + 0xD1635, pre_recursive_world_node_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(p_build_world_list_no_cull_func, ENGINE_BASE + 0xCD630);
+		HOOK_RETN_PLACE(pre_recursive_world_node_retn, ENGINE_BASE + 0xD163E);
+
+		// ^ :: while( ... node->contents < -1 .. ) -> jl to jle .. to jmp to cull less (same as returning 0 in cullnode)
+		utils::hook::set<BYTE>(ENGINE_BASE + 0xCD665, 0x7E); // needed?
+
+		// ^ :: while( ... !R_CullNode) - wrapper function to impl. additional culling control (force areas/leafs + use frustum culling when needed)
+		utils::hook(ENGINE_BASE + 0xCD668, r_cullnode_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(r_cullnode_cull_retn, ENGINE_BASE + 0xCD68F);
+		HOOK_RETN_PLACE(r_cullnode_skip_retn, ENGINE_BASE + 0xCD677);
+
+#else
 		// stub before calling 'R_RecursiveWorldNode' to override node/leaf vis
 		utils::hook(ENGINE_BASE + 0xD1648, pre_recursive_world_node_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(pre_recursive_world_node_retn, ENGINE_BASE + 0xD164D);
 
-		// ^ :: while( ... node->contents < -1 .. ) -> jl to jle
+		// ^ :: while( ... node->contents < -1 .. ) -> jl to jle .. to jmp to cull less
 		utils::hook::set<BYTE>(ENGINE_BASE + 0xCD7E5, 0x7E);
 
 		// ^ :: while( ... !R_CullNode) - wrapper function to impl. additional culling control (force areas/leafs + use frustum culling when needed)
@@ -509,6 +612,7 @@ namespace components
 
 		// R_DrawLeaf :: backface check (emissive lamps) plane normal >= -0.00999f
 		utils::hook::nop(ENGINE_BASE + 0xCD4E7, 6); // ^ 
+#endif
 
 		// CBrushBatchRender::DrawOpaqueBrushModel :: :: backface check - nop 'if ( bShadowDepth )' to disable culling
 		utils::hook::nop(ENGINE_BASE + 0xD2250, 2);
@@ -516,6 +620,14 @@ namespace components
 		// CClientLeafSystem::ExtractCulledRenderables :: disable 'engine->CullBox' check to disable entity culling in leafs
 		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)
 		utils::hook::set<BYTE>(CLIENT_BASE + 0xBDA76, 0xEB);
+
+		// not req. rn
+		// CSimpleWorldView::Setup :: nop 'DoesViewPlaneIntersectWater' check
+		//utils::hook::nop(CLIENT_BASE + 0x1CF46F, 2);
+		// ^ next instruction :: OR m_DrawFlags with 0x60 instead of 0x30
+		//utils::hook::set<BYTE>(CLIENT_BASE + 0x1CF471 + 6, 0x60);
+
+		// engine 0xB3383 - no cull overlay decals (no need)
 	}
 
 	main_module::~main_module()

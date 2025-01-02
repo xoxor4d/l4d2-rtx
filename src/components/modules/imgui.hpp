@@ -21,6 +21,11 @@ namespace components
 		bool m_initialized_device = false;
 #endif
 
+		// the following default values will be used on release builds
+
+		bool m_disable_cullnode = false;
+		bool m_enable_area_forcing = true;
+
 		float m_flashlight_fwd_offset = 0.0f;
 		float m_flashlight_horz_offset = 0.0f;
 		float m_flashlight_vert_offset = 0.0f;

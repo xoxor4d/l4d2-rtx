@@ -34,6 +34,7 @@ namespace sdk
 		unsigned int get_engine_build_number();
 		const char* get_product_version_string();
 		void execute_client_cmd(const char* m_cmd);
+		void execute_client_cmd_unrestricted(const char* m_cmd);
 		int get_app_id();
 		bool is_hltv();
 		bool is_taking_screenshot();

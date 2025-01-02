@@ -95,6 +95,12 @@ namespace sdk
 		using original_fn = void(__thiscall*)(engine_client*, const char*);
 		return (*(original_fn * *)this)[103](this, m_cmd);
 	}
+
+	void engine_client::execute_client_cmd_unrestricted(const char* m_cmd)
+	{
+		using original_fn = void(__thiscall*)(engine_client*, const char*);
+		return (*(original_fn**)this)[107](this, m_cmd);
+	}
 	
 	int engine_client::get_app_id()
 	{

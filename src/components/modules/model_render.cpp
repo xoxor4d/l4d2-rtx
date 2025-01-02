@@ -424,7 +424,7 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x480003)
 		{
 			//ctx.modifiers.do_not_render = true;
-			ctx.save_vs(dev);
+			ctx.save_vs(dev); 
 			dev->SetVertexShader(nullptr);
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2);
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
@@ -587,13 +587,18 @@ namespace components
 			//lookat_vertex_decl(dev);
 		}
 
-		// shader: VertexLitGeneric (stride 0x20)
+		// shader: VertexLitGeneric, UnlitGeneric (stride 0x20)
 		// > decals/wood/wood3
 		// > decals/metal/metal04
+		// > debug/debugtranslucentsinglecolor
 		else if (mesh->m_VertexFormat == 0x80003)
 		{
+			// TODO - HACK: see r_DispWalkable note in main_module
+			if (ctx.info.material_name.starts_with("debug/")) {
+				ctx.modifiers.do_not_render = true;
+			}
 			//ctx.modifiers.do_not_render = true;
-			lookat_vertex_decl(dev);
+			lookat_vertex_decl(dev); 
 		}
 
 		// shader: UnlitGeneric (stride 0x30)
@@ -699,12 +704,14 @@ namespace components
 		// shader: LightmappedGeneric, WorldVertexTransition_DX9 (terrain decals)
 		// > buildings/blend_roof_01
 		// > decals/burn02a
-		else if (mesh->m_VertexFormat == 0x480007)
+		else if (mesh->m_VertexFormat == 0x480007) 
 		{
 			//ctx.modifiers.do_not_render = true;
 
-			if (ctx.info.shader_name == "WorldVertexTransition_DX9") {
-				ctx.modifiers.dual_render_with_basetexture2 = true;
+			if (ctx.info.shader_name == "WorldVertexTransition_DX9") 
+			{
+				ctx.save_texture(dev, 0); // helps with culling issue
+				ctx.modifiers.dual_render_with_basetexture2 = true;  
 			}
 
 			// m_BoundTexture[7]  = first blend colormap
@@ -829,10 +836,17 @@ namespace components
 		}
 
 		// Sprite shader
-		else if (mesh->m_VertexFormat == 0x914900005)
+		else if (mesh->m_VertexFormat == 0x914900005) 
 		{
 			ctx.modifiers.do_not_render = false;
 			//int x = 1; 
+		}
+
+		// shader: Refract_DX90
+		// particle/warp_rain
+		else if (mesh->m_VertexFormat == 0x80037)
+		{
+			ctx.modifiers.do_not_render = false;
 		}
 
 		else 

@@ -5,13 +5,17 @@
 
 // Allow us to directly call the ImGui WndProc function.
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
+
+#define SPACING_INDENT_BEGIN ImGui::Spacing(); ImGui::Indent()
+#define SPACING_INDENT_END ImGui::Spacing(); ImGui::Unindent()
+
 #endif
 
 namespace components
 {
 #if USE_IMGUI
 	WNDPROC g_game_wndproc = nullptr;
-
+	
 	LRESULT __stdcall wnd_proc_hk(HWND window, UINT message_type, WPARAM wparam, LPARAM lparam)
 	{
 		if (imgui::get()->input_message(message_type, wparam, lparam)) {
@@ -69,35 +73,110 @@ namespace components
 
 	void imgui::devgui()
 	{
-		if (!ImGui::Begin("Dear ImGui Demo", &m_menu_active))
+		if (!ImGui::Begin("Devgui", &m_menu_active))
 		{
 			ImGui::End();
 			return;
 		}
 
-		if (ImGui::CollapsingHeader("Player Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::DragFloat("Forward Offset", &m_flashlight_fwd_offset, 0.1f);
-			ImGui::DragFloat("Horizontal Offset", &m_flashlight_horz_offset, 0.1f);
-			ImGui::DragFloat("Vertical Offset", &m_flashlight_vert_offset, 0.1f);
-
-			ImGui::DragFloat("Intensity", &m_flashlight_intensity, 0.1f);
-			ImGui::DragFloat("Radius", &m_flashlight_radius, 0.1f);
-
-			ImGui::Checkbox("Custom Direction", &m_flashlight_use_custom_dir);
-			ImGui::DragFloat3("Direction", &m_flashlight_direction.x, 0.01f, 0, 0, "%.2f");
-			ImGui::DragFloat("Spot Angle", &m_flashlight_angle, 0.1f);
-			ImGui::DragFloat("Spot Softness", &m_flashlight_softness, 0.1f);
-			ImGui::DragFloat("Spot Expo", &m_flashlight_exp, 0.1f);
+		static bool im_demo_menu = false;
+		if (ImGui::Button("Demo Menu")) {
+			ImGui::ShowDemoWindow(&im_demo_menu);
 		}
 
-		if (ImGui::CollapsingHeader("Bot Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
+		ImGui::Spacing();
+
+		if (ImGui::CollapsingHeader("Game Settings", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::PushID("bot");
-			ImGui::DragFloat("Forward Offset", &m_flashlight_bot_fwd_offset, 0.1f);
-			ImGui::DragFloat("Horizontal Offset", &m_flashlight_bot_horz_offset, 0.1f);
-			ImGui::DragFloat("Vertical Offset", &m_flashlight_bot_vert_offset, 0.1f);
-			ImGui::PopID();
+			SPACING_INDENT_BEGIN;
+
+			if (ImGui::Button("Director Start")) {
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("director_start");
+			}
+			
+			ImGui::SameLine();
+			if (ImGui::Button("Director Stop")) {
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("director_stop");
+			}
+
+			ImGui::Spacing();
+
+			static bool im_zignore_player = false;
+			if (ImGui::Checkbox("Z ignore Player", &im_zignore_player))
+			{
+				if (!im_zignore_player)  {
+					interfaces::get()->m_engine->execute_client_cmd_unrestricted("nb_vision_ignore_survivors 0");
+				}
+				else {
+					interfaces::get()->m_engine->execute_client_cmd_unrestricted("nb_vision_ignore_survivors 1");
+				}
+			}
+
+			ImGui::Spacing();
+
+			if (ImGui::Button("Kick Survivors")) {
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("kick rochelle; kick coach; kick ellis; kick roach");
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("Give Autoshotgun")) {
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("give autoshotgun");
+			}
+
+			SPACING_INDENT_END;
+		}
+
+		if (ImGui::CollapsingHeader("Culling", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			SPACING_INDENT_BEGIN;
+
+			ImGui::Checkbox("Disable R_CullNode", &m_disable_cullnode);
+			ImGui::Checkbox("Enable Area Forcing", &m_enable_area_forcing);
+
+			SPACING_INDENT_END;
+		}
+
+		if (ImGui::CollapsingHeader("Flashlight"))
+		{
+			SPACING_INDENT_BEGIN;
+
+			if (ImGui::TreeNodeEx("Player Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				SPACING_INDENT_BEGIN;
+
+				ImGui::DragFloat("Forward Offset", &m_flashlight_fwd_offset, 0.1f);
+				ImGui::DragFloat("Horizontal Offset", &m_flashlight_horz_offset, 0.1f);
+				ImGui::DragFloat("Vertical Offset", &m_flashlight_vert_offset, 0.1f);
+
+				ImGui::DragFloat("Intensity", &m_flashlight_intensity, 0.1f);
+				ImGui::DragFloat("Radius", &m_flashlight_radius, 0.1f);
+
+				ImGui::Checkbox("Custom Direction", &m_flashlight_use_custom_dir);
+				ImGui::DragFloat3("Direction", &m_flashlight_direction.x, 0.01f, 0, 0, "%.2f");
+				ImGui::DragFloat("Spot Angle", &m_flashlight_angle, 0.1f);
+				ImGui::DragFloat("Spot Softness", &m_flashlight_softness, 0.1f);
+				ImGui::DragFloat("Spot Expo", &m_flashlight_exp, 0.1f);
+
+				ImGui::TreePop();
+				SPACING_INDENT_END;
+			}
+
+			if (ImGui::TreeNodeEx("Bot Flashlight", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				SPACING_INDENT_BEGIN;
+
+				ImGui::PushID("bot");
+				ImGui::DragFloat("Forward Offset", &m_flashlight_bot_fwd_offset, 0.1f);
+				ImGui::DragFloat("Horizontal Offset", &m_flashlight_bot_horz_offset, 0.1f);
+				ImGui::DragFloat("Vertical Offset", &m_flashlight_bot_vert_offset, 0.1f);
+				ImGui::PopID();
+
+				ImGui::TreePop();
+				SPACING_INDENT_END;
+			}
+
+			SPACING_INDENT_END;
 		}
 
 		ImGui::End();
@@ -155,8 +234,7 @@ namespace components
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
 		//ImGui::StyleColorsDark();
 
 		{	//https://github.com/ocornut/imgui/pull/7826
