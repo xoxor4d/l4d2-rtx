@@ -215,8 +215,8 @@ namespace components
 			const vertex mesh_verts[4] =
 			{
 				D3DXVECTOR3(-1.337f - (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, 0), 0.0f, f_index / 100.0f,
-				D3DXVECTOR3(1.337f + (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, m.index, 0), f_index / 100.0f, 0.0,
-				D3DXVECTOR3(1.337f + (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, 0, m.index), 0.0f, f_index / 100.0f,
+				D3DXVECTOR3( 1.337f + (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, m.index, 0), f_index / 100.0f, 0.0,
+				D3DXVECTOR3( 1.337f + (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, 0, m.index), 0.0f, f_index / 100.0f,
 				D3DXVECTOR3(-1.337f - (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, m.index), 0.0f, f_index / 100.0f,
 			};
 
@@ -1239,18 +1239,18 @@ namespace components
 		BufferedState_t buffer_state;
 		std::string mat_name;
 
-		auto shaderapi = game::get_shaderapi();
-		if (shaderapi)
+		
+		if (const auto shaderapi = game::get_shaderapi(); shaderapi)
 		{
 			shaderapi->vtbl->GetBufferedState(shaderapi, nullptr, &buffer_state);
-			if (auto m = shaderapi->vtbl->GetBoundMaterial(shaderapi, nullptr); m) {
+
+			if (const auto m = shaderapi->vtbl->GetBoundMaterial(shaderapi, nullptr); m) {
 				mat_name = m->vftable->GetName(m);
 			}
 
 			if (const auto material = shaderapi->vtbl->GetBoundMaterial(shaderapi, nullptr);
 				material)
 			{
-				//const auto name = material->vftable->GetName(material);
 				IMaterialVar* var_out = nullptr;
 				if (has_materialvar(material, "$CROPFACTOR", &var_out))
 				{
@@ -1285,15 +1285,14 @@ namespace components
 
 		bool has_fade = startfadesize <= 1.0f || endfadesize <= 1.0f;
 		bool no_near_fade = false;
+		bool low_crop = false;
 
 		/*bool vista_test = false;
-
-		if (mat_name == "particle/vistasmokev1/vistasmokev4_nearcull")
-		{
-			int x = 1;
+		if (mat_name == "particle/vistasmokev1/vistasmokev4_nearcull") {
 			vista_test = true;
 		}
-		else*/ if (mat_name == "particle/smoke1/smoke1")
+		else*/
+		if (mat_name == "particle/smoke1/smoke1")
 		{
 			if (!has_fade)
 			{
@@ -1302,7 +1301,10 @@ namespace components
 				has_fade = true;
 				no_near_fade = true;
 			}
-
+		}
+		else if (mat_name == "particle/fire_burning_character/fire_molotov_crop_low")
+		{
+			low_crop = true;
 		}
 
 		/*bool modulate_alpha = false;
@@ -1330,16 +1332,12 @@ namespace components
 			const auto v_pos_in_src_buffer = v * builder->m_VertexBuilder.m_VertexSize_Position; 
 
 			const auto src_vPos = reinterpret_cast<Vector*>(((DWORD)builder->m_VertexBuilder.m_pCurrPosition - v_pos_in_src_buffer));
-
-			
-
-			//const auto dest_pos = reinterpret_cast<Vector*>(src_vParms);
 			const auto src_vTint = reinterpret_cast<D3DCOLOR*>(((DWORD)builder->m_VertexBuilder.m_pCurrColor - v_pos_in_src_buffer));
 
 			const auto src_tc0 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[0] - v_pos_in_src_buffer));
 			const auto dest_tc = reinterpret_cast<Vector2D*>(src_tc0);
 
-			//const auto src_tc1 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[1] + v_pos_in_src_buffer));
+			const auto src_tc1 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[1] - v_pos_in_src_buffer));
 			const auto src_tc2 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[2] - v_pos_in_src_buffer));
 			const auto src_tc3 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[3] - v_pos_in_src_buffer));
 			//const auto src_tc4 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[4] - v_pos_in_src_buffer));
@@ -1349,8 +1347,16 @@ namespace components
 
 			if (use_crop)
 			{
-				dest_tc->x = std::lerp(src_tc0->z, src_tc0->x, src_tc3->x * g_vCropFactor[0] + g_vCropFactor[2]);
-				dest_tc->y = std::lerp(src_tc0->w, src_tc0->y, src_tc3->y * g_vCropFactor[1] + g_vCropFactor[3]);
+				if (low_crop) // g_vCropFactor is failing sometimes? (c1m1_hotel)
+				{
+					dest_tc->x = std::lerp(src_tc1->z, src_tc1->x, src_tc3->x * 0.5f + 0.25f /*g_vCropFactor[0] + g_vCropFactor[2]*/);
+					dest_tc->y = std::lerp(src_tc1->w, src_tc1->y, src_tc3->y * 1.0f /*g_vCropFactor[1] + g_vCropFactor[3]*/);
+				}
+				else
+				{
+					dest_tc->x = std::lerp(src_tc0->z, src_tc0->x, src_tc3->x * g_vCropFactor[0] + g_vCropFactor[2]);
+					dest_tc->y = std::lerp(src_tc0->w, src_tc0->y, src_tc3->y * g_vCropFactor[1] + g_vCropFactor[3]);
+				}
 			}
 			else
 			{
@@ -1361,29 +1367,29 @@ namespace components
 			if (use_dualsequence)
 			{
 #if 0
-				Vector2D lerpold = { src->tc3.x, src->tc3.y };
-				Vector2D lerpnew = { src->tc3.x, src->tc3.y };
+				Vector2D lerpold = { src_tc3->x, src_tc3->y };
+				Vector2D lerpnew = { src_tc3->x, src_tc3->y };
 
 				if (bZoomSeq2)
 				{
-					lerpold.x = getlerpscaled(src->tc3.x, OLDFRM_SCALE_START, OLDFRM_SCALE_END, src->tc7.x);
-					lerpold.y = getlerpscaled(src->tc3.y, OLDFRM_SCALE_START, OLDFRM_SCALE_END, src->tc7.x);
-					lerpnew.x = getlerpscaled(src->tc3.x, 1.0f, OLDFRM_SCALE_START, src->tc7.x);
-					lerpnew.y = getlerpscaled(src->tc3.y, 1.0f, OLDFRM_SCALE_START, src->tc7.x);
+					lerpold.x = getlerpscaled(src_tc3->x, OLDFRM_SCALE_START, OLDFRM_SCALE_END, src_tc7->x);
+					lerpold.y = getlerpscaled(src_tc3->y, OLDFRM_SCALE_START, OLDFRM_SCALE_END, src_tc7->x);
+					lerpnew.x = getlerpscaled(src_tc3->x, 1.0f, OLDFRM_SCALE_START, src_tc7->x);
+					lerpnew.y = getlerpscaled(src_tc3->y, 1.0f, OLDFRM_SCALE_START, src_tc7->x);
 				}
 
 				// src->tc7.x = blendfactor between tc5 lerpold and tc6 lerpnew
-				if (src->tc7.x < 0.5f)
+				if (src_tc7->x < 0.5f)
 				{
-					src->tc0.x = std::lerp(src->tc5.z, src->tc5.x, lerpold.x);
-					src->tc0.y = std::lerp(src->tc5.w, src->tc5.y, lerpold.y);
+					dest_tc->x = std::lerp(src_tc5->z, src_tc5->x, lerpold.x);
+					dest_tc->y = std::lerp(src_tc5->w, src_tc5->y, lerpold.y);
 				}
 				else
 				{
-					src->tc0.x = std::lerp(src->tc6.z, src->tc6.x, lerpnew.x);
-					src->tc0.y = std::lerp(src->tc6.w, src->tc6.y, lerpnew.y);
+					dest_tc->x = std::lerp(src_tc6->z, src_tc6->x, lerpnew.x);
+					dest_tc->y = std::lerp(src_tc6->w, src_tc6->y, lerpnew.y);
 				}
-#endif
+#else
 				if (src_tc7->x < 1.0f)
 				{
 					dest_tc->x = std::lerp(src_tc5->z, src_tc5->x, src_tc3->x);
@@ -1394,6 +1400,7 @@ namespace components
 					dest_tc->x = std::lerp(src_tc6->z, src_tc6->x, src_tc3->x);
 					dest_tc->y = std::lerp(src_tc6->w, src_tc6->y, src_tc3->y);
 				}
+#endif
 			}
 
 			if (has_fade)
@@ -1403,18 +1410,15 @@ namespace components
 				float b = static_cast<float>((*src_vTint >> 0) & 0xFF) / 255.0f * 1.0f;
 				float a = static_cast<float>((*src_vTint >> 24) & 0xFF) / 255.0f * 1.0f;
 
-				const float RADIUS = src_tc2->z;
 				auto l = (*src_vPos - *eye).Length();
+				const float normalized_size = src_tc2->z / l;
+				float near_fade_factor = no_near_fade ? 0.0f : std::clamp<float>((normalized_size - startfadesize) / (endfadesize - startfadesize), 0.0f, 1.0f);
 
-				float normalizedSize = RADIUS / l;
-				float nearFadeFactor = no_near_fade ? 0.0f : std::clamp<float>((normalizedSize - startfadesize) / (endfadesize - startfadesize), 0.0f, 1.0f);
-
-				float farFadeFactor = std::clamp<float>(((startfadesize - normalizedSize) / startfadesize), 0.0f, 1.0f);
-
-				float fadeFactor = std::max<float>(nearFadeFactor, farFadeFactor);
+				float far_fade_factor = std::clamp<float>(((startfadesize - normalized_size) / startfadesize), 0.0f, 1.0f);
+				float fade_factor = std::max<float>(near_fade_factor, far_fade_factor);
 
 				Vector4D tint = { r, g, b, a };
-				tint = tint * (1.0f - fadeFactor); // Fades from 1 (visible) to 0 (invisible)
+				tint = tint * (1.0f - fade_factor); // Fades from 1 (visible) to 0 (invisible)
 
 #if 0
 				const float MINIMUM_SIZE_FACTOR = SizeParms[0];
@@ -1470,7 +1474,6 @@ namespace components
 #endif
 
 				*src_vTint = D3DCOLOR_COLORVALUE(tint.x, tint.y, tint.z, tint.w);
-				//*src_vTint = (*src_vTint & 0x00FFFFFF) | (static_cast<unsigned char>(a * 255.0f) << 24);
 			}
 
 			
