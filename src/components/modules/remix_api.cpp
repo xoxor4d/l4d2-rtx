@@ -266,32 +266,35 @@ namespace components
 	{
 		if (m_debug_line_materials[color])
 		{
-			m_debug_line_amount++;
-			remixapi_HardcodedVertex verts[4] = {};
-			uint32_t indices[6] = {};
-			create_line_quad(verts, indices, p1, p2, width);
-
-			remixapi_MeshInfoSurfaceTriangles triangles =
+			if (can_add_debug_lines())
 			{
-			  .vertices_values = verts,
-			  .vertices_count = ARRAYSIZE(verts),
-			  .indices_values = indices,
-			  .indices_count = 6,
-			  .skinning_hasvalue = FALSE,
-			  .skinning_value = {},
-			  .material = m_debug_line_materials[color],
-			};
+				m_debug_line_amount++;
+				remixapi_HardcodedVertex verts[4] = {};
+				uint32_t indices[6] = {};
+				create_line_quad(verts, indices, p1, p2, width);
 
-			remixapi_MeshInfo info
-			{
-				.sType = REMIXAPI_STRUCT_TYPE_MESH_INFO,
-				.hash = utils::string_hash64(utils::va("line%d", m_debug_last_line_hash ? m_debug_last_line_hash : 1)),
-				.surfaces_values = &triangles,
-				.surfaces_count = 1,
-			};
+				remixapi_MeshInfoSurfaceTriangles triangles =
+				{
+				  .vertices_values = verts,
+				  .vertices_count = ARRAYSIZE(verts),
+				  .indices_values = indices,
+				  .indices_count = 6,
+				  .skinning_hasvalue = FALSE,
+				  .skinning_value = {},
+				  .material = m_debug_line_materials[color],
+				};
 
-			m_bridge.CreateMesh(&info, &m_debug_line_list[m_debug_line_amount]);
-			m_debug_last_line_hash = reinterpret_cast<std::uint64_t>(m_debug_line_list[m_debug_line_amount]);
+				remixapi_MeshInfo info
+				{
+					.sType = REMIXAPI_STRUCT_TYPE_MESH_INFO,
+					.hash = utils::string_hash64(utils::va("line%d", m_debug_last_line_hash ? m_debug_last_line_hash : 1)),
+					.surfaces_values = &triangles,
+					.surfaces_count = 1,
+				};
+
+				m_bridge.CreateMesh(&info, &m_debug_line_list[m_debug_line_amount]);
+				m_debug_last_line_hash = reinterpret_cast<std::uint64_t>(m_debug_line_list[m_debug_line_amount]);
+			}
 		}
 	}
 

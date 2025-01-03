@@ -14,6 +14,7 @@ namespace components
 		static bool is_initialized() { return get()->m_initialized; }
 		static bool is_node_debug_enabled() { return get()->m_cmd_debug_node_vis; }
 
+		static constexpr std::uint32_t M_MAX_DEBUG_LINES = 512u;
 		enum DEBUG_REMIX_LINE_COLOR
 		{
 			RED = 0u,
@@ -25,6 +26,7 @@ namespace components
 		void create_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, float scale);
 		void create_line_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, const Vector& p1, const Vector& p2, float width);
 		void add_debug_line(const Vector& p1, const Vector& p2, float width, DEBUG_REMIX_LINE_COLOR color);
+		static bool can_add_debug_lines() { return get()->m_debug_line_amount + 1u < M_MAX_DEBUG_LINES; }
 		void debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, float width, const DEBUG_REMIX_LINE_COLOR& color);
 
 		void flashlight_create_or_update(const char* player_name, const Vector& pos, const Vector& fwd, const Vector& rt, const Vector& up, bool is_enabled, bool is_player = false);
@@ -61,7 +63,7 @@ namespace components
 
 		bool m_debug_lines_initialized = false;
 		remixapi_MaterialHandle m_debug_line_materials[3];
-		remixapi_MeshHandle m_debug_line_list[128];
+		remixapi_MeshHandle m_debug_line_list[M_MAX_DEBUG_LINES];
 		std::uint32_t m_debug_line_amount = 0u;
 		std::uint64_t m_debug_last_line_hash = 0u;
 	};
