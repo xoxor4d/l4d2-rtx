@@ -450,13 +450,53 @@ namespace components
 		const auto world = game::get_hoststate_worldbrush_data();
 		auto& map_settings = map_settings::get_map_settings();
 
-		// draw leaf index
+
+		// visualize current leaf + forced leafs (map_settings)
 		if (g_current_leaf < world->numleafs)
 		{
 			if (remix_api::is_node_debug_enabled())
 			{
 				const auto curr_leaf = &world->leafs[g_current_leaf];
-				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN);
+				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN); // current leaf
+
+				// does the area the player is currently in have any overrides?
+				if (g_player_current_area_override)
+				{
+					for (const auto& l : g_player_current_area_override->leafs)
+					{
+						if (!remix_api::can_add_debug_lines()) {
+							break;
+						}
+
+						if (const auto	forced_leaf = &world->leafs[l]; 
+										forced_leaf != curr_leaf)
+						{
+							// visualize near-by leaf overrides (TEAL)
+							if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 2000.0f * 2000.0f) {
+								remix_api::get()->debug_draw_box(forced_leaf->m_vecCenter, forced_leaf->m_vecHalfDiagonal, 3.5f, remix_api::DEBUG_REMIX_LINE_COLOR::TEAL);
+							}
+						}
+					}
+
+					for (const auto& a : g_player_current_area_override->areas)
+					{
+						for (auto i = 0u; i < (std::uint32_t)world->numleafs; i++)
+						{
+							if (!remix_api::can_add_debug_lines()) {
+								break;
+							}
+
+							// visualize near-by leafs that are part of area overrides (RED)
+							if (const auto	forced_leaf = &world->leafs[i]; 
+											forced_leaf != curr_leaf && a == (std::uint32_t)forced_leaf->area)
+							{
+								if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 350.0f * 350.0f) {
+									remix_api::get()->debug_draw_box(forced_leaf->m_vecCenter, forced_leaf->m_vecHalfDiagonal, 3.5f, remix_api::DEBUG_REMIX_LINE_COLOR::RED);
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 
