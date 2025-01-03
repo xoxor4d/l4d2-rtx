@@ -185,40 +185,42 @@ namespace components
 	void imgui::endscene_stub()
 	{
 #if USE_IMGUI
-		auto* im = imgui::get();
-		if (const auto dev = game::get_d3d_device(); dev)
+		if (auto* im = imgui::get(); im)
 		{
-			if (!im->m_initialized_device)
+			if (const auto dev = game::get_d3d_device(); dev)
 			{
-				ImGui_ImplDX9_Init(dev);
-				im->m_initialized_device = true;
-			}
-
-			if (im->m_initialized_device)
-			{
-				ImGui_ImplDX9_NewFrame();
-				ImGui_ImplWin32_NewFrame();
-				ImGui::NewFrame();
-
-				if (!interfaces::get()->m_surface->is_cursor_visible()) {
-					ImGui::GetIO().MouseDrawCursor = im->m_menu_active;
+				if (!im->m_initialized_device)
+				{
+					ImGui_ImplDX9_Init(dev);
+					im->m_initialized_device = true;
 				}
 
-				if (!im->m_menu_active) {
-					//show_cursor(false);
-					ImGui::GetIO().MouseDrawCursor = false;
+				if (im->m_initialized_device)
+				{
+					ImGui_ImplDX9_NewFrame();
+					ImGui_ImplWin32_NewFrame();
+					ImGui::NewFrame();
+
+					if (!interfaces::get()->m_surface->is_cursor_visible()) {
+						ImGui::GetIO().MouseDrawCursor = im->m_menu_active;
+					}
+
+					if (!im->m_menu_active) {
+						//show_cursor(false);
+						ImGui::GetIO().MouseDrawCursor = false;
+					}
+
+					//ImGui::GetIO().MouseDrawCursor = im->m_menu_active;
+					interfaces::get()->m_surface->set_cursor_always_visible(im->m_menu_active);
+
+					if (im->m_menu_active) {
+						im->devgui(); //ImGui::ShowDemoWindow(&im->m_menu_active);
+					}
+
+					ImGui::EndFrame();
+					ImGui::Render();
+					ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 				}
-
-				//ImGui::GetIO().MouseDrawCursor = im->m_menu_active;
-				interfaces::get()->m_surface->set_cursor_always_visible(im->m_menu_active);
-
-				if (im->m_menu_active) {
-					im->devgui(); //ImGui::ShowDemoWindow(&im->m_menu_active);
-				}
-
-				ImGui::EndFrame();
-				ImGui::Render();
-				ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 			}
 		}
 #endif
