@@ -239,8 +239,8 @@ namespace components
 		dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
 	}
 
-	// detoured
-	void __fastcall tbl_hk::model_renderer::DrawModelExecute::Detour(void* ecx, void* edx, /*void* oo, */const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld)
+	// detoured 'CModelRender::DrawModelExecute'
+	void __fastcall tbl_hk::model_renderer::DrawModelExecute::Detour(void* ecx, void* edx, const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld)
 	{
 		bool ignore = false;
 		const auto& hmsettings = map_settings::get_map_settings().hide_models;
