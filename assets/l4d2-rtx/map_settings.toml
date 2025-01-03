@@ -5,7 +5,7 @@
 # color:        R G B (0-255) transmission
 
 [FOG]
-    c1m1_hotel = { distance = 150000, color = [180, 160, 120] }
+    c1m1_hotel = { distance = 15000, color = [100, 100, 100] }
 
 
 
@@ -37,12 +37,19 @@
 # |> N_leafs:   only hide area/s when NOT in specified leaf/s [int array]
 
 [CULL]
-    #c1m1_hotel = [
-    #    { area = 2, leafs = [436, 950] },
-    #    { area = 3, leafs = [370, 621, 652, 697] },
-    #    { area = 4, leafs = [370, 371, 436, 449, 452, 466, 483, 708, 841, 950] },
-    #    { area = 5, leafs = [621] }
-    #]
+    c1m1_hotel = [
+        { area = 2, areas = [6] },
+        { area = 3, areas = [6] },
+        { area = 4, areas = [7] },
+        { area = 5, areas = [4, 6, 7], leafs = [615, 616, 620, 622, 624, 632, 633, 1501, 1504, 1508, 1511] },
+        { area = 6, leafs = [1919, 1922, 1930, 1935, 1936, 1939, 2301, 2303, 2324, 2328, 2331, 2334, 2339] },
+        { area = 7, areas = [4, 5, 10], leafs = [1298, 1327, 1364, 1367, 1370, 1669, 1974] },
+        { area = 9, areas = [6] },
+        { area = 10, areas = [7] },
+        { area = 13, areas = [21, 23], leafs = [2203] },
+        { area = 21, areas = [13] },
+        { area = 23, areas = [13, 21] },
+    ]
 
 
 
@@ -54,27 +61,36 @@
 # radius :   force hide models with this radius (checking for radii is generally faster and the preferred way to filter models) [float array]
 
 [HIDEMODEL]
-    #sp_a4_finale2 = { name = [
-    #        "tube", "arm"
-    #    ], radius = [
-    #        896.805298, #models/a4_destruction/arm_ext_halfres_rows_4x1.mdl
+    #c1m1_hotel = { radius = [
+    #        6.1857576, #models/props_junk/garbage_sodacan01a_fullscheet.mdl
     #    ]}
 
 
 
-# Spawn unique markers that can be used as anchor meshes
+# Spawn unique markers that can be used as anchor meshes (same one can be spawned multiple times)
 # Parameters ---------------------------------------------------------------------------------------------------------------------------------
 #
-# marker     ]    THIS:     number of marker mesh - can get culled BUT that can be controlled via leaf/area forcing (initial spawning can't be forced) [int 0-100]
-# nocull     ] OR THAT:     number of marker mesh - never getting culled and spawned on map load (eg: useful for distant light) [int 0-inf.]
-#                           [!] both can be spawned multiple times per map
-#
+# marker    ]     THIS:     number of marker mesh - can get culled BUT that can be controlled via leaf/area forcing (initial spawning can't be forced) [int 0-100]
+# nocull    ]  OR THAT:     number of marker mesh - never getting culled and spawned on map load (eg: useful for distant light) [int 0-inf.]
+# nocull    |>   areas:     (optional) only show nocull marker when player is in specified area/s [int array]
+# nocull    |> N_leafs:     (optional) only show nocull marker when player is in ^ and NOT in specified leaf/s [int array]
+
 # position:                 X Y Z position of the marker mesh [3D Vector]
+# rotation:                 X Y Z rotation of the marker mesh [3D Vector]
+# scale:                    X Y Z scale of the marker mesh [3D Vector]
 
 [MARKER]
-    #c1m1_hotel = [
-    #    { marker = 0, position = [-4600, 1380, 1320] }
-    #]
+    c1m1_hotel = [
+        { marker = 25, position = [620.000000, 5680.000000, 2920.000000], rotation = [0.000000, 0.000000, 0.000000] },
+        { nocull = 0, areas = [6], N_leafs = [], position = [1343.000000, 5685.000000, 2718.000000], rotation = [90.000000, 0.000000, 90.000000], scale = [3.000000, 10.000000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [], position = [1343.000000, 5500.000000, 2718.000000], rotation = [90.000000, 0.000000, 90.000000], scale = [3.000000, 10.000000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [], position = [1350.000000, 5593.500000, 2810.500000], rotation = [0.000000, 0.000000, 90.000000], scale = [2.870000, 10.000000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [], position = [1350.000000, 5586.500000, 2653.500000], rotation = [0.000000, 0.000000, 90.000000], scale = [3.000000, 10.000000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [], position = [1076.500000, 5594.000000, 2726.500000], rotation = [90.000000, 90.000000, 0.000000], scale = [3.000000, 3.000000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [], position = [2171.411621, 5694.378906, 2717.031250], rotation = [90.000000, 0.000000, 0.000000], scale = [2.000000, 2.000000, 1.000000] },
+    ]
+
+
 
 
 

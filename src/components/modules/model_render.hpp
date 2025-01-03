@@ -367,5 +367,6 @@ namespace components
 		static inline prim_fvf_context primctx {};
 
 		bool m_drew_hud = false;
+		bool m_drew_model = false;
 	};
 }

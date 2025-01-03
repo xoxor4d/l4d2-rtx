@@ -12,6 +12,7 @@ namespace components
 	void on_renderview()
 	{
 		//model_render::get()->m_drew_hud = false;
+		model_render::get()->m_drew_model = false;
 
 		auto enginerender = game::get_engine_renderer();
 		const auto dev = game::get_d3d_device();
@@ -57,7 +58,7 @@ namespace components
 
 		// TODO - find better spot to call this
 		map_settings::spawn_markers_once();
-		model_render::draw_nocull_markers();
+		//model_render::draw_nocull_markers();
 
 		// CM_PointLeafnum :: get current leaf
 		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
@@ -554,6 +555,26 @@ namespace components
 					(int)l.area == g_current_area)
 				{
 					force_leaf_vis(i);
+				}
+			}
+		}
+
+		// update visibility of nocull markers
+		if (g_player_leaf_update)
+		{
+			for (auto& m : map_settings.map_markers)
+			{
+				// ignore normal markers
+				if (!m.no_cull || m.areas.empty()) {
+					continue;
+				}
+
+				// hide marker
+				m.is_hidden = true;
+
+				// check if player is in specified area & not in specified leaf
+				if (m.areas.contains(g_current_area) && !m.when_not_in_leafs.contains(g_current_leaf)) {
+					m.is_hidden = false; // show marker
 				}
 			}
 		}

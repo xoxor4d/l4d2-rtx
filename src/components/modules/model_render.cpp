@@ -202,12 +202,16 @@ namespace components
 		dev->GetRenderState((D3DRENDERSTATETYPE)150, &og_rs);
 
 		dev->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
-		D3DXMATRIX mtx = game::IDENTITY;
+		//D3DXMATRIX mtx = game::IDENTITY;
 
 		for (auto& m : msettings.map_markers)
 		{
 			// ignore normal markers
 			if (!m.no_cull) {
+				continue;
+			}
+
+			if (m.is_hidden) {
 				continue;
 			}
 
@@ -220,14 +224,21 @@ namespace components
 				D3DXVECTOR3(-1.337f - (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, m.index), 0.0f, f_index / 100.0f,
 			};
 
-			mtx.m[3][0] = m.origin[0];
-			mtx.m[3][1] = m.origin[1];
-			mtx.m[3][2] = m.origin[2];
+			D3DXMATRIX scale_matrix, rotation_x, rotation_y, rotation_z, mat_rotation, mat_translation, world;
+
+			D3DXMatrixScaling(&scale_matrix, m.scale.x, m.scale.y, m.scale.z);
+			D3DXMatrixRotationX(&rotation_x, m.rotation.x); // pitch
+			D3DXMatrixRotationY(&rotation_y, m.rotation.y); // yaw
+			D3DXMatrixRotationZ(&rotation_z, m.rotation.z); // roll
+			mat_rotation = rotation_z * rotation_y * rotation_x; // combine rotations (order: Z * Y * X)
+
+			D3DXMatrixTranslation(&mat_translation, m.origin.x, m.origin.y, m.origin.z);
+			world = scale_matrix * mat_rotation * mat_translation;
 
 			// set remix texture hash ~req. dxvk-runtime changes - not really needed
 			dev->SetRenderState((D3DRENDERSTATETYPE)150, 100 + m.index);
 
-			dev->SetTransform(D3DTS_WORLD, &mtx);
+			dev->SetTransform(D3DTS_WORLD, &world);
 			dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, mesh_verts, sizeof(vertex));
 		}
 
@@ -242,6 +253,13 @@ namespace components
 	// detoured 'CModelRender::DrawModelExecute'
 	void __fastcall tbl_hk::model_renderer::DrawModelExecute::Detour(void* ecx, void* edx, const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld)
 	{
+		// draw nocull markers before drawing the first model - no particular reason besides that we dont want to draw them before rendering the sky
+		if (!model_render::get()->m_drew_model)
+		{
+			model_render::draw_nocull_markers();
+			model_render::get()->m_drew_model = true;
+		}
+
 		bool ignore = false;
 		const auto& hmsettings = map_settings::get_map_settings().hide_models;
 

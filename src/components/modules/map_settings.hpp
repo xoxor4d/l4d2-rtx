@@ -57,9 +57,15 @@ namespace components
 		struct marker_settings_s
 		{
 			std::uint32_t index = 0;
-			float origin[3] = {};
+			Vector origin = {};
 			bool no_cull = false;
+			Vector rotation = { 0.0f, 0.0f, 0.0f };
+			Vector scale = { 1.0f, 1.0f, 1.0f }; // no_cull only
+			std::unordered_set<std::uint32_t> areas; // no_cull only
+			std::unordered_set<std::uint32_t> when_not_in_leafs; // no_cull only
 			void* handle = nullptr;
+			bool is_hidden = false;
+			bool imgui_is_selected = false;
 		};
 
 		struct api_config_var
@@ -161,6 +167,7 @@ namespace components
 		static void on_map_load(const std::string& map_name);
 		static void on_map_unload();
 		static void clear_map_settings();
+		static void reload();
 
 		struct level_bool_s
 		{

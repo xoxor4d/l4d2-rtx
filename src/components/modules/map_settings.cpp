@@ -83,9 +83,9 @@ namespace components
 				{
 					// ent->KeyValue
 					utils::hook::call_virtual<34, void>(m.handle, "origin", utils::va("%.10f %.10f %.10f", m.origin[0], m.origin[1], m.origin[2]));
-					utils::hook::call_virtual<34, void>(m.handle, "angles", "0 0 0");
+					utils::hook::call_virtual<34, void>(m.handle, "angles", utils::va("%.10f %.10f %.10f", m.rotation[0], m.rotation[1], m.rotation[2]));
 					utils::hook::call_virtual<34, void>(m.handle, "model", model_name);
-					utils::hook::call_virtual<34, void>(m.handle, "solid", "2");
+					utils::hook::call_virtual<34, void>(m.handle, "solid", "0");
 
 					struct skin_offset
 					{
@@ -448,12 +448,59 @@ namespace components
 							if (const auto& pos = entry.at("position").as_array();
 								pos.size() == 3)
 							{
+								Vector temp_rotation;
+								Vector temp_scale = { 1.0, 1.0f, 1.0f };
+
+								// optional
+								if (entry.contains("rotation"))
+								{
+									if (const auto& rot = entry.at("rotation").as_array(); rot.size() == 3) {
+										temp_rotation = { DEG2RAD(to_float(rot[0])), DEG2RAD(to_float(rot[1])), DEG2RAD(to_float(rot[2])) };
+									} else { TOML_ERROR("[MARKER] #rotation", entry.at("rotation"), "expected a 3D vector but got => %d ", entry.at("rotation").as_array().size()); }
+								}
+
+								// optional
+								if (entry.contains("scale"))
+								{
+									if (const auto& scale = entry.at("scale").as_array(); scale.size() == 3) {
+										temp_scale = { to_float(scale[0]), to_float(scale[1]), to_float(scale[2]) };
+									} else { TOML_ERROR("[MARKER] #scale", entry.at("scale"), "expected a 3D vector but got => %d ", entry.at("scale").as_array().size()); }
+								}
+
+								// optional
+								std::unordered_set<std::uint32_t> temp_area_set;
+								if (entry.contains("areas"))
+								{
+									if (const auto& areas = entry.at("areas").as_array(); !areas.empty()) 
+									{
+										for (const auto& a : areas) {
+											temp_area_set.insert(to_int(a));
+										}
+									}
+								}
+
+								// optional
+								std::unordered_set<std::uint32_t> temp_not_in_leaf_set;
+								if (entry.contains("N_leafs"))
+								{
+									if (const auto& nleafs = entry.at("N_leafs").as_array(); !nleafs.empty())
+									{
+										for (const auto& nl : nleafs) {
+											temp_not_in_leaf_set.insert(to_int(nl));
+										}
+									}
+								}
+
 								m_map_settings.map_markers.emplace_back(
 									marker_settings_s
 									{
 										.index = temp_marker_index,
-										.origin = {to_float(pos[0]), to_float(pos[1]), to_float(pos[2])},
-										.no_cull = temp_is_nocull_marker
+										.origin = { to_float(pos[0]), to_float(pos[1]), to_float(pos[2]) },
+										.no_cull = temp_is_nocull_marker,
+										.rotation = temp_rotation,
+										.scale = temp_scale,
+										.areas = std::move(temp_area_set),
+										.when_not_in_leafs = std::move(temp_not_in_leaf_set),
 									});
 							}
 							else { TOML_ERROR("[MARKER] #position", entry.at("position"), "expected a 3D vector but got => %d ", entry.at("position").as_array().size()); }
@@ -982,15 +1029,15 @@ namespace components
 	}
 
 	ConCommand xo_mapsettings_update {};
-	void xo_mapsettings_update_fn()
+	void map_settings::reload()
 	{
-		map_settings::get()->clear_map_settings();
-		map_settings::get()->set_settings_for_map("");
+		get()->clear_map_settings();
+		get()->set_settings_for_map("");
 	}
 
 	map_settings::map_settings()
 	{
 		p_this = this;
-		game::con_add_command(&xo_mapsettings_update, "xo_mapsettings_update", xo_mapsettings_update_fn, "Reloads the map_settings.toml file + map.conf");
+		game::con_add_command(&xo_mapsettings_update, "xo_mapsettings_update", map_settings::reload, "Reloads the map_settings.toml file + map.conf");
 	}
 }

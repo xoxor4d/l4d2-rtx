@@ -43,7 +43,7 @@ namespace components
 	// called on device->EndScene
 	void remix_api::end_scene_callback()
 	{
-		imgui::endscene_stub();
+		imgui::endscene_stub(); 
 
 #if 0
 		if (!model_render::get()->m_drew_hud)
@@ -119,7 +119,7 @@ namespace components
 			RECT rect;
 			if (g_current_area != -1)
 			{
-				SetRect(&rect, 20, 125, 512, 512);
+				SetRect(&rect, 60, 125, 512, 512);
 				auto text = utils::va("Area: %d", g_current_area);
 				main_module::d3d_font->DrawTextA
 				(
@@ -132,9 +132,9 @@ namespace components
 				);
 			}
 
-			if (g_current_leaf != -1)
+			if (g_current_leaf != -1) 
 			{
-				SetRect(&rect, 20, 145, 512, 512);
+				SetRect(&rect, 60, 145, 512, 512);
 				auto text = utils::va("Leaf: %d", g_current_leaf);
 				main_module::d3d_font->DrawTextA
 				(
@@ -161,6 +161,8 @@ namespace components
 				ext.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO_OPAQUE_EXT;
 				ext.useDrawCallAlphaState = 1;
 				ext.opacityConstant = 1.0f;
+				ext.roughnessConstant = 1.0f;
+				ext.metallicConstant = 1.0f;
 				ext.roughnessTexture = L"";
 				ext.metallicTexture = L"";
 				ext.heightTexture = L"";
@@ -175,7 +177,7 @@ namespace components
 				.normalTexture = L"",
 				.tangentTexture = L"",
 				.emissiveTexture = L"",
-				.emissiveIntensity = 1.0f,
+				.emissiveIntensity = 0.1f,
 				.emissiveColorConstant = { 1.0f, 0.0f, 0.0f },
 			};
 			m_bridge.CreateMaterial(&info, &m_debug_line_materials[0]);
