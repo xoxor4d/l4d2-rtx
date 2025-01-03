@@ -4,6 +4,11 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		bool model_info_vis = false;
+	}
+
 	namespace tex_addons
 	{
 		LPDIRECT3DTEXTURE9 glass_shards;
@@ -232,6 +237,63 @@ namespace components
 		dev->SetRenderState((D3DRENDERSTATETYPE)150, og_rs);
 		dev->SetFVF(NULL);
 		dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
+	}
+
+	// detoured
+	void __fastcall tbl_hk::model_renderer::DrawModelExecute::Detour(void* ecx, void* edx, /*void* oo, */const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld)
+	{
+		bool ignore = false;
+		const auto& hmsettings = map_settings::get_map_settings().hide_models;
+
+		for (const auto& hide_mdl_with_radius : hmsettings.radii)
+		{
+			if (pInfo.pModel->radius == hide_mdl_with_radius)
+			{
+				ignore = true;
+				break;
+			}
+		}
+
+		if (!ignore && !hmsettings.substrings.empty())
+		{
+			const auto mdl_string = std::string_view(pInfo.pModel->szPathName);
+			for (const auto& hide_mdl_with_substr : hmsettings.substrings)
+			{
+				if (mdl_string.contains(hide_mdl_with_substr))
+				{
+					ignore = true;
+					break;
+				}
+			}
+		}
+
+		if (!ignore)
+		{
+			// draw the model
+			tbl_hk::model_renderer::table.original<FN>(index)(ecx, edx, /*oo,*/ state, pInfo, pCustomBoneToWorld);
+
+			if (cmd::model_info_vis)
+			{
+				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < 1000.0f * 1000.0f)
+				{
+					game::debug_add_text_overlay(&pInfo.origin.x, pInfo.pModel->szPathName, 0);
+					game::debug_add_text_overlay(&pInfo.origin.x, utils::va("Radius: %.7f", pInfo.pModel->radius), 1);
+					game::debug_add_text_overlay(&pInfo.origin.x, utils::va("Origin: %.7f %.7f %.7f", pInfo.origin.x, pInfo.origin.y, pInfo.origin.z), 2);
+				}
+			}
+		}
+		else
+		{
+			if (cmd::model_info_vis)
+			{
+				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < 1000.0f * 1000.0f)
+				{
+					game::debug_add_text_overlay(&pInfo.origin.x, "#IGNORED#", 0, 1.0f, 0.6f, 0.6f, 0.6f);
+					game::debug_add_text_overlay(&pInfo.origin.x, pInfo.pModel->szPathName, 1, 1.0f, 0.6f, 0.6f, 0.6f);
+					game::debug_add_text_overlay(&pInfo.origin.x, utils::va("Radius: %.7f", pInfo.pModel->radius), 2, 1.0f, 0.6f, 0.6f, 0.6f);
+				}
+			}
+		}
 	}
 
 	// 
@@ -1435,17 +1497,24 @@ namespace components
 	}
 
 	// #
+	// Commands
+
+	ConCommand xo_debug_toggle_model_info_cmd{};
+	void xo_debug_toggle_model_info_fn()
+	{
+		cmd::model_info_vis = !cmd::model_info_vis;
+	}
+
+	// #
 	// #
 
 	model_render::model_render()
 	{
 		p_this = this;
 
-		/* tbl_hk::model_renderer::_interface = utils::module_interface.get<tbl_hk::model_renderer::IVModelRender*>("engine.dll", "VEngineModel016");
-
+		tbl_hk::model_renderer::_interface = utils::module_interface.get<tbl_hk::model_renderer::IVModelRender*>("engine.dll", "VEngineModel016");
 		XASSERT(tbl_hk::model_renderer::table.init(tbl_hk::model_renderer::_interface) == false);
-		XASSERT(tbl_hk::model_renderer::table.hook(&tbl_hk::model_renderer::DrawModelExecute::Detour, tbl_hk::model_renderer::DrawModelExecute::Index) == false);
- 		*/
+		XASSERT(tbl_hk::model_renderer::table.hook(&tbl_hk::model_renderer::DrawModelExecute::Detour, tbl_hk::model_renderer::DrawModelExecute::index) == false);
 
 		// init addon textures
 		init_texture_addons();
@@ -1460,6 +1529,11 @@ namespace components
 		utils::hook::nop(CLIENT_BASE + 0x3C9F1F, 6);
 		utils::hook(CLIENT_BASE + 0x3C9F1F, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, CLIENT_BASE + 0x3C9F25);
+
+		// #
+		// commands
+
+		game::con_add_command(&xo_debug_toggle_model_info_cmd, "xo_debug_toggle_model_info", xo_debug_toggle_model_info_fn, "Toggle model name and radius visualizations");
 	}
 }
 

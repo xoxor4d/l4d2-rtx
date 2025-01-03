@@ -2,9 +2,22 @@
 
 namespace components
 {
-	class prim_fvf_context {
-	public:
+	namespace tbl_hk::model_renderer
+	{
+		inline utils::vtable table;
+		inline struct IVModelRender* _interface = nullptr;
 
+		namespace DrawModelExecute
+		{
+			constexpr uint32_t index = 19u;
+			using FN = void(__fastcall*)(void*, void*, /*void*,*/ const DrawModelState_t&, const ModelRenderInfo_t&, matrix3x4_t*);
+			void __fastcall Detour(void* ecx, void* edx, /*void* oo,*/ const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld);
+		}
+	}
+
+	class prim_fvf_context
+	{
+	public:
 		// retrieve information about the current pass - returns true if successful
 		bool get_info_for_pass(IShaderAPIDX8* shaderapi)
 		{
