@@ -329,6 +329,7 @@ namespace components
 				node_index = node - &game::get_hoststate_worldbrush_data()->nodes[0];
 			}
 
+			// HIDE
 			// check if this node was forced visible
 			if (!g_player_current_area_override->leafs.contains(node_index))
 			{
@@ -392,6 +393,23 @@ namespace components
 			if (g_player_current_area_override->leafs.contains(node_index)) {
 				return 0;
 			}
+
+			// check if there are leaf specific tweaks
+			if (!g_player_current_area_override->leaf_tweaks.empty())
+			{
+				for (const auto& lt : g_player_current_area_override->leaf_tweaks)
+				{
+					// check if node the player is currently in has any overrides
+					if (lt.in_leafs.contains(g_current_leaf)) 
+					{
+						// if so, check if the current node to be culled is part of a forced area
+						// note: areas are not vis forced - this only disables frustum culling and relies on PVS
+						if (lt.areas.contains((std::uint32_t)node->area)) {
+							return 0;
+						}
+					}
+				}
+			}
 		}
 
 		// cull node
@@ -442,20 +460,56 @@ namespace components
 		g_player_current_area_override = nullptr;
 	}
 
+	// called from remix_api::on_present_callback()
+	void main_module::hud_draw_area_info()
+	{
+		// Draw current node/leaf as HUD
+		if (is_node_debug_enabled() && d3d_font)
+		{
+			RECT rect;
+			if (g_current_area != -1)
+			{
+				SetRect(&rect, get()->m_hud_debug_node_vis_pos[0], get()->m_hud_debug_node_vis_pos[1], 512, 512);
+				d3d_font->DrawTextA(nullptr, utils::va("Area: %d", g_current_area), -1, &rect, DT_NOCLIP, D3DCOLOR_XRGB(255, 255, 255)); // text length (-1 = null-terminated)
+			}
+
+			if (g_current_leaf != -1)
+			{
+				SetRect(&rect, get()->m_hud_debug_node_vis_pos[0], get()->m_hud_debug_node_vis_pos[1] + 15, 512, 512);
+				d3d_font->DrawTextA(nullptr, utils::va("Leaf: %d", g_current_leaf), -1, &rect, DT_NOCLIP, D3DCOLOR_XRGB(50, 255, 20));
+			}
+
+			if (get()->m_hud_debug_node_vis_has_forced_leafs)
+			{
+				SetRect(&rect, get()->m_hud_debug_node_vis_pos[0], get()->m_hud_debug_node_vis_pos[1] + 40, 512, 512);
+				d3d_font->DrawTextA(nullptr, "Individual forced leafs", -1, &rect, DT_NOCLIP, D3DCOLOR_XRGB(0, 255, 255));
+			}
+
+			if (get()->m_hud_debug_node_vis_has_forced_arealeafs)
+			{
+				SetRect(&rect, get()->m_hud_debug_node_vis_pos[0], get()->m_hud_debug_node_vis_pos[1] + 55, 512, 512);
+				d3d_font->DrawTextA(nullptr, "Leafs of a forced area", -1, &rect, DT_NOCLIP, D3DCOLOR_XRGB(255, 0, 0));
+			}
+		}
+	}
+
 	void pre_recursive_world_node()
 	{
 		if (game::get_viewid() == VIEW_3DSKY || game::get_viewid() == VIEW_MONITOR) {
 			return;
 		}
 
+		// reset
+		main_module::get()->m_hud_debug_node_vis_has_forced_leafs = false;
+		main_module::get()->m_hud_debug_node_vis_has_forced_arealeafs = false;
+
 		const auto world = game::get_hoststate_worldbrush_data();
 		auto& map_settings = map_settings::get_map_settings();
-
 
 		// visualize current leaf + forced leafs (map_settings)
 		if (g_current_leaf < world->numleafs)
 		{
-			if (remix_api::is_node_debug_enabled())
+			if (main_module::is_node_debug_enabled())
 			{
 				const auto curr_leaf = &world->leafs[g_current_leaf];
 				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN); // current leaf
@@ -463,6 +517,7 @@ namespace components
 				// does the area the player is currently in have any overrides?
 				if (g_player_current_area_override)
 				{
+					// visualize forced leafs
 					for (const auto& l : g_player_current_area_override->leafs)
 					{
 						if (!remix_api::can_add_debug_lines()) {
@@ -473,12 +528,15 @@ namespace components
 										forced_leaf != curr_leaf)
 						{
 							// visualize near-by leaf overrides (TEAL)
-							if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 2000.0f * 2000.0f) {
+							if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 2000.0f * 2000.0f) 
+							{
 								remix_api::get()->debug_draw_box(forced_leaf->m_vecCenter, forced_leaf->m_vecHalfDiagonal, 3.5f, remix_api::DEBUG_REMIX_LINE_COLOR::TEAL);
+								main_module::get()->m_hud_debug_node_vis_has_forced_leafs = true;
 							}
 						}
 					}
 
+					// visualize leafs of forced areas
 					for (const auto& a : g_player_current_area_override->areas)
 					{
 						for (auto i = 0u; i < (std::uint32_t)world->numleafs; i++)
@@ -491,8 +549,35 @@ namespace components
 							if (const auto	forced_leaf = &world->leafs[i]; 
 											forced_leaf != curr_leaf && a == (std::uint32_t)forced_leaf->area)
 							{
-								if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 350.0f * 350.0f) {
+								if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 350.0f * 350.0f) 
+								{
 									remix_api::get()->debug_draw_box(forced_leaf->m_vecCenter, forced_leaf->m_vecHalfDiagonal, 3.5f, remix_api::DEBUG_REMIX_LINE_COLOR::RED);
+									main_module::get()->m_hud_debug_node_vis_has_forced_arealeafs = true;
+								}
+							}
+						}
+					}
+
+					// visualize leafs of forced areas defined in leaf_tweaks
+					for (const auto& lt : g_player_current_area_override->leaf_tweaks)
+					{
+						if (lt.in_leafs.contains(g_current_leaf))
+						{
+							for (auto i = 0u; i < (std::uint32_t)world->numleafs; i++)
+							{
+								if (!remix_api::can_add_debug_lines()) {
+									break;
+								}
+
+								// visualize near-by leafs that are part of area overrides (RED)
+								if (const auto	forced_leaf = &world->leafs[i];
+									forced_leaf != curr_leaf && lt.areas.contains((std::uint32_t)forced_leaf->area))
+								{
+									if (game::get_current_view_origin()->DistToSqr(forced_leaf->m_vecCenter) < 350.0f * 350.0f) 
+									{
+										remix_api::get()->debug_draw_box(forced_leaf->m_vecCenter, forced_leaf->m_vecHalfDiagonal, 3.5f, remix_api::DEBUG_REMIX_LINE_COLOR::RED);
+										main_module::get()->m_hud_debug_node_vis_has_forced_arealeafs = true;
+									}
 								}
 							}
 						}
@@ -894,8 +979,19 @@ namespace components
 		game::cvar_uncheat_and_set_int("fog_enable", 0);
 	}
 
+	// #
+	// #
+
+	ConCommand xo_debug_toggle_node_vis_cmd {};
+	void main_module::toggle_node_vis_info()
+	{
+		set_node_vis_info(!get()->m_cmd_debug_node_vis);
+	}
+
 	main_module::main_module()
 	{
+		p_this = this;
+
 		{ // init filepath var
 			char path[MAX_PATH]; GetModuleFileNameA(nullptr, path, MAX_PATH);
 			game::root_path = path; utils::erase_substring(game::root_path, "left4dead2.exe");
@@ -1006,6 +1102,11 @@ namespace components
 		//utils::hook::set<BYTE>(CLIENT_BASE + 0x1CF471 + 6, 0x60);
 
 		// engine 0xB3383 - no cull overlay decals (no need)
+
+		// #
+		// commands
+
+		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", toggle_node_vis_info, "Toggle bsp node/leaf debug visualization using the remix api");
 	}
 
 	main_module::~main_module()

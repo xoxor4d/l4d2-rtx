@@ -112,41 +112,7 @@ namespace components
 	void remix_api::on_present_callback()
 	{
 		main_module::iterate_entities();
-
-		// Draw current node/leaf as HUD
-		if (is_node_debug_enabled() && main_module::d3d_font)
-		{
-			RECT rect;
-			if (g_current_area != -1)
-			{
-				SetRect(&rect, 60, 125, 512, 512);
-				auto text = utils::va("Area: %d", g_current_area);
-				main_module::d3d_font->DrawTextA
-				(
-					nullptr,
-					text,
-					-1,       // text length (-1 = null-terminated)
-					&rect,
-					DT_NOCLIP,
-					D3DCOLOR_XRGB(255, 255, 255)
-				);
-			}
-
-			if (g_current_leaf != -1) 
-			{
-				SetRect(&rect, 60, 145, 512, 512);
-				auto text = utils::va("Leaf: %d", g_current_leaf);
-				main_module::d3d_font->DrawTextA
-				(
-					nullptr,
-					text,
-					-1,       // text length (-1 = null-terminated)
-					&rect,
-					DT_NOCLIP,
-					D3DCOLOR_XRGB(50, 255, 20)
-				);
-			}
-		}
+		main_module::hud_draw_area_info();
 	}
 
 	// #
@@ -458,15 +424,6 @@ namespace components
 	// #
 	// #
 
-	ConCommand xo_debug_toggle_node_vis_cmd{};
-	void remix_api::xo_debug_toggle_node_vis_fn()
-	{
-		get()->m_cmd_debug_node_vis = !get()->m_cmd_debug_node_vis;
-	}
-
-	// #
-	// #
-
 	remix_api::remix_api()
 	{
 		p_this = this;
@@ -478,11 +435,5 @@ namespace components
 			remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, end_scene_callback, on_present_callback);
 		}
 		else { game::console(); printf("[!][RemixApi] Failed to initialize the remixApi - Code: %d\n", status); }
-
-
-		// #
-		// commands
-		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
-
 	}
 }

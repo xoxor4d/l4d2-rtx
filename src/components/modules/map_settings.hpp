@@ -74,22 +74,6 @@ namespace components
 			std::string value;
 		};
 
-		enum AREA_CULL_MODE : uint8_t
-		{
-			AREA_CULL_MODE_NO_FRUSTUM = 0,
-			AREA_CULL_MODE_FRUSTUM = 1,
-			AREA_CULL_MODE_FRUSTUM_FORCE_AREA = 2,
-			AREA_CULL_COUNT = 3,
-			// -------------------
-			AREA_CULL_MODE_DEFAULT = AREA_CULL_MODE_FRUSTUM_FORCE_AREA,
-		};
-
-		struct hide_area_s
-		{
-			std::unordered_set<std::uint32_t> areas;
-			std::unordered_set<std::uint32_t> when_not_in_leafs;
-		};
-
 		struct remix_light_settings_s
 		{
 			struct point_s
@@ -124,15 +108,35 @@ namespace components
 			float kill_delay = 0.0f;
 		};
 
+		enum AREA_CULL_MODE : uint8_t
+		{
+			AREA_CULL_MODE_NO_FRUSTUM = 0,
+			AREA_CULL_MODE_FRUSTUM = 1,
+			AREA_CULL_MODE_FRUSTUM_FORCE_AREA = 2,
+			AREA_CULL_COUNT = 3,
+			// -------------------
+			AREA_CULL_MODE_DEFAULT = AREA_CULL_MODE_FRUSTUM_FORCE_AREA,
+		};
+
+		struct leaf_tweak_s
+		{
+			std::unordered_set<std::uint32_t> in_leafs;
+			std::unordered_set<std::uint32_t> areas;
+		};
+
+		struct hide_area_s
+		{
+			std::unordered_set<std::uint32_t> areas;
+			std::unordered_set<std::uint32_t> when_not_in_leafs;
+		};
+
 		struct area_overrides_s
 		{
 			std::unordered_set<std::uint32_t> leafs;
 			std::unordered_set<std::uint32_t> areas;
 			std::unordered_set<std::uint32_t> hide_leafs;
-
-			// areas - when_not_in_leafs
 			std::vector<hide_area_s> hide_areas;
-
+			std::vector<leaf_tweak_s> leaf_tweaks;
 			AREA_CULL_MODE cull_mode;
 			std::uint32_t area_index;
 		};

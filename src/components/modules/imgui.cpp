@@ -137,6 +137,13 @@ namespace components
 			ImGui::Checkbox("Enable Area Forcing", &m_enable_area_forcing);
 			ImGui::Checkbox("Enable 3D Sky", &m_enable_3dsky);
 
+			bool im_area_debug_state = main_module::is_node_debug_enabled();
+			if (ImGui::Checkbox("Toggle Area Debug Info", &im_area_debug_state)) {
+				main_module::set_node_vis_info(im_area_debug_state);
+			}
+
+			ImGui::SliderInt2("HUD: Area Debug Position", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
+
 			ImGui::Spacing();
 			if (ImGui::TreeNodeEx("Marker Manipulation", ImGuiTreeNodeFlags_FramePadding))
 			{
@@ -242,7 +249,7 @@ namespace components
 					if (selection)
 					{
 						int temp_num = (int)selection->index;
-						if (ImGui::DragInt("Marker Number", &temp_num, 0.1f, 0.0f))
+						if (ImGui::DragInt("Marker Number", &temp_num, 0.1f, 0))
 						{
 							if (temp_num < 0) {
 								temp_num = 0;

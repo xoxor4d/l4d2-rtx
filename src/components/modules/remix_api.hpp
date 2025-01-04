@@ -12,7 +12,6 @@ namespace components
 
 		void on_renderview();
 		static bool is_initialized() { return get()->m_initialized; }
-		static bool is_node_debug_enabled() { return get()->m_cmd_debug_node_vis; }
 
 		static constexpr std::uint32_t M_MAX_DEBUG_LINES = 512u;
 		enum DEBUG_REMIX_LINE_COLOR
@@ -56,10 +55,8 @@ namespace components
 		static void begin_scene_callback();
 		static void end_scene_callback();
 		static void on_present_callback();
-		static void xo_debug_toggle_node_vis_fn();
 
 		bool m_initialized = false;
-		bool m_cmd_debug_node_vis = false;
 
 		bool m_debug_lines_initialized = false;
 		remixapi_MaterialHandle m_debug_line_materials[3];

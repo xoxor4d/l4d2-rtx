@@ -23,32 +23,43 @@
 # Useful console command: 'xo_debug_toggle_node_vis'
 # Parameters ---------------------------------------------------------------------------------------------------------------------------------
 #
-# area:         the area the player has to be in
-# leafs:        leaf/s with forced visibility [int array]
-# areas:        area/s with forced visibility [int array]
-# cull:         [0] disable frustum culling
-#               [1] frustum culling (still forces leaf/s)
-#               [2] frustum culling (still forces leaf/s + forces all leafs in current area) (default, even when parameter 'cull' is not used) 
+# in_area ]                 the area the player has to be in    [int]
+#         |>       leafs:   leaf/s with forced visibility       [int array]
+#         |>       areas:   area/s with forced visibility       [int array]
+#         |>        cull:   [0] disable frustum culling
+#         |>                [1] frustum culling                 (still forces leaf/s)
+#         |>                [2] frustum culling (default)       (still forces leaf/s + forces all leafs in current area)
 #
-# hide_leafs:   force hide leaf/s   [int array]
+#                           # This can be used to disable frustum culling for specified areas when the player in specified leafs
+#                           # - Useful at area crossings when used in conjunction with nocull-area-specific markers that block visibility
+#         |>  leaf_tweak:   per leaf overrides                  [array of structure below]
+#         :: |> in_leafs:   the leaf/s the player has to be in  [int array]
+#         :: |>    areas:   area/s with forced visibility       [int array]
+# 
+#                           # This can be used to forcefully cull parts of the map
+#         |>  hide_leafs:   force hide leaf/s                   [int array]
+#         |>  hide_areas:   force hide area/s                   [array of structure below]
+#         :: |>    areas:   area/s to hide                      [int array]
+#         :: |>  N_leafs:   only hide area/s when NOT in leaf/s [int array]
 #
-# hide_areas:   force hide area/s   [int array]
-# |>   areas:   area/s to hide      [int array]
-# |> N_leafs:   only hide area/s when NOT in specified leaf/s [int array]
 
 [CULL]
     c1m1_hotel = [
-        { area = 2, areas = [6] },
-        { area = 3, areas = [6] },
-        { area = 4, areas = [7] },
-        { area = 5, areas = [4, 6, 7], leafs = [615, 616, 620, 622, 624, 632, 633, 1501, 1504, 1508, 1511] },
-        { area = 6, leafs = [1919, 1922, 1930, 1935, 1936, 1939, 2301, 2303, 2324, 2328, 2331, 2334, 2339] },
-        { area = 7, areas = [4, 5, 10], leafs = [1298, 1327, 1364, 1367, 1370, 1669, 1974] },
-        { area = 9, areas = [6] },
-        { area = 10, areas = [7] },
-        { area = 13, areas = [21, 23], leafs = [2203] },
-        { area = 21, areas = [13] },
-        { area = 23, areas = [13, 21] },
+        { in_area = 2, areas = [6] },
+        { in_area = 3, areas = [6] },
+        { in_area = 4, areas = [7] },
+        { in_area = 5, areas = [4, 6, 7], leafs = [615, 616, 620, 622, 624, 632, 633, 1501, 1504, 1508, 1511] },
+
+        { in_area = 6, leaf_tweak = [ 
+            { in_leafs = [2203, 2332, 2333], areas = [13] }
+        ]},  #leafs = [1919, 1922, 1930, 1935, 1936, 1939, 2301, 2303, 2324, 2328, 2331, 2334, 2339 ]},
+
+        { in_area = 7, areas = [4, 5, 10], leafs = [1298, 1327, 1364, 1367, 1370, 1669, 1974] },
+        { in_area = 9, areas = [6] },
+        { in_area = 10, areas = [7] },
+        { in_area = 13, areas = [21, 23], leafs = [2203] },
+        { in_area = 21, areas = [13] },
+        { in_area = 23, areas = [13, 21] },
     ]
 
 
