@@ -49,6 +49,8 @@ namespace sdk
 		void draw_print_text(const wchar_t* text, int len, font_draw_type_t type = FONT_DRAW_DEFAULT);
 		void set_cursor_always_visible(bool v);
 		bool is_cursor_visible();
+		void unlock_cursor();
+		void lock_cursor();
 
 		m_font create_font();
 	};

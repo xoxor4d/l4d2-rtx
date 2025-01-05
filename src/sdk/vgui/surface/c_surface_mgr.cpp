@@ -69,6 +69,18 @@ namespace sdk
 		return (*(original_fn**)this)[50](this);
 	}
 
+	void surface::unlock_cursor()
+	{
+		using original_fn = void(__thiscall*)(surface*);
+		return (*(original_fn**)this)[58](this);
+	}
+
+	void surface::lock_cursor()
+	{
+		using original_fn = void(__thiscall*)(surface*);
+		return (*(original_fn**)this)[59](this);
+	}
+
 	m_font surface::create_font()
 	{
 		using original_fn = m_font(__thiscall*)(surface*);

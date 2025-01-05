@@ -45,5 +45,10 @@ namespace components
 		float m_flashlight_exp = 0.8f;
 
 	private:
+		void tab_general();
+		void tab_marker_culling();
+		bool m_im_window_focused = false;
+		bool m_im_window_hovered = false;
+		bool m_im_allow_game_input = false;
 	};
 }

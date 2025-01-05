@@ -377,7 +377,7 @@ namespace components
 								}
 							}
 
-							m_map_settings.area_settings.emplace(area, 
+							m_map_settings.area_settings.emplace(area,
 								area_overrides_s 
 								{
 									std::move(leaf_set),
