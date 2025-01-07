@@ -138,7 +138,7 @@ namespace components
 	{
 		try 
 		{
-			auto config = toml::parse("l4d2-rtx\\map_settings.toml");
+			auto config = toml::parse("l4d2-rtx\\map_settings.toml", toml::spec::v(1, 1, 0));
 
 			// #
 			auto to_float = [](const toml::value& entry, const float default_val = 0.0f)

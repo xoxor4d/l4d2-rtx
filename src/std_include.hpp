@@ -57,6 +57,7 @@
 	#pragma warning(push)
 	#pragma warning(disable: 6011)
 	#pragma warning(disable: 28182)
+#define IMGUI_DEFINE_MATH_OPERATORS
 	#include "imgui.h"
 	#include <backends/imgui_impl_dx9.h>
 	#include <backends/imgui_impl_win32.h>

@@ -943,7 +943,7 @@ namespace components
 			ctx.save_tss(dev, D3DTSS_ALPHAARG2);
 			ctx.save_tss(dev, D3DTSS_ALPHAOP);
 			dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+			dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE4X);
 
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 
@@ -1304,6 +1304,17 @@ namespace components
 		bool has_fade = startfadesize <= 1.0f || endfadesize <= 1.0f;
 		bool no_near_fade = false;
 		bool low_crop = false;
+		bool reduce_emissiveness = false;
+
+		bool is_emissive = false;
+		{
+			DWORD dest_blend;
+			dev->GetRenderState(D3DRS_DESTBLEND, &dest_blend);
+
+			if ((D3DBLEND)dest_blend == D3DBLEND_ONE) {
+				is_emissive = true;
+			}
+		}
 
 		/*bool vista_test = false;
 		if (mat_name == "particle/vistasmokev1/vistasmokev4_nearcull") {
@@ -1320,20 +1331,12 @@ namespace components
 				no_near_fade = true;
 			}
 		}
-		else if (mat_name == "particle/fire_burning_character/fire_molotov_crop_low")
-		{
+		else if (mat_name == "particle/fire_burning_character/fire_molotov_crop_low") {
 			low_crop = true;
 		}
-
-		/*bool modulate_alpha = false;
-		{
-			DWORD dest_blend;
-			dev->GetRenderState(D3DRS_DESTBLEND, &dest_blend);
-
-			if ((D3DBLEND)dest_blend == D3DBLEND_ONE) {
-				modulate_alpha = true;
-			}
-		}*/
+		else if (is_emissive && mat_name.starts_with("particle/vistasmo") || mat_name.starts_with("particle/smoke1/") || mat_name.starts_with("particle/spray1/spray1")) {
+			reduce_emissiveness = true;
+		}
 
 		float g_vCropFactor[4] = {};
 		dev->GetVertexShaderConstantF(15, g_vCropFactor, 1);
@@ -1437,6 +1440,10 @@ namespace components
 
 				Vector4D tint = { r, g, b, a };
 				tint = tint * (1.0f - fade_factor); // Fades from 1 (visible) to 0 (invisible)
+
+				if (reduce_emissiveness) {
+					tint.w *= 0.25f;
+				}
 
 #if 0
 				const float MINIMUM_SIZE_FACTOR = SizeParms[0];
