@@ -50,5 +50,18 @@ namespace components
 		bool m_im_window_focused = false;
 		bool m_im_window_hovered = false;
 		bool m_im_allow_game_input = false;
+		std::string m_devgui_custom_footer_content;
+
+		static void questionmark(const char* desc)
+		{
+			ImGui::TextDisabled("(?)");
+			if (ImGui::BeginItemTooltip())
+			{
+				ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+				ImGui::TextUnformatted(desc);
+				ImGui::PopTextWrapPos();
+				ImGui::EndTooltip();
+			}
+		}
 	};
 }
