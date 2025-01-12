@@ -938,6 +938,9 @@ namespace components
 		game::cvar_uncheat_and_set_int("mat_fastnobump", 1);
 		game::cvar_uncheat_and_set_int("mat_disable_bloom", 1);
 
+		game::cvar_uncheat_and_set_int("r_threadeddetailprops", 0);
+		game::cvar_uncheat_and_set_int("r_DrawDetailProps", 0); // disables grass (detail) sprites on displacements (unstable and blurry)
+
 
 		// TODO: HACK
 		// remove when displacement-backface culling check is found - currently in use so that
