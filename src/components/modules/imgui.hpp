@@ -27,9 +27,9 @@ namespace components
 		bool m_enable_area_forcing = true;
 		bool m_enable_3dsky = false;
 
-		float m_flashlight_fwd_offset = 0.0f;
-		float m_flashlight_horz_offset = 0.0f;
-		float m_flashlight_vert_offset = 0.0f;
+		float m_flashlight_fwd_offset = -8.0f;
+		float m_flashlight_horz_offset = -5.0f;
+		float m_flashlight_vert_offset = -2.0f;
 
 		float m_flashlight_bot_fwd_offset = 22.0f;
 		float m_flashlight_bot_horz_offset = 1.0f;
@@ -40,7 +40,7 @@ namespace components
 
 		bool m_flashlight_use_custom_dir = false;
 		Vector m_flashlight_direction = { 1.0f, 0.0f, 0.0f };
-		float m_flashlight_angle = 23.0f;
+		float m_flashlight_angle = 24.0f;
 		float m_flashlight_softness = 0.3f;
 		float m_flashlight_exp = 0.8f;
 
