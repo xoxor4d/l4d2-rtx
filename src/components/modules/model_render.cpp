@@ -403,6 +403,11 @@ namespace components
 		}
 //#endif
 
+		if (ctx.info.material_name.contains("detailsprites"))
+		{
+			int x = 1; 
+		}
+
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
 		/*if (static bool runtime_hack_once = false; !runtime_hack_once)
@@ -551,7 +556,7 @@ namespace components
 		else if (mesh->m_VertexFormat == 0xa0103)
 		{
 			//lookat_vertex_decl(dev);
-
+			//ctx.modifiers.do_not_render = true; 
 			ctx.save_vs(dev);
 			dev->SetVertexShader(nullptr);
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
@@ -568,6 +573,13 @@ namespace components
 			dev->SetVertexShader(nullptr);
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX2);
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+		}
+
+		// UnlitGeneric -- stride 0x20
+		// > skybox/urban_horizon_even
+		else if (mesh->m_VertexFormat == 0x80103)
+		{
+			ctx.modifiers.do_not_render = false; 
 		}
 
 		// shader: screenspace_general_dx9, Engine_Post_dx9, Sky_HDR_DX9, DecalModulate_dx9 ..
@@ -603,6 +615,9 @@ namespace components
 				dev->SetVertexShader(nullptr);
 				dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
 				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+				//dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+				//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+				//set_remix_texture_categories(dev, ctx, WorldMatte);
 			}
 
 			else if (ctx.info.shader_name.starts_with("Engine_")) // Engine_Post
@@ -709,6 +724,10 @@ namespace components
 				dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
 				ctx.modifiers.do_not_render = false;
 			}
+			/*else
+			{
+				ctx.modifiers.do_not_render = true;
+			}*/
 			//ctx.modifiers.do_not_render = true;
 
 			// sky ff "works" but visuals are messed up
@@ -733,23 +752,31 @@ namespace components
 		// > debug/debugtranslucentsinglecolor
 		else if (mesh->m_VertexFormat == 0x80003)
 		{
+			//ctx.modifiers.do_not_render = true;
+
 			// TODO - HACK: see r_DispWalkable note in main_module
 			if (ctx.info.material_name.starts_with("debug/")) {
 				ctx.modifiers.do_not_render = true;
 			}
 			//ctx.modifiers.do_not_render = true;
-			lookat_vertex_decl(dev); 
+			//lookat_vertex_decl(dev);
+
+			ctx.save_vs(dev);
+			dev->SetVertexShader(nullptr);
+			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1);
+			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 		}
 
 		// shader: UnlitGeneric (stride 0x30)
 		// > __fontpage_additive, vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
 		// > vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
+		// > detail/detailsprites_overgrown
 		else if (mesh->m_VertexFormat == 0x80007)
 		{
 			//ctx.modifiers.do_not_render = true;
 
 			// always render UI and world ui with high gamma
-			ctx.modifiers.with_high_gamma = true;
+			ctx.modifiers.with_high_gamma = true; 
 
 			/*if (ctx.info.buffer_state.m_Transform[2].m[3][3] == 1.0f && 
 				(ctx.info.material_name == "vgui_white" || ctx.info.material_name == "__fontpage"))
@@ -838,6 +865,15 @@ namespace components
 				else if (ctx.info.material_name.ends_with("_noz")) {
 					ctx.modifiers.do_not_render = true;
 				}
+			}
+			else if (ctx.info.material_name.starts_with("detail/")) 
+			{
+				//lookat_vertex_decl(dev);
+
+				ctx.save_vs(dev);
+				dev->SetVertexShader(nullptr); 
+				dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 			}
 		}
 
@@ -955,10 +991,10 @@ namespace components
 		}
 
 		// shader: SpriteCard (spark) - stride 0x60
-		// > particle/beam_flashlight
+		// > particle/beam_flashlight (not used for surv. only the player) -> disable or blood overlay (hud) will raster this sprite
 		else if (mesh->m_VertexFormat == 0x124900005)
 		{
-			ctx.modifiers.do_not_render = false;
+			ctx.modifiers.do_not_render = true;
 			//int x = 1;
 		}
 
@@ -996,7 +1032,7 @@ namespace components
 		}
 
 		//ctx.modifiers.do_not_render = false;
-		//int break_me = 1;
+		int break_me = 1;
 	}
 
 	HOOK_RETN_PLACE_DEF(cmeshdx8_renderpass_pre_draw_retn_addr);
