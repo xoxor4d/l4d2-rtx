@@ -84,7 +84,7 @@ namespace game
 		if (cbaseentity_ptr)
 		{
 			// UTIL_Remove
-			utils::hook::call<void(__cdecl)(void* cbaseentity)>(SERVER_BASE + 0x2071E0)(cbaseentity_ptr);
+			utils::hook::call<void(__cdecl)(void* cbaseentity)>(SERVER_BASE + 0x2071E0)(cbaseentity_ptr); // #OFFS 2501
 		}
 	}
 

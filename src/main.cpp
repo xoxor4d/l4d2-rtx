@@ -112,8 +112,8 @@ DWORD WINAPI find_window_loop(LPVOID)
 	}
 
 	GET_MODULE_HANDLE(game::shaderapidx9_module, "shaderapidx9.dll", T);
-	GET_MODULE_HANDLE(game::studiorender_module, "studiorender.dll", T);
-	GET_MODULE_HANDLE(game::materialsystem_module, "materialsystem.dll", T);
+	//GET_MODULE_HANDLE(game::studiorender_module, "studiorender.dll", T);
+	//GET_MODULE_HANDLE(game::materialsystem_module, "materialsystem.dll", T);
 	GET_MODULE_HANDLE(game::engine_module, "engine.dll", T);
 	GET_MODULE_HANDLE(game::client_module, "client.dll", T);
 	GET_MODULE_HANDLE(game::server_module, "server.dll", T);

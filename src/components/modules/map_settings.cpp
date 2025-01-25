@@ -60,7 +60,7 @@ namespace components
 			//const auto skin_num = 1; 
 			//const auto model_name = "models/extras/info_speech.mdl";
 
-			void* mdlcache = reinterpret_cast<void*>(*(DWORD*)(SERVER_BASE + 0x897AE0));
+			void* mdlcache = reinterpret_cast<void*>(*(DWORD*)(SERVER_BASE + 0x897AE0)); // #OFFS 2501
 
 			// mdlcache->BeginLock
 			utils::hook::call_virtual<26, void>(mdlcache);
@@ -70,13 +70,13 @@ namespace components
 			if (mdl_handle != 0xFFFF)
 			{
 				// save precache state - CBaseEntity::m_bAllowPrecache
-				const bool old_precache_state = *reinterpret_cast<bool*>(SERVER_BASE + 0x7D8FC0);
+				const bool old_precache_state = *reinterpret_cast<bool*>(SERVER_BASE + 0x7D8FC0); // #OFFS 2501
 
 				// allow precaching - CBaseEntity::m_bAllowPrecache
-				*reinterpret_cast<bool*>(SERVER_BASE + 0x7D8FC0) = true;
+				*reinterpret_cast<bool*>(SERVER_BASE + 0x7D8FC0) = true; // #OFFS 2501
 
 				// CreateEntityByName - CBaseEntity *__cdecl CreateEntityByName(const char *className, int iForceEdictIndex, bool bNotify)
-				m.handle = utils::hook::call<void* (__cdecl)(const char* className, int iForceEdictIndex, bool bNotify)>(SERVER_BASE + 0x1196B0)
+				m.handle = utils::hook::call<void* (__cdecl)(const char* className, int iForceEdictIndex, bool bNotify)>(SERVER_BASE + 0x1196B0) // #OFFS 2501
 					("dynamic_prop", -1, true);
 
 				if (m.handle)
@@ -100,7 +100,7 @@ namespace components
 					utils::hook::call_virtual<26, void>(m.handle);
 
 					// DispatchSpawn
-					utils::hook::call<void(__cdecl)(void* pEntity, bool bRunVScripts)>(SERVER_BASE + 0x209580)
+					utils::hook::call<void(__cdecl)(void* pEntity, bool bRunVScripts)>(SERVER_BASE + 0x209580) // #OFFS 2501
 						(m.handle, true);
 
 					// ent->Activate
@@ -108,7 +108,7 @@ namespace components
 				}
 
 				// restore precaching state - CBaseEntity::m_bAllowPrecache
-				*reinterpret_cast<bool*>(SERVER_BASE + 0x7D8FC0) = old_precache_state;
+				*reinterpret_cast<bool*>(SERVER_BASE + 0x7D8FC0) = old_precache_state; // #OFFS 2501
 			}
 
 			utils::hook::call_virtual<27, void>(mdlcache); // mdlcache->EndLock

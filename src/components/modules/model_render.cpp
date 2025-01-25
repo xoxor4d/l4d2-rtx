@@ -625,7 +625,7 @@ namespace components
 				// do not fog HUD elements :D
 				dev->SetRenderState(D3DRS_FOGENABLE, FALSE);
 
-				const auto s_viewFadeColor = reinterpret_cast<Vector4D*>(CLIENT_BASE + 0x7A3D68);
+				const auto s_viewFadeColor = reinterpret_cast<Vector4D*>(CLIENT_BASE + 0x7A3D68); // #OFFS 2501
 
 				ctx.save_vs(dev);
 				dev->SetVertexShader(nullptr);

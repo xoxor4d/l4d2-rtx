@@ -1,8 +1,8 @@
 #pragma once
 
 #define RENDERER_BASE			game::shaderapidx9_module
-#define STUDIORENDER_BASE		game::studiorender_module
-#define MATERIALSTYSTEM_BASE	game::materialsystem_module
+//#define STUDIORENDER_BASE		game::studiorender_module
+//#define MATERIALSTYSTEM_BASE	game::materialsystem_module
 #define ENGINE_BASE				game::engine_module
 #define CLIENT_BASE				game::client_module
 #define SERVER_BASE				game::server_module
@@ -35,7 +35,7 @@ namespace game
 	inline CRender* get_engine_renderer() { return reinterpret_cast<CRender*>(ENGINE_BASE + 0x601F00); }
 	inline IDirect3DDevice9* get_d3d_device() { return reinterpret_cast<IDirect3DDevice9*>(*(DWORD*)(RENDERER_BASE + 0xD3EE8)); }
 	inline IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50)); }
-	inline IMaterialSystem* get_material_system() { return reinterpret_cast<IMaterialSystem*>(*(DWORD*)(CLIENT_BASE + 0x88B7F0)); }
+	inline IMaterialSystem* get_material_system() { return reinterpret_cast<IMaterialSystem*>(*(DWORD*)(CLIENT_BASE + 0x88B7F0)); } // 2501
 	inline worldbrushdata_t* get_hoststate_worldbrush_data() { return reinterpret_cast<worldbrushdata_t*>(*(DWORD*)(ENGINE_BASE + 0x42FFB8)); }
 	inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 

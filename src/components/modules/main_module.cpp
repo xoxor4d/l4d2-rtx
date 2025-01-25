@@ -64,7 +64,7 @@ namespace components
 		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
 
 		// CM_LeafArea :: get current area the camera is in
-		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); 
+		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); // #OFFS 2501
 
 		remix_api::get()->on_renderview();
 
@@ -304,7 +304,7 @@ namespace components
 	int r_cullnode_wrapper(mnode_t* node)
 	{
 		if (game::get_viewid() == VIEW_3DSKY || game::get_viewid() == VIEW_MONITOR) {
-			return utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node);
+			return utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node); // #OFFS 2501
 		}
 
 		// default culling mode or no culling if cmd was used
@@ -367,7 +367,7 @@ namespace components
 		}*/
 
 		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
-		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) {
+		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) { // #OFFS
 			return 0;
 		}
 
@@ -1036,7 +1036,7 @@ namespace components
 		// --
 
 		// CViewRender::RenderView :: "start" of current frame (after CViewRender::DrawMonitors)
-		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick();
+		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick(); // 2501
 		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
 
 		// not needed
