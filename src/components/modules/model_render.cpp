@@ -86,8 +86,19 @@ namespace components
 	{
 		NONE = 0,
 		INFECTED = 1 << 0,
-		//EMISSIVE_TWEAK = 1 << 1,
+		EMISSIVE_TWEAK = 1 << 1,
 	};
+
+	// uses unused Renderstate 149 & 164 to tweak the emissive intensity of remix materials (legacy/opaque)
+	// ~ currently req. runtime changes
+	void set_remix_emissive_intensity(IDirect3DDevice9* dev, prim_fvf_context& ctx, float intensity)
+	{
+		ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
+		dev->SetRenderState((D3DRENDERSTATETYPE)149, EMISSIVE_TWEAK);
+
+		ctx.save_rs(dev, (D3DRENDERSTATETYPE)164);
+		dev->SetRenderState((D3DRENDERSTATETYPE)164, *reinterpret_cast<DWORD*>(&intensity));
+	}
 
 	// set remix texture categories - RemixInstanceCategories
 	// ~ currently req. runtime changes
