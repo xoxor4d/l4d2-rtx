@@ -1605,6 +1605,9 @@ namespace components
 		utils::hook(CLIENT_BASE + 0x3C9F1F, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, CLIENT_BASE + 0x3C9F25);
 
+		// C_FuncAreaPortalWindow::DrawModel :: disable drawing Area Portal Brushmodels
+		utils::hook::nop(CLIENT_BASE + 0x7690E, 2); // 2501
+
 		// #
 		// commands
 
