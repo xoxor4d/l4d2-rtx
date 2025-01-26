@@ -38,7 +38,9 @@ namespace components
 		// nocull markers handled in 'model_renderer::DrawModelExecute::Detour'
 
 		// CM_PointLeafnum :: get current leaf
-		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
+		const auto current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
+		g_player_leaf_update = g_current_leaf != current_leaf;
+		g_current_leaf = current_leaf;
 
 		// CM_LeafArea :: get current area the camera is in
 		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); // #OFFS 2501
