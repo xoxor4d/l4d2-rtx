@@ -27,6 +27,7 @@ namespace components
 				}
 			}
 
+			main_module::cross_handle_map_and_game_settings();
 			remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
 		}
 

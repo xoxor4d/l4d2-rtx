@@ -105,7 +105,6 @@ namespace components
 
 		// always re-write file
 		write_toml();
-
 		return true;
 	}
 
@@ -113,6 +112,7 @@ namespace components
 	void xo_gamesettings_update_fn()
 	{
 		game_settings::parse_toml();
+		main_module::cross_handle_map_and_game_settings();
 	}
 
 	game_settings::game_settings()

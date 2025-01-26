@@ -11,41 +11,18 @@ namespace components
 
 	void on_renderview()
 	{
-		//model_render::get()->m_drew_hud = false;
-		model_render::get()->m_drew_model = false;
-
-		auto enginerender = game::get_engine_renderer();
 		const auto dev = game::get_d3d_device();
 
-		// setup main camera
-		{
-			float colView[4][4] = {};
-			utils::row_major_to_column_major(enginerender->m_matrixView.m[0], colView[0]);
+		// helper for nocull markers
+		model_render::get()->m_drew_model = false;
 
-			float colProj[4][4] = {};
-			utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
-
-			/*auto pos = game::get_current_view_origin();
-			D3DXMATRIX world =
-			{
-				1.0f, 0.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				pos->x, pos->y, pos->z, 1.0f
-			};*/
-
-			dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
-			dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
-			dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
-
-			// set a default material with diffuse set to a warm white
-			// so that add light to texture works and does not require rtx.effectLightPlasmaBall (animated)
-			D3DMATERIAL9 dmat = {};
-			dmat.Diffuse.r = 1.0f;
-			dmat.Diffuse.g = 0.8f;
-			dmat.Diffuse.b = 0.8f;
-			dev->SetMaterial(&dmat);
-		}
+		// set a default material with diffuse set to a warm white
+		// so that add light to texture works and does not require rtx.effectLightPlasmaBall (animated)
+		D3DMATERIAL9 dmat = {};
+		dmat.Diffuse.r = 1.0f;
+		dmat.Diffuse.g = 0.8f;
+		dmat.Diffuse.b = 0.8f;
+		dev->SetMaterial(&dmat);
 
 		// ----
 		// ----
@@ -58,7 +35,7 @@ namespace components
 
 		// TODO - find better spot to call this
 		map_settings::spawn_markers_once();
-		//model_render::draw_nocull_markers();
+		// nocull markers handled in 'model_renderer::DrawModelExecute::Detour'
 
 		// CM_PointLeafnum :: get current leaf
 		g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
@@ -107,63 +84,58 @@ namespace components
 	// ##
 	// ##
 
-#if 0
-	void on_skyboxdraw()
-	{
-		auto enginerender = game::get_engine_renderer();
-		const auto dev = game::get_d3d_device();
+	//void on_skyboxdraw()
+	//{
+	//	auto enginerender = game::get_engine_renderer();
+	//	const auto dev = game::get_d3d_device();
 
-		auto mat = game::get_material_system();
-		auto ctx = mat->vtbl->GetRenderContext(mat);
+	//	auto mat = game::get_material_system();
+	//	auto ctx = mat->vtbl->GetRenderContext(mat);
 
-		VMatrix viewm = {};
-		ctx->vtbl->GetMatrix2(ctx, MATERIAL_VIEW, &viewm);
+	//	VMatrix viewm = {};
+	//	ctx->vtbl->GetMatrix2(ctx, MATERIAL_VIEW, &viewm);
 
-		// setup main camera
-		{
-			float colView[4][4] = {};
-			utils::row_major_to_column_major(enginerender->m_matrixView.m[0], colView[0]);
+	//	// setup main camera
+	//	{
+	//		float colView[4][4] = {};
+	//		utils::row_major_to_column_major(enginerender->m_matrixView.m[0], colView[0]);
 
-			float colProj[4][4] = {};
-			utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
+	//		float colProj[4][4] = {};
+	//		utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
 
-			/*auto pos = game::get_current_view_origin();
-			auto render_pos = reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
+	//		auto pos = game::get_current_view_origin();
+	//		auto render_pos = reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
 
-			D3DXMATRIX world =
-			{
-				1.0f, 0.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				pos->x, pos->y, pos->z, 1.0f
-			};*/
+	//		D3DXMATRIX world =
+	//		{
+	//			1.0f, 0.0f, 0.0f, 0.0f,
+	//			0.0f, 1.0f, 0.0f, 0.0f,
+	//			0.0f, 0.0f, 1.0f, 0.0f,
+	//			render_pos->x, render_pos->y, render_pos->z, 1.0f
+	//		};
 
-			dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
-			dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
-			dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
-		}
+	//		dev->SetTransform(D3DTS_WORLD, &world);
+	//		dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
+	//		dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
+	//	}
+	//}
 
-		//g_current_leaf = game::get_leaf_from_position(*game::get_current_view_origin());
+	//HOOK_RETN_PLACE_DEF(skyboxview_draw_internal_retn);
+	//__declspec(naked) void skyboxview_draw_internal_stub()
+	//{
+	//	__asm
+	//	{
+	//		add     esp, 0x14;
 
-		//// CM_LeafArea :: get current area the camera is in
-		//g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf);
-	}
+	//		pushad;
+	//		call	on_skyboxdraw;
+	//		popad;
 
-	HOOK_RETN_PLACE_DEF(skyboxview_draw_internal_retn);
-	__declspec(naked) void skyboxview_draw_internal_stub()
-	{
-		__asm
-		{
-			pushad;
-			call	on_skyboxdraw;
-			popad;
-
-			// og
-			mov     eax, [edx + 0xC4];
-			jmp		skyboxview_draw_internal_retn;
-		}
-	}
-#endif
+	//		// og
+	//		cmp     byte ptr[ebp + 0xC], 0;
+	//		jmp		skyboxview_draw_internal_retn;
+	//	}
+	//}
 
 	// called on EndScene - remix_api::end_scene_callback()
 	void main_module::iterate_entities()
@@ -845,6 +817,7 @@ namespace components
 		game::cvar_uncheat("r_staticlight_streams");
 		game::cvar_uncheat("r_staticpropinfo");
 		game::cvar_uncheat("r_teeth");
+		game::cvar_uncheat("r_3dsky");
 	}
 
 	HOOK_RETN_PLACE_DEF(on_map_load_stub_retn);
@@ -984,7 +957,8 @@ namespace components
 		game::cvar_uncheat_and_set_int("r_flashlightrenderworld", 0);
 		game::cvar_uncheat_and_set_int("r_FlashlightDetailProps", 0);
 
-		game::cvar_uncheat_and_set_int("r_3dsky", 1);
+		// yes the user could just set it via the console but .. people
+		game::cvar_uncheat_and_set_int("r_3dsky", game_settings::get()->enable_3d_sky.get_as<bool>());
 		game::cvar_uncheat_and_set_int("mat_fullbright", 1);
 		game::cvar_uncheat_and_set_int("mat_softwareskin", 1);
 		game::cvar_uncheat_and_set_int("mat_phong", 1);
@@ -1033,6 +1007,17 @@ namespace components
 		// disable fog
 		game::cvar_uncheat_and_set_int("fog_override", 1);
 		game::cvar_uncheat_and_set_int("fog_enable", 0);
+	}
+
+	// logic after loading either map or game settings
+	void main_module::cross_handle_map_and_game_settings()
+	{
+		if (remix_api::is_initialized())
+		{
+			// rtx.skyAutoDetect
+			const auto is_3d_sky_enabled = game_settings::get()->enable_3d_sky.get_as<bool>();
+			remix_vars::set_option(remix_vars::get_option("rtx.skyAutoDetect"), remix_vars::string_to_option_value(remix_vars::OPTION_TYPE_FLOAT, is_3d_sky_enabled ? "1" : "0"));
+		}
 	}
 
 	// #
@@ -1093,9 +1078,9 @@ namespace components
 		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
 
 		// not needed
-		//utils::hook::nop(CLIENT_BASE + 0x1D3F33, 6);
-		//utils::hook(CLIENT_BASE + 0x1D3F33, skyboxview_draw_internal_stub).install()->quick();
-		//HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F39);
+		//utils::hook::nop(CLIENT_BASE + 0x1D3F1D, 7);
+		//utils::hook(CLIENT_BASE + 0x1D3F1D, skyboxview_draw_internal_stub).install()->quick();
+		//HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F24);
 
 		// #
 		// culling

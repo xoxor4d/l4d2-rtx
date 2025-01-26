@@ -366,7 +366,6 @@ namespace components
 		static void init_texture_addons(bool release = false);
 		static inline prim_fvf_context primctx {};
 
-		bool m_drew_hud = false;
 		bool m_drew_model = false;
 	};
 }

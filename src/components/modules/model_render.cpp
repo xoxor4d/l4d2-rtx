@@ -402,13 +402,11 @@ namespace components
 			}
 		}
 
-		if (game_settings::get()->enable_3d_sky.get_as<bool>())
-		{
-			// needed for 3d skybox
-			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-			dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-			dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-		}
+		// no longer set cam transforms in 'main_module::on_renderview'
+		// setting them there causes meshes rendered with shaders to lag behind
+		dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 
 		/*if (ctx.info.material_name.contains("detailsprites"))
 		{
@@ -957,7 +955,17 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x24900005)
 		{
 			//ctx.modifiers.do_not_render = true;
-			ctx.save_texture(dev, 0);
+
+			// this fixes shader lag .. which means we do not set a valid camera for the sky/cable/effects
+			//dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]); 
+			//dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
+			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+
+			D3DMATRIX view, proj;
+			dev->GetTransform(D3DTS_VIEW, &view);
+			dev->GetTransform(D3DTS_PROJECTION, &proj);
+
+			ctx.save_texture(dev, 0);  
 			dev->SetTexture(0, tex_addons::black); 
 		}
 

@@ -20,6 +20,7 @@ namespace components
 
 		static void iterate_entities();
 		static void force_cvars();
+		static void cross_handle_map_and_game_settings();
 
 		static void hud_draw_area_info();
 		static void trigger_vis_logic();
