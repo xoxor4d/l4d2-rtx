@@ -220,6 +220,7 @@ namespace components
 				continue;
 			}
 
+			// main_module::pre_recursive_world_node
 			if (m.is_hidden) {
 				continue;
 			}
@@ -1382,7 +1383,8 @@ namespace components
 				no_near_fade = true;
 			}
 		}
-		else if (mat_name == "particle/fire_burning_character/fire_molotov_crop_low") {
+		// "particle/fire_burning_character/fire_molotov_crop_low"
+		else if (mat_name.starts_with("particle/fire_burning_character") && mat_name.contains("crop")) {
 			low_crop = true;
 		}
 		else if (is_emissive && mat_name.starts_with("particle/vistasmo") || mat_name.starts_with("particle/smoke1/") || mat_name.starts_with("particle/spray1/spray1")) {
