@@ -932,11 +932,12 @@ namespace components
 				static float culltable_saved_row_y_pos_last_button = 0.0f;
 
 				// # CULL TABLE
-				if (ImGui::BeginTable("CullTable", 5, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+				if (ImGui::BeginTable("CullTable", 6, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
 					ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollY, ImVec2(0, 580)))
 				{
 					ImGui::TableSetupScrollFreeze(0, 1); // make top row always visible
 					ImGui::TableSetupColumn("Ar", ImGuiTableColumnFlags_NoResize, 18.0f);
+					ImGui::TableSetupColumn("Mode", ImGuiTableColumnFlags_WidthStretch, 34.0f);
 					ImGui::TableSetupColumn("Leafs", ImGuiTableColumnFlags_WidthStretch, 120.0f);
 					ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 60.0f);
 					ImGui::TableSetupColumn("Hide-Leafs", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_DefaultHide, 40.0f);
@@ -979,11 +980,39 @@ namespace components
 						ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_TableHeaderBg));
 
 						// - Area
-						ImGui::Text("%d", area_num);
+						ImGui::Text("%d", (int)area_num);
 
 						if (is_area_selected) {
 							area_selection_matches_any_entry = true; // check that the selection ptr is up to date
 						}
+
+						// Mode
+						ImGui::TableNextColumn();
+
+						const char* cullmode_items[] = { "No Frustum", "Frustum", "Frstm+ForceAr" };
+
+						ImGui::PushID((int)area_num);
+						ImGui::SetNextItemWidth(122.0f);
+						if (ImGui::BeginCombo("##ModeSelector", cullmode_items[a.cull_mode], ImGuiComboFlags_None))
+						{
+							for (int n = 0; n < IM_ARRAYSIZE(cullmode_items); n++)
+							{
+								const bool is_selected = (a.cull_mode == n);
+								if (ImGui::Selectable(cullmode_items[n], is_selected)) {
+									a.cull_mode = (map_settings::AREA_CULL_MODE)n;
+								}
+
+								if (is_selected) {
+									ImGui::SetItemDefaultFocus();
+								}
+									
+							}
+							ImGui::EndCombo();
+						}
+						TT(	"No Frustum:\t\t   compl. disable frustum culling when in area\n"
+							"Frustum:\t\t\t  stock frustum culling\n"
+							"Frustum + Force Area: stock frustum culling + force all nodes/leafs in current area");
+						ImGui::PopID();
 
 						// - Leafs
 						ImGui::TableNextColumn();
