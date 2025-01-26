@@ -92,8 +92,11 @@ namespace game
 	{
 		if (const auto ivar = game::get_icvar(); ivar)
 		{
-			if (auto var = ivar->vftable->FindVar(ivar, name); var) {
-				var->m_nFlags &= ~0x4000;
+			if (auto var = ivar->vftable->FindVar(ivar, name); var) 
+			{
+				var->m_nFlags &= ~(1 << 1); // FCVAR_DEVELOPMENTONLY
+				var->m_nFlags &= ~(1 << 4); // FCVAR_HIDDEN
+				var->m_nFlags &= ~(1 << 14); // FCVAR_CHEAT
 			}
 		}
 	}
@@ -105,7 +108,9 @@ namespace game
 			if (auto var = ivar->vftable->FindVar(ivar, name); var)
 			{
 				var->vtbl->SetValue_Int(var, val);
-				var->m_nFlags &= ~0x4000;
+				var->m_nFlags &= ~(1 << 1); // FCVAR_DEVELOPMENTONLY
+				var->m_nFlags &= ~(1 << 4); // FCVAR_HIDDEN
+				var->m_nFlags &= ~(1 << 14); // FCVAR_CHEAT
 			}
 		}
 	}
@@ -117,7 +122,9 @@ namespace game
 			if (auto var = ivar->vftable->FindVar(ivar, name); var)
 			{
 				var->vtbl->SetValue_Float(var, val);
-				var->m_nFlags &= ~0x4000;
+				var->m_nFlags &= ~(1 << 1); // FCVAR_DEVELOPMENTONLY
+				var->m_nFlags &= ~(1 << 4); // FCVAR_HIDDEN
+				var->m_nFlags &= ~(1 << 14); // FCVAR_CHEAT
 			}
 		}
 	}
