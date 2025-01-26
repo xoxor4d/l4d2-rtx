@@ -226,7 +226,6 @@ namespace components
 			SPACING_INDENT_BEGIN;
 			ImGui::Checkbox("Disable R_CullNode", &m_disable_cullnode);
 			ImGui::Checkbox("Enable Area Forcing", &m_enable_area_forcing);
-			ImGui::Checkbox("Enable 3D Sky", &m_enable_3dsky);
 
 			bool im_area_debug_state = main_module::is_node_debug_enabled();
 			if (ImGui::Checkbox("Toggle Area Debug Info", &im_area_debug_state)) {

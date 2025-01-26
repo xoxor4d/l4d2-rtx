@@ -10,6 +10,7 @@ namespace components
 		mem_allocator_.clear();
 		_register(new interfaces());
 		_register(new flags());
+		_register(new game_settings());
 		_register(new remix_api());
 		_register(new main_module());
 		_register(new model_render());

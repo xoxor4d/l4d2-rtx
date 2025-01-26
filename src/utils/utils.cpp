@@ -284,7 +284,7 @@ namespace utils
 		if (game::root_path.empty())
 		{
 			char path[MAX_PATH]; GetModuleFileNameA(nullptr, path, MAX_PATH);
-			game::root_path = path; utils::erase_substring(game::root_path, "portal2.exe");
+			game::root_path = path; utils::erase_substring(game::root_path, "left4dead2.exe");
 		}
 
 		file.open(game::root_path + sub_dir + "\\" + file_name);

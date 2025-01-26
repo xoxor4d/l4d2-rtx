@@ -1,7 +1,5 @@
 #include "std_include.hpp"
 
-//#define ENABLE_3D_SKY 1
-
 namespace components
 {
 	namespace cmd
@@ -404,20 +402,18 @@ namespace components
 			}
 		}
 
-//#if ENABLE_3D_SKY
-		if (imgui::get()->m_enable_3dsky)
+		if (game_settings::get()->enable_3d_sky.get_as<bool>())
 		{
 			// needed for 3d skybox
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 			dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 			dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 		}
-//#endif
 
-		if (ctx.info.material_name.contains("detailsprites"))
+		/*if (ctx.info.material_name.contains("detailsprites"))
 		{
 			int x = 1; 
-		}
+		}*/
 
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970

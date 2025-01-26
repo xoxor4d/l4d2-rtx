@@ -25,7 +25,6 @@ namespace components
 
 		bool m_disable_cullnode = false;
 		bool m_enable_area_forcing = true;
-		bool m_enable_3dsky = false;
 
 		float m_flashlight_fwd_offset = -8.0f;
 		float m_flashlight_horz_offset = -5.0f;

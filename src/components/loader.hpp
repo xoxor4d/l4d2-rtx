@@ -26,6 +26,7 @@ namespace components
 
 #include "modules/interfaces.hpp"
 #include "modules/flags.hpp"
+#include "modules/game_settings.hpp"
 #include "modules/remix_api.hpp"
 #include "modules/remix_lights.hpp"
 #include "modules/remix_vars.hpp"

@@ -944,10 +944,18 @@ namespace components
 		//game::cvar_uncheat_and_set_int("z_skip_wounds", 1);
 		//game::cvar_uncheat_and_set_int("z_wound_client_disabled", 1);
 
-		game::cvar_uncheat_and_set_int("r_staticprop_lod", 0);
-		game::cvar_uncheat_and_set_int("r_lod", 0);
-		game::cvar_uncheat_and_set_int("r_lod_switch_scale", 1); // hidden cvar
-		
+		if (!game_settings::get()->lod_forcing.get_as<bool>())
+		{
+			game::cvar_uncheat("r_staticprop_lod");
+			game::cvar_uncheat("r_lod");
+			game::cvar_uncheat("r_lod_switch_scale"); // hidden cvar
+		}
+		else
+		{
+			game::cvar_uncheat_and_set_int("r_staticprop_lod", 0);
+			game::cvar_uncheat_and_set_int("r_lod", 0);
+			game::cvar_uncheat_and_set_int("r_lod_switch_scale", 1); // hidden cvar
+		}
 
 		game::cvar_uncheat_and_set_int("r_dopixelvisibility", 0); // hopefully fix random crash (dxvk cmdBindPipeline) on map load
 
