@@ -618,6 +618,29 @@ namespace components
 			}
 		}
 
+		// leaf tweaks: this forces all leafs of an area that is forced per leaf
+		if (g_player_current_area_override)
+		{
+			if (!g_player_current_area_override->leaf_tweaks.empty())
+			{
+				for (const auto& lt : g_player_current_area_override->leaf_tweaks)
+				{
+					if (lt.in_leafs.contains(g_current_leaf))
+					{
+						for (auto i = 0u; i < (std::uint32_t)world->numleafs; i++)
+						{
+							// visualize near-by leafs that are part of area overrides (RED)
+							if (const auto	forced_leaf = &world->leafs[i];
+								lt.areas.contains((std::uint32_t)forced_leaf->area))
+							{
+								force_leaf_vis(i);
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// update visibility of nocull markers
 		if (g_player_leaf_update)
 		{
