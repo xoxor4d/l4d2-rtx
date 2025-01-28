@@ -116,6 +116,7 @@ namespace components
 					interfaces::get()->m_surface->set_cursor_always_visible(false);
 				}
 
+				ImGui::SetWindowFocus(); // unfocus input text
 				m_im_allow_game_input = true;
 				return false;
 			}
@@ -250,7 +251,7 @@ namespace components
 				auto& markers = map_settings::get_map_settings().map_markers;
 				if (ImGui::Button("Copy All Markers to Clipboard", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 				{
-					std::string toml_str = "    "s + map_settings::get_map_settings().mapname + " = [\n"s;
+					std::string toml_str = map_settings::get_map_settings().mapname + " = [\n"s;
 					for (auto& m : markers)
 					{
 						toml_str += "        { " + (m.no_cull ? "nocull = "s : "marker = "s) + std::to_string(m.index);
@@ -295,8 +296,11 @@ namespace components
 				}
 
 				ImGui::SameLine();
-				if (ImGui::Button("Reload MapSettings##Marker", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-					map_settings::reload();
+				if (ImGui::Button("Reload MapSettings##Marker", ImVec2(ImGui::GetContentRegionAvail().x, 0))) 
+				{
+					if (!ImGui::IsPopupOpen("Reload MapSettings?")) {
+						ImGui::OpenPopup("Reload MapSettings?");
+					}
 				}
 
 				ImGui::TextDisabled("No auto-save or file writing. You need to export to clipboard and override the settings yourself!");
@@ -338,7 +342,7 @@ namespace components
 				// MARKER TABLE
 
 				if (ImGui::BeginTable("MarkerTable", 9,
-					ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+					ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
 					ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 240)))
 				{
 					ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide, 12.0f);
@@ -346,9 +350,9 @@ namespace components
 					ImGui::TableSetupColumn("NC", ImGuiTableColumnFlags_NoResize, 24.0f);
 					ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 80.0f);
 					ImGui::TableSetupColumn("NLeafs", ImGuiTableColumnFlags_WidthStretch, 80.0f);
-					ImGui::TableSetupColumn("Pos", ImGuiTableColumnFlags_WidthFixed, 200.0f);
-					ImGui::TableSetupColumn("Rot", ImGuiTableColumnFlags_WidthFixed, 180.0f);
-					ImGui::TableSetupColumn("Scale", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+					ImGui::TableSetupColumn("Pos", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 200.0f);
+					ImGui::TableSetupColumn("Rot", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 180.0f);
+					ImGui::TableSetupColumn("Scale", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 130.0f);
 					ImGui::TableSetupColumn("##Delete", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip, 16.0f);
 					ImGui::TableHeadersRow();
 
@@ -430,8 +434,11 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								const auto spos = ImGui::GetCursorScreenPos();
 								ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
-								if (ImGui::InputText("##AreaMarker", in_area_buf, IM_ARRAYSIZE(in_area_buf), input_text_flags)) {
+
+								if (ImGui::InputText("##AreaMarker", in_area_buf, IM_ARRAYSIZE(in_area_buf), input_text_flags)) 
+								{
 									get_and_add_integers_to_marker(in_area_buf, selection->areas);
+									main_module::trigger_vis_logic();
 								}
 
 								ImGui::SetCursorScreenPos(spos);
@@ -448,14 +455,17 @@ namespace components
 								}
 
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
-								if (ImGui::Button("+##Area")) {
+								if (ImGui::Button("+##Area")) 
+								{
 									get_and_add_integers_to_marker(in_area_buf, selection->areas);
+									main_module::trigger_vis_logic();
 								}
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##Areas"))
 								{
-									auto c_leaf_str = utils::va("%d", g_current_leaf);
-									get_and_add_integers_to_marker((char*)c_leaf_str, selection->areas, false);
+									auto c_area_str = utils::va("%d", g_current_area);
+									get_and_add_integers_to_marker((char*)c_area_str, selection->areas, false);
+									main_module::trigger_vis_logic();
 								} TT("Pick Current Area");
 							} // End Area Input
 
@@ -515,6 +525,7 @@ namespace components
 								{
 									auto c_leaf_str = utils::va("%d", g_current_leaf);
 									get_and_add_integers_to_marker((char*)c_leaf_str, selection->when_not_in_leafs, false);
+									main_module::trigger_vis_logic();
 								} TT("Pick Current Leaf");
 							} // end Input
 
@@ -544,8 +555,10 @@ namespace components
 								ImGui::PushID((int)i);
 
 								const auto btn_size = ImVec2(16, is_selected ? (row_max_y_pos - table_first_row_y_pos - 8.0f) : 16.0f);
-								if (ImGui::Button("x##Marker", btn_size)) {
+								if (ImGui::Button("x##Marker", btn_size)) 
+								{
 									marked_for_deletion = &m;
+									main_module::trigger_vis_logic();
 								}
 								ImGui::PopStyleVar(2);
 								ImGui::PopStyleColor();
@@ -606,9 +619,15 @@ namespace components
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.4f, 0.3f, 0.1f, 0.8f));
 					if (ImGui::Button("Duplicate Current Marker"))
 					{
-						markers.emplace_back(map_settings::marker_settings_s{
-								selection->index, selection->origin, selection->no_cull, selection->rotation, selection->scale, selection->areas, selection->when_not_in_leafs
-							});
+						markers.emplace_back(map_settings::marker_settings_s {
+							.index = selection->index,
+							.origin = selection->origin, 
+							.no_cull = selection->no_cull, 
+							.rotation = selection->rotation, 
+							.scale = selection->scale, 
+							.areas = selection->areas, 
+							.when_not_in_leafs = selection->when_not_in_leafs
+						});
 
 						selection = &markers.back();
 					}
@@ -618,8 +637,15 @@ namespace components
 				ImGui::SameLine();
 				ImGui::BeginDisabled(!selection);
 				{
-					if (ImGui::Button("Teleport to Marker", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
+					if (ImGui::Button("TP to Marker")) {
 						interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("noclip; setpos %.2f %.2f %.2f", selection->origin.x, selection->origin.y, selection->origin.z - 40.0f));
+					}
+
+					ImGui::SameLine();
+					if (ImGui::Button("TP Marker to Player", ImVec2(ImGui::GetContentRegionAvail().x, 0))) 
+					{
+						selection->origin = *game::get_current_view_origin();
+						selection->origin.z -= 1.0f;
 					}
 					ImGui::EndDisabled();
 				}
@@ -703,7 +729,7 @@ namespace components
 					// temp map to sort areas by area number
 					std::map<int, map_settings::area_overrides_s> sorted_area_settings(areas.begin(), areas.end());
 
-					std::string toml_str = "    "s + map_settings::get_map_settings().mapname + " = [\n"s;
+					std::string toml_str = map_settings::get_map_settings().mapname + " = [\n"s;
 					for (auto& [ar_num, a] : sorted_area_settings)
 					{
 						bool is_multiline = false;
@@ -884,8 +910,11 @@ namespace components
 				} // end copy to clipboard
 
 				ImGui::SameLine();
-				if (ImGui::Button("Reload MapSettings##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
-					map_settings::reload();
+				if (ImGui::Button("Reload MapSettings##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0))) 
+				{
+					if (!ImGui::IsPopupOpen("Reload MapSettings?")) {
+						ImGui::OpenPopup("Reload MapSettings?");
+					}
 				}
 
 				ImGui::TextDisabled("No auto-save or file writing. You need to export to clipboard and override the settings yourself!");
@@ -1129,8 +1158,8 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##AreasCull"))
 								{
-									auto c_leaf_str = utils::va("%d", g_current_leaf);
-									get_and_add_integers_to_set((char*)c_leaf_str, area_selection->areas, false);
+									auto c_area_str = utils::va("%d", g_current_area);
+									get_and_add_integers_to_set((char*)c_area_str, area_selection->areas, false);
 								} TT("Pick Current Area");
 							} // End Area Input
 						}
@@ -1787,6 +1816,40 @@ namespace components
 			}
 
 			SPACING_INDENT_END;
+		}
+
+		if (ImGui::BeginPopupModal("Reload MapSettings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+		{
+			const auto half_width = ImGui::GetContentRegionMax().x * 0.5f;
+			auto line1_str = "You'll loose all unsaved changes if you continue!";
+			auto line2_str = "Use the copy to clipboard buttons and manually update";
+			auto line3_str = "the map_settings.toml file if you've made changes.";
+
+			ImGui::Spacing();
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line1_str).x * 0.5f));
+			ImGui::Text(line1_str);
+
+			ImGui::Spacing();
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line2_str).x * 0.5f));
+			ImGui::Text(line2_str);
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line3_str).x * 0.5f));
+			ImGui::Text(line3_str);
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			ImVec2 button_size(half_width - 10.0f, 0.0f);
+			if (ImGui::Button("Reload", button_size)) 
+			{
+				map_settings::reload();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel", button_size)) {
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
 		}
 
 		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "\nLeaf: " + std::to_string(g_current_leaf);
