@@ -306,7 +306,7 @@ namespace components
 	void remix_vars::parse_and_apply_conf_with_lerp(const std::string& conf_name, const std::uint64_t& identifier, const EASE_TYPE ease, const float duration, const float delay, const float delay_transition_back)
 	{
 		std::ifstream file;
-		if (utils::open_file_homepath("portal2-rtx\\map_configs", conf_name, file))
+		if (utils::open_file_homepath("l4d2-rtx\\map_configs", conf_name, file))
 		{
 			std::string input;
 			while (std::getline(file, input))
@@ -340,7 +340,7 @@ namespace components
 		else
 		{
 			game::console();
-			printf("[RemixVars] Failed to find config: \"%s\" in \"portal2-rtx\\map_configs\"\n", conf_name.c_str());
+			printf("[RemixVars] Failed to find config: \"%s\" in \"l4d2-rtx\\map_configs\"\n", conf_name.c_str());
 		}
 	}
 
@@ -635,6 +635,59 @@ namespace components
 						ip._complete = false;
 					}
 				}
+			}
+		}
+	}
+
+	// #
+	// #
+
+	void remix_vars::on_sound_start(const std::uint32_t hash, const std::string_view& sound_name)
+	{
+		// check for spawn trigger
+		auto& msettings = map_settings::get_map_settings();
+		for (auto it = msettings.remix_transitions.begin(); it != msettings.remix_transitions.end();)
+		{
+			// only handle sound transitions
+			if (it->trigger_type != map_settings::TRANSITION_TRIGGER_TYPE::SOUND) {
+				++it; continue;
+			}
+
+			bool iterpp = false;
+			if ((it->sound_hash && it->sound_hash == hash) || it->sound_name == sound_name)
+			{
+				bool can_add_transition = true;
+
+				// do not allow the same transition twice
+				for (const auto& ip : remix_vars::interpolate_stack)
+				{
+					if (ip.identifier == it->hash)
+					{
+						can_add_transition = false;
+						break;
+					}
+				}
+
+				if (can_add_transition)
+				{
+					remix_vars::parse_and_apply_conf_with_lerp(
+						it->config_name,
+						it->hash,
+						it->interpolate_type,
+						it->duration,
+						it->delay_in,
+						it->delay_out);
+
+					if (it->mode <= map_settings::TRANSITION_MODE::ONCE_ON_LEAVE)
+					{
+						it = msettings.remix_transitions.erase(it);
+						iterpp = true; // erase returns the next iterator
+					}
+				}
+			}
+
+			if (!iterpp) {
+				++it;
 			}
 		}
 	}

@@ -1,16 +1,17 @@
-# Fog Settings
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Fog Settings ---------------------------------------------------------------------------------------------------------------------------------
+# ~~ Parameters: 
 #
-# distance:     larger distance == less fog
-# color:        R G B (0-255) transmission
+# distance:     larger distance == less fog     [float]
+# color:        R G B transmission              [3D Vector - 0-255]
 
 [FOG]
     c1m1_hotel = { distance = 15000, color = [100, 100, 100] }
 
 
 
-# Water UV Scale
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Water UV Scale -------------------------------------------------------------------------------------------------------------------------------
+# :: Change water scaling per map
+# ~~ Parameters: 
 #
 # Small values reduce repetition while larger values will increase tiling (default = 1.0)
 
@@ -19,57 +20,85 @@
 
 
 
-# Override culling per game area
-# Useful console command: 'xo_debug_toggle_node_vis'
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Override culling per game area ---------------------------------------------------------------------------------------------------------------
+# :: Useful console command: 'xo_debug_toggle_node_vis'
+# ~~ Parameters:
 #
-# in_area ]                 the area the player has to be in    [int]
-#         |>       leafs:   leaf/s with forced visibility       [int array]
-#         |>       areas:   area/s with forced visibility       [int array]
-#         |>        cull:   [0] disable frustum culling
-#         |>                [1] frustum culling                 (still forces leaf/s)
-#         |>                [2] frustum culling (default)       (still forces leaf/s + forces all leafs in current area)
+# in_area:          the area the player has to be in                        [int]
+# areas:            area/s with forced visibility                           [int array]
+# leafs:            leaf/s with forced visibility                           [int array]
 #
-#                           # This can be used to disable frustum culling for specified areas when the player in specified leafs
-#                           # - Useful at area crossings when used in conjunction with nocull-area-specific markers that block visibility
-#         |>  leaf_tweak:   per leaf overrides                  [array of structure below]
-#         :: |> in_leafs:   the leaf/s the player has to be in  [int array]
-#         :: |>    areas:   area/s with forced visibility       [int array]
+# cull:             [0] disable frustum culling                             [int 0-2]
+#                   [1] frustum culling            (forces leaf/s)
+#                   [2] frustum culling (default)  (forces leaf/s + all leafs in current area)
+#
+# -----------       :: This can be used to disable frustum culling for specified areas when the player is in specified leafs 
+#                   :: Useful at area crossings when used in conjunction with nocull - area-specific markers that block visibility
+# leaf_tweak:                                                               [array of structure below]
+#                   |> in_leafs:   the leaf/s the player has to be in       [int array]
+#                   |>    areas:   area/s with forced visibility            [int array]
 # 
-#                           # This can be used to forcefully cull parts of the map
-#         |>  hide_leafs:   force hide leaf/s                   [int array]
-#         |>  hide_areas:   force hide area/s                   [array of structure below]
-#         :: |>    areas:   area/s to hide                      [int array]
-#         :: |>  N_leafs:   only hide area/s when NOT in leaf/s [int array]
+# -----------       :: This can be used to forcefully cull parts of the map
+# hide_areas:                                                               [array of structure below]
+#                   |>    areas:   area/s to hide                           [int array]
+#                   |>  N_leafs:   only hide area/s when NOT in leaf/s      [int array]
+#
+# hide_leafs:       force hide leaf/s                                       [int array]
 #
 
 [CULL]
     c1m1_hotel = [
-        { in_area = 2, areas = [6] },
-        { in_area = 3, areas = [6] },
-        { in_area = 4, areas = [7] },
-        { in_area = 5, areas = [4, 6, 7], leafs = [615, 616, 620, 622, 624, 632, 633, 1501, 1504, 1508, 1511] },
+        { in_area =   2, areas = [6], leafs = [
+                1, 4, 6, 10, 11, 12
+            ], leaf_tweak = [
+                { in_leafs = [1], areas = [3] },
+            ], hide_areas = [
+                { areas = [3], N_leafs = [55] },
+                { areas = [5], N_leafs = [56] },
+            ], hide_leafs = [5, 15] },
 
-        { in_area = 6, leaf_tweak = [ 
-            { in_leafs = [2203, 2332, 2333], areas = [13] }
-        ]},  #leafs = [1919, 1922, 1930, 1935, 1936, 1939, 2301, 2303, 2324, 2328, 2331, 2334, 2339 ]},
+        { in_area =   3, areas = [6] },
+        { in_area =   4, areas = [7] },
+        { in_area =   5, areas = [4, 6, 7], leafs = [
+                615, 616, 620, 622, 624, 632, 633, 1501, 
+                1504, 1508, 1511
+            ], cull = 0 },
 
-        { in_area = 7, areas = [4, 5, 10], leafs = [1298, 1327, 1364, 1367, 1370, 1669, 1974] },
-        { in_area = 9, areas = [6] },
-        { in_area = 10, areas = [7] },
-        { in_area = 13, areas = [21, 23], leafs = [2203] },
-        { in_area = 21, areas = [13] },
-        { in_area = 23, areas = [13, 21] },
+        { in_area =   6, leaf_tweak = [
+                { in_leafs = [2203, 2332, 2333], areas = [13] },
+                { in_leafs = [2, 3, 4], areas = [14] },
+            ] },
+
+        { in_area =   7, areas = [4, 5, 10], leafs = [
+                1298, 1327, 1364, 1367, 1370, 1669, 1974
+            ] },
+        { in_area =   9, areas = [6] },
+        { in_area =  10, areas = [7] },
+        { in_area =  11, areas = [13] },
+        { in_area =  13, areas = [11, 21, 23], leafs = [
+                2203, 2332, 2333
+            ], leaf_tweak = [
+                { in_leafs = [2328, 2331, 2334, 2366], areas = [6] },
+            ] },
+
+        { in_area =  21, areas = [13] },
+        { in_area =  23, areas = [13, 21] },
+    ]
+
+
+    c2m1_highway = [
+        { in_area =   1, cull = 1 },
     ]
 
 
 
-# Can be used to hide models (eg. when a certain model is used a lot, it can make sense to hide them and manually re-add the models by adding them as references to map markers (toolkit) - will help with cpu bottlenecks)
-# Useful console command: 'xo_debug_toggle_model_info'
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Hide Models ---------------------------------------------------------------------------------------------------------------------------------
+# :: Can be used to hide models (eg. when a certain model is used a lot, it can make sense to hide them and manually re-add the models by adding them as references to map markers (toolkit) - will help with cpu bottlenecks)
+# :: Useful console command: 'xo_debug_toggle_model_info'
+# ~~ Parameters:
 #
-# name   :   force hide models containing the specified substring [string array]
-# radius :   force hide models with this radius (checking for radii is generally faster and the preferred way to filter models) [float array]
+# name:             force hide models containing the specified substring                                                                [string array]
+# radius:           force hide models with this radius (checking for radii is generally faster and the preferred way to filter models)  [float array]
 
 [HIDEMODEL]
     #c1m1_hotel = { radius = [
@@ -78,116 +107,130 @@
 
 
 
-# Spawn unique markers that can be used as anchor meshes (same one can be spawned multiple times)
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Spawn unique markers meshes ---------------------------------------------------------------------------------------------------------------------------------
+# :: Can be used as anchor mesh (same one can be spawned multiple times)
+# ~~ Parameters:
 #
-# marker    ]     THIS:     number of marker mesh - can get culled BUT that can be controlled via leaf/area forcing (initial spawning can't be forced) [int 0-100]
-# nocull    ]  OR THAT:     number of marker mesh - never getting culled and spawned on map load (eg: useful for distant light) [int 0-inf.]
-# nocull    |>   areas:     (optional) only show nocull marker when player is in specified area/s [int array]
-# nocull    |> N_leafs:     (optional) only show nocull marker when player is in ^ and NOT in specified leaf/s [int array]
-
-# position:                 X Y Z position of the marker mesh [3D Vector]
-# rotation:                 X Y Z rotation of the marker mesh [3D Vector]
-# scale:                    X Y Z scale of the marker mesh [3D Vector]
+# marker    ]     THIS:     number of marker mesh - can get culled BUT that can be controlled via leaf/area forcing (initial spawning can't be forced)  [int 0-100]
+# nocull    ]  OR THAT:     number of marker mesh - never getting culled and spawned on map load (eg: useful for distant light)                         [int 0-inf]
+#           |>   areas:     (opt.) only show nocull marker when player is in specified area/s                                                           [int array]
+#           |> N_leafs:     (opt.) only show nocull marker when player is in ^ and NOT in specified leaf/s                                              [int array]
+#
+# position:                 position of the marker mesh     [3D Vector]
+# rotation:                 rotation of the marker mesh     [3D Vector]
+# scale:                    scale of the marker mesh        [3D Vector]
 
 [MARKER]
     c1m1_hotel = [
         { marker = 25, position = [620.000000, 5680.000000, 2920.000000], rotation = [0.000000, 0.000000, 0.000000] },
-        { nocull = 0, areas = [6], N_leafs = [], position = [1343.000000, 5685.000000, 2718.000000], rotation = [90.000000, 0.000000, 90.000000], scale = [3.000000, 10.000000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [], position = [1343.000000, 5500.000000, 2718.000000], rotation = [90.000000, 0.000000, 90.000000], scale = [3.000000, 10.000000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [], position = [1350.000000, 5593.500000, 2810.500000], rotation = [0.000000, 0.000000, 90.000000], scale = [2.870000, 10.000000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [], position = [1350.000000, 5586.500000, 2653.500000], rotation = [0.000000, 0.000000, 90.000000], scale = [3.000000, 10.000000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [], position = [1076.500000, 5594.000000, 2726.500000], rotation = [90.000000, 90.000000, 0.000000], scale = [3.000000, 3.000000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [], position = [2171.411621, 5694.378906, 2717.031250], rotation = [90.000000, 0.000000, 0.000000], scale = [2.000000, 2.000000, 1.000000] },
+        { nocull = 0, areas = [13], N_leafs = [2334, 2366, 2359, 2331], position = [1728.517944, 6075.494629, 2721.531006], rotation = [90.000000, 0.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1621.017944, 5627.995117, 2721.531006], rotation = [90.000000, 90.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1854.759033, 5599.157227, 2717.031250], rotation = [90.000000, 73.698997, 0.000000], scale = [3.240000, 2.940000, 1.000000] },
     ]
 
 
-
-
-
-# Remix variable configs
-# Useful console command: 'scene_print' && 'xo_debug_toggle_node_vis'
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Remix variable configs ---------------------------------------------------------------------------------------------------------------------------------
+# :: Useful console command: 'xo_scene_print' && 'xo_debug_toggle_node_vis' && 'xo_debug_toggle_sound_print'
+# ~~ Parameters:
 #
-# startup:      configs that will be loaded on map-load, conf matching the map name will be loaded automatically and does not need to be specified
-# conf:         name of config containing remix options (goal values)
+# startup:      configs that will be loaded on map-load, conf matching the map name will be loaded automatically and does not need to be specified              [array of strings]
 #
-# leafs:    ]      THIS:    leaf's that will trigger the transition [array] (moving from one leaf to another connected & defined leaf will not trigger the transition) [int array]
-# choreo:   ]   OR THAT:    name of choreography (.vcd) that will trigger the transition (can be a substring - keep as short as possible) (has prio. over leafs param)
+# -----------
+# transitions:  load / transition to config values on specified events                                                                                          [array of structure below]
+#               |> conf:         name of config containing remix (goal) variables                                                                               [string]
+#               |> trigger:      trigger config loading / transition via choreography (.vcd), sound or leaf
+#                                |> choreo ]    THIS:                       name of choreography (.vcd) that will trigger the transition (can be a substring)   [string]
+#                                          ]             |> actor:   (opt.) name of actor the event is played on                                                [string]
+#                                          ]             |> event:   (opt.) name of the event within the .vcd (can be a substr)                                 [string]
+#                                          ]             |> param1:  (opt.) name of the event within the .vcd (can be a substr)                                 [string]
+#                                          ] 
+#                                |> sound  ] OR THAT:    hash made up of name, index and position (cmd: see desc.) OR substring of soundname                    [integer] (hex format) || [string]
+#                                |> leafs  ] OR THAT:    leaf's that will trigger the transition                                                                [int array]
+#                                                        [!] moving from one leaf to another connected & defined leaf will not trigger the transition
 #
-# mode:         [0] ONCE:   On Enter/Start -- [1] ONCE: On Leave/End    // transition will only be activated once (until map reload or map_settings reload)
-#               [2] ALWAYS: On Enter/Start -- [3] ALWAYS: On Leave/End
-#
-# ease:         [0] LINEAR 
-#               [1] SIN_IN   -- [2] SIN_OUT   -- [3] SIN_INOUT
-#               [4] CUBIC_IN -- [5] CUBIC_OUT -- [6] CUBIC_INOUT
-#               [7] EXPO_IN  -- [8] EXPO_OUT  -- [9] EXPO_INOUT
-#
-# duration:     transition time (in seconds) [float]
-# delay_in:     delay start of transition (in seconds) [float]
-# delay_out:    delay between end of transition and transition back to the initial starting value (in seconds) - only active if value > 0 [float]
+#               |> mode:         [0] ONCE:   On Enter/Start -- [1] ONCE: On Leave/End   (will only be activated once - until map or map_settings reload)        [int 0-3]
+#                                [2] ALWAYS: On Enter/Start -- [3] ALWAYS: On Leave/End
+#               
+#               |> ease:         [0] LINEAR                                                                                                                     [int 0-9]
+#                                [1] SIN_IN   -- [2] SIN_OUT   -- [3] SIN_INOUT
+#                                [4] CUBIC_IN -- [5] CUBIC_OUT -- [6] CUBIC_INOUT
+#                                [7] EXPO_IN  -- [8] EXPO_OUT  -- [9] EXPO_INOUT
+#               
+#               |> duration:     transition time (in seconds)                                                                                                   [float]
+#               |> delay_in:     delay start of transition (in seconds)                                                                                         [float]
+#               |> delay_out:    delay between end of transition and transition back to the initial starting value (in seconds) - only active if value > 0      [float]
 
 [CONFIGVARS]
-    # Hello Migraine
-    #sp_a1_intro1 = { transitions = [
-    #    { conf = "chromatic_explosion.conf", choreo = "npc\\sphere03\\OpeningHello", mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 }
-    #]}
+    # Migraine
+    c1m1_hotel = { transitions = [
+        #{ conf = "chromatic_explosion.conf", trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
+        #{ conf = "chromatic_explosion.conf", trigger = { sound = 0x87a91fef }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
+        #{ conf = "chromatic_explosion.conf", trigger = { sound = "weapons/pistol/gunfire/pistol_fire.wav" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
+    ]}
 
 
 
-# Spawn lights using the remix api
-# Useful console command: 'scene_print' && 'xo_debug_toggle_sound_print'
-# Parameters ---------------------------------------------------------------------------------------------------------------------------------
+# Spawn lights using the remix api ---------------------------------------------------------------------------------------------------------------------------------
+# :: Useful console command: 'scene_print' && 'xo_debug_toggle_sound_print'
+# ~~ Parameters:
 #
 # trigger:          trigger light creation via choreography (.vcd) or sound
 #                   [!] not defining this will create the light on map load 
 #
-#                   > choreo ]    THIS:     name of choreography (.vcd) (can be a substring) [string]
-#                   > sound  ] OR THAT:     hash made up of name, index and position (cmd: xo_debug_toggle_sound_print) (hex format) [integer]
-#                   > delay:                delay spawn after trigger (in seconds) [float]
-#                   > always:               re-trigger every time and not only once [0-1] (defaults to 0)
+#                   |> choreo ]    THIS:    |> choreo:         name of choreography (.vcd) that will trigger the transition (can be a substring)    [string]
+#                             ]             |> actor:   (opt.) name of actor the event is played on                                                 [string]
+#                             ]             |> event:   (opt.) name of the event within the .vcd (can be a substr)                                  [string]
+#                             ]             |> param1:  (opt.) name of the event within the .vcd (can be a substr)                                  [string]
+#                             ] 
+#                   |> sound  ] OR THAT:    hash made up of name, index and position (cmd: see desc.)                                               [integer] (hex format)
+#                   |> delay:               delay spawn after trigger (in seconds)                                                                  [float]
+#                   |> always:              re-triggering the event again will spawn a new light instance everytime (defaults to 0)                 [int 0-1]
+#
 # -----------
 # kill:             kill light via choreography (.vcd) or sound
 #                   [!] not defining this || empty string/hash -> light will loop until the map gets unloaded or once loop is complete when run_once is true
 #
-#                   > choreo ]    THIS:     name of choreography (.vcd) (can be a substring) [string]
-#                   > sound  ] OR THAT:     hash made up of name, index and position (cmd: xo_debug_toggle_sound_print) (hex format) [integer]
-#                   > delay:                delay kill after vcd was triggered (in seconds) [float]
+#                   |> choreo ]    THIS:    name of choreography (.vcd) (can be a substring)                                                        [string]
+#                   |> sound  ] OR THAT:    hash made up of name, index and position (cmd: see desc.)                                               [integer] (hex format)
+#                   |> delay:               delay kill after vcd was triggered (in seconds)                                                         [float]
+#
 # -----------
-# points:           list of points that will make up a spline the light will move along [3D Vector Array]
+# points:           list of points that will make up a spline the light will move along                                                             [array of structure below]
 #
-#                   > position:     X Y Z coordinates of light [3D Vector]
-#                                   [!] first point needs to define a position - following ones will use the last defined position if position is not defined
+#                   |> position:            X Y Z coordinates of light                                                                              [3D Vector]
+#                                           [!] first point needs to define a position
+#                                           [!] following ones will use the last defined position if position is not defined
 #
-#                   > radiance:     R G B radiance of light [3D Vector] (defaults to 10 10 10)
-#                   > scalar:       ^ radiance scalar
-#                   > radius:       radius of light [float] (defaults to 1.0)
-#                   > smoothness:   curve smoothness [float 0-1] (defaults to 0.5 - values above 1 might produce odd results)
-#                   > timepoint:    time in seconds at which the light arrives at the point (float) (evenly distributed if not specified)
-#                                   [!] first timepoint is always 0
-#                                   [!] timepoints can not be out of order
-#                                   [!] last point requires a timepoint and defines the total duration
+#                   |> radiance:            R G B radiance of light (defaults to 10 10 10)                                                          [3D Vector 0-inf]
+#                   |> scalar:              ^ radiance scalar
+#                   |> radius:              radius of light (defaults to 1.0)                                                                       [float]
+#                   |> smoothness:          curve smoothness (defaults to 0.5 - values above 1 might produce odd results)                           [float 0-1]
+#                   |> timepoint:           time in seconds at which the light arrives at the point (evenly distributed if not specified)           [float]
+#                                           [!] first timepoint is always 0
+#                                           [!] timepoints can not be out of order
+#                                           [!] last point requires a timepoint and defines the total duration
 #
-#                   > direction:    light direction (will be normalized in code) [3D Vector] (defaults to 0 0 1)
-#                   > degrees:      cone angle - anything besides 180 turns ON light shaping [float 0-180] (defaults to 180)
-#                   > softness:     cone softness [float 0-PI] (defaults to 0)
-#                   > exponent:     focus expo [float] (defaults to 0)
+#                   |> direction:           light direction (will be normalized in code) (defaults to 0 0 1)                                        [3D Vector 0-inf] (will be normalized in code)
+#                   |> degrees:             cone angle - anything besides 180 turns ON light shaping (defaults to 180)                              [float 0-180]
+#                   |> softness:            cone softness (defaults to 0)                                                                           [float 0-PI]
+#                   |> exponent:            focus expo (defaults to 0)                                                                              [float]
+#
 # -----------
-# run_once:         ]     THIS:     destroy light after reaching the last point (to kill light without choreo) [0-1] (defaults to 0)
-# loop:             ] OR THESE:     create a looping light that restarts at the first point after reaching the last point [0-1] (defaults to 0)
-# loop_smoothing:   ] OR THESE:     automatically connect and smooth the start and end point [0-1] (defaults to 0)
-#                                   [!] requires 'loop' to be true
-#                                   [!] only position + timepoint is used from the last point 
-
+# run_once:         ]    THIS:              destroy light after reaching the last point (defaults to 0)                                             [int 0-1]
+# loop:             ] OR THAT:              create a looping light that restarts at the first point after reaching the last point (defaults to 0)   [int 0-1]
+# loop_smoothing:   ] OR THAT:              automatically connect and smooth the start and end point (defaults to 0)                                [int 0-1]
+#                                           [!] requires 'loop' to be true
+#                                           [!] only position + timepoint is used from the last point 
+# ------------------------------------------------------------------------------------------------------------------------------------------------------
 [LIGHTS]
     c1m1_hotel = [
             # 1st light - infinite loop
-            #{ points = [
-            #    { position = [-922.0, -500.0, -60.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
-            #    { position = [-922.0, -400.0, 0.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
-            #    { position = [-922.0, -700.0, 80.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
-            #    { position = [-922.0, -600.0, 0.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
-            #], run_once = 0, loop = 1, loop_smoothing = 1 },
+            { trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = 1 }, points = [
+                { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
+                { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
+                { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
+                { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
+            ], run_once = 1, loop = 0 },
 
             # 2nd light - triggered and killed by choreo event - looping until killed (scene_playvcd "npc/announcer/prehub28.vcd")
             #{ trigger = { choreo = "prehub27.vcd", delay = 0.0 }, kill = { choreo = "prehub28.vcd", delay = 0.0 }, points = [

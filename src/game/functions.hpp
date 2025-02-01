@@ -56,6 +56,7 @@ namespace game
 	extern void cvar_uncheat_and_set_int(const char* name, int val);
 	extern void cvar_uncheat_and_set_float(const char* name, float val);
 
+	extern void print_ingame(const char* msg, ...);
 
 	// CM_PointLeafnum
 	inline int get_leaf_from_position(const Vector& pos) { return utils::hook::call<int(__cdecl)(const float*)>(ENGINE_BASE + 0x14B130)(&pos.x); }

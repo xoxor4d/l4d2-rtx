@@ -7,11 +7,13 @@
 // enable/disable benchmark logic
 //#define BENCHMARK
 
-#ifdef DEBUG
-	#define USE_IMGUI 1
-#else
-	#define USE_IMGUI 0
-#endif
+//#ifdef DEBUG
+//	#define USE_IMGUI 1
+//#else
+//	#define USE_IMGUI 0
+//#endif
+
+#define USE_IMGUI 1
 
 // Version number
 #include <version.hpp>

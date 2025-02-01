@@ -28,6 +28,8 @@ namespace components
 #include "modules/flags.hpp"
 #include "modules/game_settings.hpp"
 #include "modules/remix_api.hpp"
+#include "modules/choreo_events.hpp"
+#include "modules/sound_events.hpp"
 #include "modules/remix_lights.hpp"
 #include "modules/remix_vars.hpp"
 #include "modules/main_module.hpp"

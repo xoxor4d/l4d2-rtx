@@ -1048,7 +1048,7 @@ namespace components
 		}
 
 		//ctx.modifiers.do_not_render = false;
-		int break_me = 1;
+		//int break_me = 1;
 	}
 
 	HOOK_RETN_PLACE_DEF(cmeshdx8_renderpass_pre_draw_retn_addr);

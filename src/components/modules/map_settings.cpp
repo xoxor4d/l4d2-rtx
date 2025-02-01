@@ -2,6 +2,8 @@
 
 namespace components
 {
+#define CATCH_ERR	catch (toml::type_error& err) { game::console(); printf("%s\n", err.what()); return; }
+
 	void map_settings::set_settings_for_map(const std::string& map_name)
 	{
 		m_map_settings.mapname = !map_name.empty() ? map_name : interfaces::get()->m_engine->get_level_name();
@@ -29,6 +31,38 @@ namespace components
 
 			main_module::cross_handle_map_and_game_settings();
 			remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
+		}
+
+		// are we using any sound hashes or names to trigger configvar transitions?
+		{
+			if (!m_map_settings.remix_transitions.empty())
+			{
+				for (const auto& t : m_map_settings.remix_transitions)
+				{
+					if (t.trigger_type == TRANSITION_TRIGGER_TYPE::SOUND && t.sound_hash) {
+						m_map_settings.using_any_transition_sound_hash = true;
+					}
+
+					if (t.trigger_type == TRANSITION_TRIGGER_TYPE::SOUND && !t.sound_name.empty()) {
+						m_map_settings.using_any_transition_sound_name = true;
+					}
+				}
+			}
+		}
+
+		// are we using any sound hashes to trigger light spawning?
+		{
+			if (!m_map_settings.remix_transitions.empty())
+			{
+				for (const auto& l : m_map_settings.remix_lights)
+				{
+					if (l.trigger_sound_hash || l.kill_sound_hash)
+					{
+						m_map_settings.using_any_light_sound_hash = true;
+						break;
+					}
+				}
+			}
 		}
 
 		m_loaded = true;
@@ -561,11 +595,10 @@ namespace components
 			{
 				auto& configvar_table = config["CONFIGVARS"];
 
-				// #TODO
-				auto process_transition_entry = [to_int, to_float](const toml::value& entry)
+				auto process_transition_entry = [to_uint, to_int, to_float](const toml::value& entry)
 					{
 						// we NEED conf, leafs and duration or speed
-						if (entry.contains("conf") && (entry.contains("leafs") || entry.contains("choreo")) && (entry.contains("duration") || entry.contains("speed")))
+						if (entry.contains("conf") && entry.contains("trigger") && (entry.contains("duration") || entry.contains("speed")))
 						{
 							std::string config_name;
 
@@ -602,24 +635,51 @@ namespace components
 									duration = to_float(entry.at("duration"));
 								}
 
-								const bool choreo_mode = entry.contains("choreo");
-								if (choreo_mode)
+								const auto& trigger = entry.at("trigger");
+
+								// choreo trigger
+								if (trigger.contains("choreo"))
 								{
 									std::string choreo_name;
-									try { choreo_name = entry.at("choreo").as_string(); }
-									catch (toml::type_error& err)
+									std::string choreo_actor;
+									std::string choreo_event;
+									std::string choreo_param1;
+
+									try { choreo_name = trigger.at("choreo").as_string(); }
+									CATCH_ERR;
+
+									if (trigger.contains("actor"))
 									{
-										game::console(); printf("%s\n", err.what());
-										return;
+										try { choreo_actor = trigger.at("actor").as_string(); }
+										CATCH_ERR;
+									}
+									
+									if (trigger.contains("event"))
+									{
+										try { choreo_event = trigger.at("event").as_string(); }
+										CATCH_ERR;
+									}
+
+									if (trigger.contains("param1"))
+									{
+										try { choreo_param1 = trigger.at("param1").as_string(); }
+										CATCH_ERR;
 									}
 
 									if (!choreo_name.empty())
 									{
 										const auto hash = utils::string_hash64(utils::va("%s%s%.2f", choreo_name.c_str(), config_name.c_str(), duration));
-										m_map_settings.choreo_transitions.emplace_back(
+										m_map_settings.remix_transitions.emplace_back(
+											TRANSITION_TRIGGER_TYPE::CHOREO,
 											std::move(choreo_name),
+											std::move(choreo_actor),
+											std::move(choreo_event),
+											std::move(choreo_param1),
+											0u,
+											"",
+											std::unordered_set<std::uint32_t>(),
 											config_name,
-											(CHOREO_TRANS_MODE)mode,
+											(TRANSITION_MODE)mode,
 											ease,
 											delay_in,
 											delay_out,
@@ -627,36 +687,76 @@ namespace components
 											hash);
 									}
 								}
-								else
+
+								// sound trigger
+								else if (trigger.contains("sound"))
 								{
-									const bool leaf_mode = !choreo_mode && entry.contains("leafs");
-									if (leaf_mode)
+									std::uint32_t temp_sound_hash = 0u;
+									std::string temp_sound_name;
+
+									if (trigger.at("sound").type() == toml::value_t::integer)
 									{
-										std::unordered_set<std::uint32_t> leaf_set;
-										const auto& leafs = entry.at("leafs").as_array();
-										if (!leafs.empty())
-										{
-											for (const auto& leaf : leafs) {
-												leaf_set.insert(to_int(leaf));
-											}
+										temp_sound_hash = to_uint(trigger.at("sound"), 0u);
+									}
+									else
+									{
+										try { temp_sound_name = trigger.at("sound").as_string(); }
+										CATCH_ERR;
+									}
 
-											// create a unique hash for this transition
-											int leaf_sum = 0;
-											for (const auto& leaf : leaf_set) {
-												leaf_sum += leaf;
-											}
+									const auto hash = utils::string_hash64(utils::va("%d%s%.2f", temp_sound_hash, temp_sound_name.c_str(), config_name.c_str(), duration));
+									m_map_settings.remix_transitions.emplace_back(
+										TRANSITION_TRIGGER_TYPE::SOUND,
+										"",
+										"",
+										"",
+										"",
+										temp_sound_hash,
+										std::move(temp_sound_name),
+										std::unordered_set<std::uint32_t>(),
+										config_name,
+										(TRANSITION_MODE)mode,
+										ease,
+										delay_in,
+										delay_out,
+										duration,
+										hash);
+								}
 
-											const auto hash = utils::string_hash64(utils::va("%d%s%.2f", leaf_sum, config_name.c_str(), duration));
-											m_map_settings.leaf_transitions.emplace_back(
-												std::move(leaf_set),
-												config_name,
-												(LEAF_TRANS_MODE)mode,
-												ease,
-												delay_in,
-												delay_out,
-												duration,
-												hash);
+								// leaf trigger
+								else if (trigger.contains("leafs"))
+								{
+									std::unordered_set<std::uint32_t> leaf_set;
+									const auto& leafs = trigger.at("leafs").as_array();
+									if (!leafs.empty())
+									{
+										for (const auto& leaf : leafs) {
+											leaf_set.insert(to_int(leaf));
 										}
+
+										// create a unique hash for this transition
+										std::uint32_t leaf_sum = 0;
+										for (const auto& leaf : leaf_set) {
+											leaf_sum += leaf;
+										}
+
+										const auto hash = utils::string_hash64(utils::va("%d%s%.2f", leaf_sum, config_name.c_str(), duration));
+										m_map_settings.remix_transitions.emplace_back(
+											TRANSITION_TRIGGER_TYPE::LEAF,
+											"",
+											"",
+											"",
+											"",
+											0u,
+											"",
+											std::move(leaf_set),
+											config_name,
+											(TRANSITION_MODE)mode,
+											ease,
+											delay_in,
+											delay_out,
+											duration,
+											hash);
 									}
 								}
 							}
@@ -714,6 +814,10 @@ namespace components
 							// - parse trigger
 
 							std::string temp_trigger_choreo_name;
+							std::string temp_trigger_choreo_actor;
+							std::string temp_trigger_choreo_event;
+							std::string temp_trigger_choreo_param1;
+
 							std::uint32_t temp_trigger_sound = 0u;
 							float temp_trigger_delay = 0.0f;
 							bool temp_trigger_always = false;
@@ -727,10 +831,24 @@ namespace components
 								if (trigger.contains("choreo"))
 								{
 									try { temp_trigger_choreo_name = trigger.at("choreo").as_string(); }
-									catch (toml::type_error& err)
+									CATCH_ERR;
+
+									if (trigger.contains("actor"))
 									{
-										game::console(); printf("%s\n", err.what());
-										return;
+										try { temp_trigger_choreo_actor = trigger.at("actor").as_string(); }
+										CATCH_ERR;
+									}
+
+									if (trigger.contains("event"))
+									{
+										try { temp_trigger_choreo_event = trigger.at("event").as_string(); }
+										CATCH_ERR;
+									}
+
+									if (trigger.contains("param1"))
+									{
+										try { temp_trigger_choreo_param1 = trigger.at("param1").as_string(); }
+										CATCH_ERR;
 									}
 
 									has_valid_trigger = true;
@@ -769,11 +887,7 @@ namespace components
 								if (kill.contains("choreo"))
 								{
 									try { temp_kill_choreo_name = kill.at("choreo").as_string(); }
-									catch (toml::type_error& err)
-									{
-										game::console(); printf("%s\n", err.what());
-										return;
-									}
+									CATCH_ERR;
 
 									has_valid_kill_trigger = true;
 								}
@@ -922,7 +1036,7 @@ namespace components
 							{
 								bool temp_run_once = false;
 								if (entry.contains("run_once")) {
-									temp_run_once = to_int(entry.at("run_once"), 0);
+									temp_run_once = to_uint(entry.at("run_once"), 0);
 								}
 
 								bool temp_loop = false;
@@ -938,6 +1052,9 @@ namespace components
 										temp_loop_smoothing,
 										temp_trigger_always,
 										std::move(temp_trigger_choreo_name),
+										std::move(temp_trigger_choreo_actor),
+										std::move(temp_trigger_choreo_event),
+										std::move(temp_trigger_choreo_param1),
 										temp_trigger_sound,
 										temp_trigger_delay,
 										std::move(temp_kill_choreo_name),
@@ -1050,8 +1167,7 @@ namespace components
 		m_map_settings.remix_lights.clear();
 
 		m_map_settings.area_settings.clear();
-		m_map_settings.leaf_transitions.clear();
-		m_map_settings.choreo_transitions.clear();
+		m_map_settings.remix_transitions.clear();
 
 		destroy_markers();
 		m_map_settings.map_markers.clear();
@@ -1075,4 +1191,6 @@ namespace components
 		p_this = this;
 		game::con_add_command(&xo_mapsettings_update, "xo_mapsettings_update", map_settings::reload, "Reloads the map_settings.toml file + map.conf");
 	}
+
+#undef CATCH_ERR
 }

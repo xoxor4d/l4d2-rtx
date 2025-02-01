@@ -2788,7 +2788,7 @@ namespace components
 
 	struct CChoreoScene
 	{
-		char pad1[0x7C];
+		char pad1[0x78];
 		float m_flCurrentTime;
 		float m_flStartTime;
 		float m_flEndTime;
@@ -2806,8 +2806,9 @@ namespace components
 		char pad2[0x5C];
 		char m_szFileName[128];
 	};
-	STATIC_ASSERT_OFFSET(CChoreoScene, m_flCurrentTime, 0x7C);
-	STATIC_ASSERT_OFFSET(CChoreoScene, m_szFileName, 0x18C);
+	STATIC_ASSERT_OFFSET(CChoreoScene, m_flCurrentTime, 0x78);
+	STATIC_ASSERT_OFFSET(CChoreoScene, m_nSceneFPS, 0x128);
+	STATIC_ASSERT_OFFSET(CChoreoScene, m_szFileName, 0x188);
 
 	struct __declspec(align(4)) CChoreoEvent
 	{

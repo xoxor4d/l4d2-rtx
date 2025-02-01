@@ -12,6 +12,8 @@ namespace components
 		_register(new flags());
 		_register(new game_settings());
 		_register(new remix_api());
+		_register(new choreo_events());
+		_register(new sound_events());
 		_register(new main_module());
 		_register(new model_render());
 		_register(new imgui());

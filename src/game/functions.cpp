@@ -128,4 +128,22 @@ namespace game
 			}
 		}
 	}
+
+	typedef void(__cdecl* msg_fn)(const char* msg, va_list);
+	void print_ingame(const char* msg, ...)
+	{
+		if (msg == nullptr) {
+			return;
+		}
+
+		static msg_fn fn = (msg_fn)GetProcAddress(GetModuleHandleA("tier0.dll"), "Msg");
+		char buffer[989];
+
+		va_list list;
+		va_start(list, msg);
+		vsprintf(buffer, msg, list);
+		perror(buffer);
+		va_end(list);
+		fn(buffer, list);
+	}
 }

@@ -93,9 +93,8 @@ namespace components
 		static inline remix_lights* p_this = nullptr;
 		static remix_lights* get() { return p_this; }
 
-		static void on_event_start(const std::string_view& name);
+		static void on_event_start(const std::string_view& name, const std::string_view& actor, const std::string_view& event, const std::string_view& param1);
 		static void on_event_finish(const std::string_view& name);
-		static bool on_sound_start_require_hash();
 		static void on_sound_start(std::uint32_t hash);
 		static void on_client_frame();
 		static void on_map_load();

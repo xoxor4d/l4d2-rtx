@@ -93,6 +93,7 @@ namespace components
 		static void				parse_and_apply_conf_with_lerp(const std::string& conf_name, const std::uint64_t& identifier, const EASE_TYPE ease, float duration, float delay = 0.0f, float delay_transition_back = 0.0f);
 
 		static void				on_map_load();
+		static void				on_sound_start(std::uint32_t hash, const std::string_view& sound_name);
 		static void				on_client_frame();
 
 		struct interpolate_entry_s

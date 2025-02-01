@@ -662,10 +662,15 @@ namespace components
 		}
 
 		// leaf transitions
-		if (g_player_leaf_update && !map_settings.leaf_transitions.empty())
+		if (g_player_leaf_update && !map_settings.remix_transitions.empty())
 		{
-			for (auto t = map_settings.leaf_transitions.begin(); t != map_settings.leaf_transitions.end();)
+			for (auto t = map_settings.remix_transitions.begin(); t != map_settings.remix_transitions.end();)
 			{
+				// only handle leaf transitions
+				if (t->trigger_type != map_settings::TRANSITION_TRIGGER_TYPE::LEAF) {
+					++t; continue;
+				}
+
 				bool iterpp = false;
 				bool trigger_transition = false;
 
@@ -724,7 +729,7 @@ namespace components
 
 						if (!keep_transition)
 						{
-							t = map_settings.leaf_transitions.erase(t);
+							t = map_settings.remix_transitions.erase(t);
 							iterpp = true; // erase returns the next iterator
 						}
 					}
@@ -843,6 +848,7 @@ namespace components
 		game::cvar_uncheat("r_staticpropinfo");
 		game::cvar_uncheat("r_teeth");
 		game::cvar_uncheat("r_3dsky");
+		game::cvar_uncheat("scene_print");
 	}
 
 	HOOK_RETN_PLACE_DEF(on_map_load_stub_retn);

@@ -231,6 +231,12 @@ namespace components
 
 			light->ext.shaping_hasvalue = light->ext.shaping_value.coneAngleDegrees != 180.0f;
 
+			// not updating these can result in a crash in bridge::remix_api?
+			light->ext.pNext = nullptr;
+			light->ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+			light->info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+			light->info.pNext = &light->ext;
+
 			return remix_api::get()->m_bridge.CreateLight(&light->info, &light->handle) == REMIXAPI_ERROR_CODE_SUCCESS;
 		}
 
@@ -271,7 +277,8 @@ namespace components
 			light->info.hash = utils::string_hash64(utils::va("api-light%d", light->light_num));
 			light->info.radiance = remixapi_Float3D{ pt.radiance.x * pt.radiance_scalar, pt.radiance.y * pt.radiance_scalar, pt.radiance.z * pt.radiance_scalar };
 
-			return remix_api::get()->m_bridge.CreateLight(&light->info, &light->handle) == REMIXAPI_ERROR_CODE_SUCCESS;
+			const auto api = remix_api::get();
+			return api->m_bridge.CreateLight(&light->info, &light->handle) == REMIXAPI_ERROR_CODE_SUCCESS;
 		}
 
 		return false;
@@ -451,13 +458,34 @@ namespace components
 	// #
 
 	// called from: choreo_events::scene_ent_on_start_event_hk
-	void remix_lights::on_event_start(const std::string_view& name)
+	void remix_lights::on_event_start(const std::string_view& name, const std::string_view& actor, const std::string_view& event, const std::string_view& param1)
 	{
 		auto& msettings = map_settings::get_map_settings();
 		for (auto it = msettings.remix_lights.begin(); it != msettings.remix_lights.end();)
 		{
 			if (!it->trigger_choreo_name.empty() && name.contains(it->trigger_choreo_name))
 			{
+				// check if opt. actor is defined and matches event actor
+				if (!it->trigger_choreo_actor.empty() && !actor.contains(it->trigger_choreo_actor))
+				{
+					++it;
+					continue;
+				}
+
+				// check if opt. event is defined and matches event string
+				if (!it->trigger_choreo_event.empty() && !event.contains(it->trigger_choreo_event))
+				{
+					++it;
+					continue;
+				}
+
+				// check if opt. param1 is defined and matches event param1
+				if (!it->trigger_choreo_param1.empty() && !param1.contains(it->trigger_choreo_param1))
+				{
+					++it;
+					continue;
+				}
+
 				get()->add_single_map_setting_light(&*it);
 
 				// only spawn on the very first play of the vcd
@@ -483,36 +511,6 @@ namespace components
 				}
 			}
 		}
-	}
-
-	/**
-	 * Check if we have to calculate a hash in on_sound_start
-	 * @return	returns true if we require hashing
-	 */
-	bool remix_lights::on_sound_start_require_hash()
-	{
-		// check map_setting lights (spawn)
-		auto& msettings = map_settings::get_map_settings();
-		if (!msettings.remix_lights.empty())
-		{
-			for (const auto& l : msettings.remix_lights)
-			{
-				if (l.trigger_sound_hash || l.kill_sound_hash) {
-					return true;
-				}
-			}
-		}
-
-		// check active lights (kill)
-		for (auto& l : m_map_lights)
-		{
-			// only check active lights with a kill trigger not yet marked to be destroyed
-			if (l.handle && l.def.kill_sound_hash && !l.is_marked_for_destruction) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	void remix_lights::on_sound_start(const std::uint32_t hash)

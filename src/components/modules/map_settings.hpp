@@ -12,7 +12,7 @@ namespace components
 		static inline map_settings* p_this = nullptr;
 		static map_settings* get() { return p_this; }
 
-		enum LEAF_TRANS_MODE : uint8_t
+		enum TRANSITION_MODE : uint8_t
 		{
 			ONCE_ON_ENTER = 0,
 			ONCE_ON_LEAVE = 1,
@@ -20,32 +20,32 @@ namespace components
 			ALWAYS_ON_LEAVE = 3,
 		};
 
-		struct leaf_transition_s
+		enum TRANSITION_TRIGGER_TYPE : uint8_t
 		{
-			std::unordered_set<std::uint32_t> leafs;
-			std::string config_name;
-			LEAF_TRANS_MODE mode;
-			remix_vars::EASE_TYPE interpolate_type;
-			float delay_in = 0.0f;
-			float delay_out = 0.0f;
-			float duration = 0.0f;
-			std::uint64_t hash;
-			bool _state_enter = false;
+			CHOREO = 0,
+			SOUND = 1,
+			LEAF = 2,
 		};
 
-		enum CHOREO_TRANS_MODE : uint8_t
+		struct remix_transition_s
 		{
-			ONCE_ON_START = 0,
-			ONCE_ON_END = 1,
-			ALWAYS_ON_START = 2,
-			ALWAYS_ON_END = 3,
-		};
+			TRANSITION_TRIGGER_TYPE trigger_type;
 
-		struct choreo_transition_s
-		{
+			// choreo trigger
 			std::string choreo_name;
+			std::string choreo_actor;
+			std::string choreo_event;
+			std::string choreo_param1;
+
+			// sound trigger
+			std::uint32_t sound_hash;
+			std::string sound_name;
+
+			// leaf trigger
+			std::unordered_set<std::uint32_t> leafs;
+
 			std::string config_name;
-			CHOREO_TRANS_MODE mode;
+			TRANSITION_MODE mode;
 			remix_vars::EASE_TYPE interpolate_type;
 			float delay_in = 0.0f;
 			float delay_out = 0.0f;
@@ -94,12 +94,15 @@ namespace components
 			};
 
 			std::vector<point_s> points;
-			bool run_once = false;
+			bool run_once = 0u;
 			bool loop = false;
 			bool loop_smoothing = false;
 			bool trigger_always = false;
 
 			std::string trigger_choreo_name;
+			std::string trigger_choreo_actor;
+			std::string trigger_choreo_event;
+			std::string trigger_choreo_param1;
 			std::uint32_t trigger_sound_hash;
 			float trigger_delay = 0.0f;
 
@@ -155,11 +158,13 @@ namespace components
 			float water_uv_scale = 1.0f;
 			std::unordered_map<std::uint32_t, area_overrides_s> area_settings;
 			hide_models_s hide_models;
-			std::vector<leaf_transition_s> leaf_transitions;
-			std::vector<choreo_transition_s> choreo_transitions;
+			std::vector<remix_transition_s> remix_transitions;
 			std::vector<marker_settings_s> map_markers;
 			std::vector<std::string> api_var_configs;
 			std::vector<remix_light_settings_s> remix_lights;
+			bool using_any_light_sound_hash = false;
+			bool using_any_transition_sound_hash = false;
+			bool using_any_transition_sound_name = false;
 		};
 
 		static map_settings_s& get_map_settings() { return m_map_settings; }
