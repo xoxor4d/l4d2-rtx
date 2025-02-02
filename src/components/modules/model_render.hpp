@@ -276,6 +276,7 @@ namespace components
 			bool dual_render_with_specified_texture = false; // render prim a second time with tex defined in 'dual_render_texture'
 			bool dual_render_with_specified_texture_blend_add = false; // renders second prim using blend mode ADD
 			IDirect3DBaseTexture9* dual_render_texture = nullptr;
+			float dual_render_texture_z_offset = 0.0f;
 
 			void reset()
 			{
@@ -292,6 +293,7 @@ namespace components
 				dual_render_with_basetexture2 = false;
 				dual_render_with_specified_texture = false;
 				dual_render_texture = nullptr;
+				dual_render_texture_z_offset = 0.0f;
 			}
 		};
 

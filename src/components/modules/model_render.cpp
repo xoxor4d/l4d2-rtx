@@ -344,15 +344,17 @@ namespace components
 		auto& ctx = model_render::primctx;
 		const auto shaderapi = game::get_shaderapi();
 
+		bool scale_water_uvs = false;
+
 		if (ctx.get_info_for_pass(shaderapi)) 
 		{
 			// added format check
-			if (mesh->m_VertexFormat == 0x2480033 || mesh->m_VertexFormat == 0x80033) 
+			if (mesh->m_VertexFormat == 0x480033 || mesh->m_VertexFormat == 0x80033)
 			{
 				if (ctx.info.shader_name.starts_with("Wa") && ctx.info.shader_name.contains("Water"))
 				{
 					IMaterialVar* var = nullptr;
-					if (has_materialvar(ctx.info.material, "$basetexture", &var))
+					if (has_materialvar(ctx.info.material, "$basetexture", &var)) 
 					{
 						// if material has NO defined basetexture
 						if (var && !var->vftable->IsDefined(var))
@@ -361,46 +363,67 @@ namespace components
 							var = nullptr;
 							const auto has_bottom_mat = has_materialvar(ctx.info.material, "$bottommaterial", &var);
 
-							if (!has_bottom_mat)
+							if (has_bottom_mat)
 							{
-								// do not render water surfaces that have no bottom material (this is the surface below the water)
-								// could just check $abovewater I guess? lmao
-
 								// we only need one surface
-								ctx.modifiers.do_not_render = true;
-							}
-
-							// put the normalmap into texture slot 0
-							else
-							{
-								//  BindTexture( SHADER_SAMPLER2, TEXTURE_BINDFLAGS_NONE, NORMALMAP, BUMPFRAME );
-								IDirect3DBaseTexture9* tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[2]);
+								scale_water_uvs = true;
+								ctx.modifiers.as_water = true;
+								ctx.modifiers.dual_render_with_specified_texture = true;
+								ctx.modifiers.dual_render_texture_z_offset = 1.25f;
+								ctx.modifiers.dual_render_texture = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[2]);
+								
+								// assign flowmap
+								IDirect3DBaseTexture9* tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[4]);
 								if (tex)
 								{
-									// save og texture
-									ctx.modifiers.as_water = true;
 									ctx.save_texture(dev, 0);
 									dev->SetTexture(0, tex);
 								}
 							}
-						}
 
-						// material has defined a $basetexture
-						else
-						{
-							//  sampler 10
-							IDirect3DBaseTexture9* tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[10]);
-							if (tex)
+							// ignore 'beneath'
+							else
 							{
-								// save og texture
-								ctx.modifiers.as_water = true;
-								ctx.save_texture(dev, 0);
-								dev->SetTexture(0, tex);
+								ctx.modifiers.do_not_render = true;
 							}
 						}
+
+						//do we need this?
+						// material has defined a $basetexture
+						//else
+						//{
+						//	//  sampler 10
+						//	IDirect3DBaseTexture9* tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[10]);
+						//	if (tex)
+						//	{
+						//		// save og texture
+						//		ctx.modifiers.as_water = true;
+						//		ctx.save_texture(dev, 0);
+						//		dev->SetTexture(0, tex);
+						//	}
+						//}
 					}
 				}
 			}
+		}
+
+		// scale water uv's
+		if (scale_water_uvs)
+		{
+			const auto& scale_setting = map_settings::get_map_settings().water_uv_scale;
+
+			// create a scaling matrix
+			D3DXMATRIX scaleMatrix;
+			D3DXMatrixScaling(&scaleMatrix, 1.5f * scale_setting, 1.5f * scale_setting, 1.0f);
+
+			ctx.save_ss(dev, D3DSAMP_ADDRESSU);
+			ctx.save_ss(dev, D3DSAMP_ADDRESSV);
+			dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+			dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+
+			ctx.set_texture_transform(dev, &scaleMatrix);
+			ctx.save_tss(dev, D3DTSS_TEXTURETRANSFORMFLAGS);
+			dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 		}
 
 		// no longer set cam transforms in 'main_module::on_renderview'
@@ -612,6 +635,11 @@ namespace components
 				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
+			}*/
+
+			/*if (ctx.info.shader_name.starts_with("Black"))
+			{
+				ctx.modifiers.do_not_render = true;
 			}*/
 
 			if (ctx.info.shader_name.starts_with("DecalMod"))
@@ -1041,10 +1069,61 @@ namespace components
 			ctx.modifiers.do_not_render = false;
 		}
 
+		// shader: Water_DX9_HDR (with bottommaterial)
+		// > liquids/water_swamp_m2
+		else if (mesh->m_VertexFormat == 0x480033)
+		{
+			ctx.modifiers.do_not_render = false;
+			lookat_vertex_decl(dev);
+
+			ctx.save_vs(dev);
+			dev->SetVertexShader(nullptr);
+			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1);
+			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+		}
+
+		// shader: Water_DX9_HDR
+		// > liquids/water_swamp_m2_beneath
+		else if (mesh->m_VertexFormat == 0x80033)
+		{
+			ctx.modifiers.do_not_render = false;
+			lookat_vertex_decl(dev);
+
+			ctx.save_vs(dev);
+			dev->SetVertexShader(nullptr);
+			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1);
+			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+		}
+
 		else 
 		{
 			ctx.modifiers.do_not_render = false;
 			//int break_me = 1;  
+		}
+
+		if (game_settings::get()->enable_3d_sky.get_as<bool>())
+		{
+			// ignore for now (sometimes used for 3d skybox)
+			if (ctx.info.shader_name.starts_with("Black"))
+			{
+				ctx.modifiers.do_not_render = true;
+
+#if 0	// i thought that the simple world model might be alpha controlled?
+				// in-case it was changed
+				ctx.restore_texture(dev, 0);
+
+				ctx.save_texture(dev, 0);
+				dev->SetTexture(0, tex_addons::black);
+
+				ctx.save_rs(dev, D3DRS_ALPHABLENDENABLE);
+				dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+
+				ctx.save_tss(dev, D3DTSS_ALPHAARG2);
+				ctx.save_tss(dev, D3DTSS_ALPHAOP);
+				dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+				dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+#endif
+			}
 		}
 
 		//ctx.modifiers.do_not_render = false;
@@ -1242,6 +1321,17 @@ namespace components
 				dev->SetRenderState(D3DRS_ZENABLE, FALSE);
 
 				set_remix_texture_categories(dev, ctx, WorldMatte | IgnoreOpacityMicromap);
+			}
+
+			if (ctx.modifiers.dual_render_texture_z_offset != 0.0f)
+			{
+				ctx.info.buffer_state.m_Transform[0].m[3][2] += ctx.modifiers.dual_render_texture_z_offset;
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			}
+
+			if (ctx.modifiers.as_water)
+			{
+				set_remix_texture_hash(dev, ctx, utils::string_hash32(ctx.info.material_name));
 			}
 
 			// re-draw surface
