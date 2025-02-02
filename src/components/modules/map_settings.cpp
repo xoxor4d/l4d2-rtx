@@ -52,7 +52,7 @@ namespace components
 
 		// are we using any sound hashes to trigger light spawning?
 		{
-			if (!m_map_settings.remix_transitions.empty())
+			if (!m_map_settings.remix_lights.empty())
 			{
 				for (const auto& l : m_map_settings.remix_lights)
 				{
