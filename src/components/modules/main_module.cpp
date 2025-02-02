@@ -1167,11 +1167,11 @@ namespace components
 		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)
 		utils::hook::set<BYTE>(CLIENT_BASE + 0xBDA76, 0xEB);
 
-		// not req. rn
+		// ~ always show geometry below water surface
 		// CSimpleWorldView::Setup :: nop 'DoesViewPlaneIntersectWater' check
-		//utils::hook::nop(CLIENT_BASE + 0x1CF46F, 2);
+		utils::hook::nop(CLIENT_BASE + 0x1CF46F, 2);
 		// ^ next instruction :: OR m_DrawFlags with 0x60 instead of 0x30
-		//utils::hook::set<BYTE>(CLIENT_BASE + 0x1CF471 + 6, 0x60);
+		//utils::hook::set<BYTE>(CLIENT_BASE + 0x1CF471 + 6, 0x60); ...... not needed in l4d2?
 
 		// engine 0xB3383 - no cull overlay decals (no need)
 
