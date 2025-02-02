@@ -369,7 +369,7 @@ namespace components
 								scale_water_uvs = true;
 								ctx.modifiers.as_water = true;
 								ctx.modifiers.dual_render_with_specified_texture = true;
-								ctx.modifiers.dual_render_texture_z_offset = 1.25f;
+								ctx.modifiers.dual_render_texture_z_offset = 0.5f;
 								ctx.modifiers.dual_render_texture = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[2]);
 								
 								// assign flowmap
@@ -406,6 +406,11 @@ namespace components
 				}
 			}
 		}
+
+		/*if (ctx.info.shader_name.starts_with("Black"))
+		{
+			int break_me = 0;
+		}*/
 
 		// scale water uv's
 		if (scale_water_uvs)
@@ -637,10 +642,10 @@ namespace components
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 			}*/
 
-			/*if (ctx.info.shader_name.starts_with("Black"))
-			{
+			// causes some weird flickering artifacts from time to time?
+			if (ctx.info.shader_name.starts_with("Black")) {
 				ctx.modifiers.do_not_render = true;
-			}*/
+			}
 
 			if (ctx.info.shader_name.starts_with("DecalMod"))
 			{
