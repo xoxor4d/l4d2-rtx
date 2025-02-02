@@ -16,7 +16,7 @@
 # Small values reduce repetition while larger values will increase tiling (default = 1.0)
 
 [WATER]
-    #c1m1_hotel = 5.0
+    c3m2_swamp = 10.0
 
 
 
@@ -44,7 +44,6 @@
 #                   |>  N_leafs:   only hide area/s when NOT in leaf/s      [int array]
 #
 # hide_leafs:       force hide leaf/s                                       [int array]
-#
 
 [CULL]
     c1m1_hotel = [
@@ -129,6 +128,7 @@
     ]
 
 
+
 # Remix variable configs ---------------------------------------------------------------------------------------------------------------------------------
 # :: Useful console command: 'xo_scene_print' && 'xo_debug_toggle_node_vis' && 'xo_debug_toggle_sound_print'
 # ~~ Parameters:
@@ -149,7 +149,7 @@
 #                                                        [!] moving from one leaf to another connected & defined leaf will not trigger the transition
 #
 #               |> mode:         [0] ONCE:   On Enter/Start -- [1] ONCE: On Leave/End   (will only be activated once - until map or map_settings reload)        [int 0-3]
-#                                [2] ALWAYS: On Enter/Start -- [3] ALWAYS: On Leave/End
+#                                [2] ALWAYS: On Enter/Start -- [3] ALWAYS: On Leave/End (sounds only use ONCE or ALWAYS 0-1 or 2-3)
 #               
 #               |> ease:         [0] LINEAR                                                                                                                     [int 0-9]
 #                                [1] SIN_IN   -- [2] SIN_OUT   -- [3] SIN_INOUT
@@ -165,7 +165,7 @@
     c1m1_hotel = { transitions = [
         #{ conf = "chromatic_explosion.conf", trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = 0x87a91fef }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
-        #{ conf = "chromatic_explosion.conf", trigger = { sound = "weapons/pistol/gunfire/pistol_fire.wav" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
+        #{ conf = "chromatic_explosion.conf", trigger = { sound = "weapons/pistol/gunfire/pistol_fire.wav" }, mode = 2, ease = 8, duration = 0.25, delay_in = 0.0, delay_out = 0.15 },
     ]}
 
 
@@ -221,16 +221,23 @@
 # loop_smoothing:   ] OR THAT:              automatically connect and smooth the start and end point (defaults to 0)                                [int 0-1]
 #                                           [!] requires 'loop' to be true
 #                                           [!] only position + timepoint is used from the last point 
-# ------------------------------------------------------------------------------------------------------------------------------------------------------
+
 [LIGHTS]
     c1m1_hotel = [
             # 1st light - infinite loop
-            { trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = 1 }, points = [
-                { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
-                { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
-                { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
-                { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
-            ], run_once = 1, loop = 0 },
+            #{ trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = 1 }, points = [
+            #    { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
+            #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
+            #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
+            #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
+            #], run_once = 1, loop = 0 },
+
+            # red flashing light when opening the first door
+            # :: doors/door1_stop.wav -- delay: 0.00 -- vol: 0.69 -- origin: [408.00000 5600.00000 2704.00000]
+            { trigger = { sound = 0xe826cc9a, delay = 0.0, always = 0 }, points = [
+                { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 0.0, radius = 3.0, smoothness = 1.0 },
+                { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
+            ], run_once = 0, loop = 1, loop_smoothing = 1 },
 
             # 2nd light - triggered and killed by choreo event - looping until killed (scene_playvcd "npc/announcer/prehub28.vcd")
             #{ trigger = { choreo = "prehub27.vcd", delay = 0.0 }, kill = { choreo = "prehub28.vcd", delay = 0.0 }, points = [
