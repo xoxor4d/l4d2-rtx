@@ -29,6 +29,7 @@ namespace components
 		void debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, float width, const DEBUG_REMIX_LINE_COLOR& color);
 
 		void flashlight_create_or_update(const char* player_name, const Vector& pos, const Vector& fwd, const Vector& rt, const Vector& up, bool is_enabled, bool is_player = false);
+		static void flashlight_frame();
 
 		remixapi_Interface m_bridge;
 

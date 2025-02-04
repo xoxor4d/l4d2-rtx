@@ -43,7 +43,7 @@ namespace components
 	// called on device->EndScene
 	void remix_api::end_scene_callback()
 	{
-		imgui::endscene_stub(); 
+		imgui::endscene_stub();
 
 #if 0
 		if (!model_render::get()->m_drew_hud)
@@ -111,7 +111,6 @@ namespace components
 	// called on device->Present
 	void remix_api::on_present_callback()
 	{
-		main_module::iterate_entities();
 		main_module::hud_draw_area_info();
 	}
 
@@ -337,7 +336,7 @@ namespace components
 		}
 	}
 
-	void flashlight_frame()
+	void remix_api::flashlight_frame()
 	{
 		if (const auto api = remix_api::get();
 			remix_api::is_initialized())
@@ -401,7 +400,8 @@ namespace components
 	{
 		if (is_initialized()) 
 		{
-			flashlight_frame();
+			main_module::iterate_entities();
+			remix_api::flashlight_frame();
 
 			init_debug_lines();
 
