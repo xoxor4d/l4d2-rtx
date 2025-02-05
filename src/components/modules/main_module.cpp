@@ -428,6 +428,11 @@ namespace components
 						if (lt.areas.contains((std::uint32_t)node->area)) {
 							return 0;
 						}
+
+						// force individual leafs
+						if (lt.leafs.contains(node_index)) {
+							return 0;
+						}
 					}
 				}
 			}

@@ -414,7 +414,16 @@ namespace components
 											}
 										}
 
-										temp_leaf_tweak_set.emplace_back(std::move(temp_in_leafs_set), std::move(temp_areas));
+										std::unordered_set<std::uint32_t> temp_leafs;
+										if (elem.contains("leafs"))
+										{
+											const auto& leafs = elem.at("leafs").as_array();
+											for (const auto& l : leafs) {
+												temp_leafs.insert(to_uint(l));
+											}
+										}
+
+										temp_leaf_tweak_set.emplace_back(std::move(temp_in_leafs_set), std::move(temp_areas), std::move(temp_leafs));
 									}
 								}
 							}

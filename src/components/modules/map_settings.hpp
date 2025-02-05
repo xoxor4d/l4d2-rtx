@@ -130,6 +130,7 @@ namespace components
 		{
 			std::unordered_set<std::uint32_t> in_leafs;
 			std::unordered_set<std::uint32_t> areas;
+			std::unordered_set<std::uint32_t> leafs;
 		};
 
 		struct hide_area_s
