@@ -437,7 +437,7 @@ namespace components
 		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 
-		/*if (ctx.info.material_name.contains("detailsprites"))
+		/*if (ctx.info.material_name.contains("scope_sn"))
 		{
 			int x = 1; 
 		}*/
@@ -453,9 +453,12 @@ namespace components
 		// shader: VertexLitGeneric (infected - player model - viewmodel - dynamic props)
 		// > models/weapons/melee/crowbar
 		// > models/props_junk/wood_palletcrate001a
+		// shader: Refract_DX90
+		// > vgui/hud/scope_sniper_ul
 		if (mesh->m_VertexFormat == 0xa0003)
 		{
 			//ctx.modifiers.do_not_render = true;
+			bool use_shader = false;
 
 			// viewmodel
 			if (ctx.info.buffer_state.m_Transform[2].m[3][2] == -1.00003338f)
@@ -578,10 +581,17 @@ namespace components
 				}*/
 			}
 
-			ctx.save_vs(dev);
-			dev->SetVertexShader(nullptr);
-			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX6);
+			else if (ctx.info.material_name.starts_with("vgui/hud/scope_sniper")) {
+				use_shader = true;
+			}
+
+			if (!use_shader)
+			{
+				ctx.save_vs(dev);
+				dev->SetVertexShader(nullptr);
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+				dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX6);
+			}
 		}
 
 		// shader: VertexLitGeneric
