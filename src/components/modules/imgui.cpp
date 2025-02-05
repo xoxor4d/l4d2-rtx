@@ -220,7 +220,79 @@ namespace components
 		}
 	}
 
-	void imgui::tab_marker_culling()
+	void ms_fog()
+	{
+		if (ImGui::CollapsingHeader("Fog Settings"))
+		{
+			SPACING_INDENT_BEGIN;
+
+			auto& ms = map_settings::get_map_settings();
+
+			Vector fog_color = {};
+			fog_color.x = static_cast<float>((ms.fog_color >> 16) & 0xFF) / 255.0f * 1.0f;
+			fog_color.y = static_cast<float>((ms.fog_color >>  8) & 0xFF) / 255.0f * 1.0f;
+			fog_color.z = static_cast<float>((ms.fog_color >>  0) & 0xFF) / 255.0f * 1.0f;
+
+			if (ImGui::Button("Copy Settings to Clipboard##Fog", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
+			{
+				std::string toml_str = map_settings::get_map_settings().mapname + " = { "s;
+				toml_str += "distance = " + std::to_string(map_settings::get_map_settings().fog_dist) + ", "s;
+				toml_str += "color = ["
+					+ std::to_string(static_cast<int>(std::round(fog_color.x * 255.0f))) + ", "
+					+ std::to_string(static_cast<int>(std::round(fog_color.y * 255.0f))) + ", "
+					+ std::to_string(static_cast<int>(std::round(fog_color.z * 255.0f))) + "] }"s;
+
+				ImGui::LogToClipboard();
+				ImGui::LogText(toml_str.c_str());
+				ImGui::LogFinish();
+			}
+
+			ImGui::SameLine();
+			if (ImGui::Button("Reload MapSettings##Marker", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+			{
+				if (!ImGui::IsPopupOpen("Reload MapSettings?")) {
+					ImGui::OpenPopup("Reload MapSettings?");
+				}
+			}
+
+			ImGui::TextDisabled("No auto-save or file writing. You need to export to clipboard and override the settings yourself!");
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			bool fog_enabled = ms.fog_dist != 0.0f;
+			if (ImGui::Checkbox("Enable Fog", &fog_enabled))
+			{
+				if (!fog_enabled) {
+					ms.fog_dist = 0.0f;
+				}
+				else
+				{
+					ms.fog_dist = 15000.0f;
+					if (ms.fog_color == 0xFFFFFFFF) {
+						ms.fog_color = 0xFF646464;
+					}
+				}
+			}
+
+			if (ImGui::DragFloat("Distance", &ms.fog_dist, 1.0f, 0.0f)) {
+				ms.fog_dist = ms.fog_dist < 0.0f ? 0.0f : ms.fog_dist;
+			}
+
+			if (ImGui::ColorEdit3("Transmission", &fog_color.x, ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar)) {
+				ms.fog_color = D3DCOLOR_COLORVALUE(fog_color.x, fog_color.y, fog_color.z, 1.0f);
+			}
+
+			SPACING_INDENT_END;
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+			SPACING_INDENT_END;
+			ImGui::ItemSize(ImVec2(0, 10));
+		}
+	}
+
+	void imgui::tab_map_settings()
 	{
 		//if (ImGui::CollapsingHeader("Culling / Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -235,7 +307,22 @@ namespace components
 
 			ImGui::SliderInt2("HUD: Area Debug Position", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
 
+			{
+				auto* default_nocull_dist = &map_settings::get_map_settings().default_nocull_dist;
+				if (ImGui::DragFloat("Default NoCull Distance", default_nocull_dist, 0.5f, 0.0f)) {
+					*default_nocull_dist = *default_nocull_dist < 0.0f ? 0.0f : *default_nocull_dist;
+				}
+				TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
+			}
+			
+
 			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// fog settings
+			ms_fog();
+
 			ImGui::Spacing();
 			ImGui::Spacing();
 
@@ -724,7 +811,7 @@ namespace components
 				SPACING_INDENT_BEGIN;
 
 				auto& areas = map_settings::get_map_settings().area_settings;
-				if (ImGui::Button("Copy Settings to Clipboard", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
+				if (ImGui::Button("Copy Settings to Clipboard##Cull", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 				{
 					// temp map to sort areas by area number
 					std::map<int, map_settings::area_overrides_s> sorted_area_settings(areas.begin(), areas.end());
@@ -790,8 +877,14 @@ namespace components
 							toml_str += "\n            ]";
 						} // end leafs
 
-						if (a.cull_mode != map_settings::AREA_CULL_MODE::AREA_CULL_MODE_DEFAULT) {
+						if (a.cull_mode != map_settings::AREA_CULL_MODE::AREA_CULL_INFO_DEFAULT) {
 							toml_str += ", cull = " + std::to_string(a.cull_mode);
+						}
+
+						if (   a.cull_mode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START
+							&& a.cull_mode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END)
+						{
+							toml_str += ", nocull_dist = " + std::to_string(a.nocull_distance);
 						}
 
 						if (!a.leaf_tweaks.empty())
@@ -1018,7 +1111,7 @@ namespace components
 						// Mode
 						ImGui::TableNextColumn();
 
-						const char* cullmode_items[] = { "No Frustum", "Frustum", "Frstm+ForceAr" };
+						const char* cullmode_items[] = { "NoFrustum", "NoFrstmInAr", "Stock", "ForceAr", "AreaDist", "Distance" };
 
 						ImGui::PushID((int)area_num);
 						ImGui::SetNextItemWidth(122.0f);
@@ -1038,9 +1131,23 @@ namespace components
 							}
 							ImGui::EndCombo();
 						}
-						TT(	"No Frustum:\t\t   compl. disable frustum culling when in area\n"
-							"Frustum:\t\t\t  stock frustum culling\n"
-							"Frustum + Force Area: stock frustum culling + force all nodes/leafs in current area");
+						TT(	"No Frustum:\t\t   compl. disable frustum culling (everywhere)\n"
+							"No Frustum in Area: compl. disable frustum culling when in current area"
+							"Stock:\t\t\t  stock frustum culling\n"
+							"Force Area: ^ + force all nodes/leafs in current area"
+							"Force Area Dist: ^ + all outside of current area within certain dist to player"
+							"Distance: force all nodes/leafs within certain dist to player");
+
+						if (   a.cull_mode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START
+							&& a.cull_mode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END)
+						{
+							if (ImGui::DragFloat("Dist##NocullDist", &a.nocull_distance, 0.1f, 0.0f, FLT_MAX, "%.2f"))
+							{
+								a.nocull_distance = a.nocull_distance < 0.0f ? 0.0f : a.nocull_distance;
+								main_module::trigger_vis_logic();
+							}
+						}
+						
 						ImGui::PopID();
 
 						// - Leafs
@@ -1747,7 +1854,8 @@ namespace components
 					if (ImGui::Button("Add current Area##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 					{
 						areas.emplace((std::uint32_t)g_current_area, map_settings::area_overrides_s{
-								.cull_mode = map_settings::AREA_CULL_MODE::AREA_CULL_MODE_DEFAULT,
+								.cull_mode = map_settings::AREA_CULL_MODE::AREA_CULL_INFO_DEFAULT,
+								.nocull_distance = map_settings::get_map_settings().default_nocull_dist,
 								.area_index = (std::uint32_t)g_current_area,
 							});
 					}
@@ -1899,7 +2007,7 @@ namespace components
 		if (ImGui::BeginTabBar("devgui_tabs"))
 		{
 			ADD_TAB("General", tab_general);
-			ADD_TAB("Marker / Culling", tab_marker_culling)
+			ADD_TAB("Marker / Culling", tab_map_settings)
 			ImGui::EndTabBar();
 		}
 

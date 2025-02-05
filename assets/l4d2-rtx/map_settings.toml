@@ -6,6 +6,9 @@
 
 [FOG]
     c1m1_hotel = { distance = 15000, color = [100, 100, 100] }
+    c1m2_streets = { distance = 2500.000000, color = [22, 23, 20] }
+    c4m1_milltown_a = { distance = 3000, color = [100, 100, 100] }
+
 
 
 
@@ -28,9 +31,14 @@
 # areas:            area/s with forced visibility                           [int array]
 # leafs:            leaf/s with forced visibility                           [int array]
 #
-# cull:             [0] disable frustum culling                             [int 0-2]
-#                   [1] frustum culling            (forces leaf/s)
-#                   [2] frustum culling (default)  (forces leaf/s + all leafs in current area)
+# cull:             [0] disable frustum culling                             [int 0-5]
+#                   [1] disable frustum culling in current area
+#                   [2] stock
+#                   [3] frustum culling (outside current area) + force all nodes/leafs in current area
+#                   [4] ^ + outside of current area within certain dist to player (param: nocull_dist)
+#                   [5] force all leafs/nodes within certain dist to player (param: nocull_dist)                        << default
+#
+# nocull_dist:      |> Distance around the player where objects wont get culled - only used on certain cull modes       << defaults to 600.0
 #
 # -----------       :: This can be used to disable frustum culling for specified areas when the player is in specified leafs 
 #                   :: Useful at area crossings when used in conjunction with nocull - area-specific markers that block visibility
@@ -46,48 +54,78 @@
 # hide_leafs:       force hide leaf/s                                       [int array]
 
 [CULL]
+    #c1m1_hotel = [
+    #    { in_area =   2, areas = [6], leafs = [
+    #            1, 4, 6, 10, 11, 12
+    #        ], leaf_tweak = [
+    #            { in_leafs = [1], areas = [3] },
+    #        ], hide_areas = [
+    #            { areas = [3], N_leafs = [55] },
+    #            { areas = [5], N_leafs = [56] },
+    #        ], hide_leafs = [5, 15] },
+    #
+    #    { in_area =   3, areas = [6] },
+    #    { in_area =   4, areas = [7] },
+    #    { in_area =   5, areas = [4, 6, 7], leafs = [
+    #            615, 616, 620, 622, 624, 632, 633, 1501, 
+    #            1504, 1508, 1511
+    #        ], cull = 0 },
+    #
+    #    { in_area =   6, leaf_tweak = [
+    #            { in_leafs = [2203, 2332, 2333], areas = [13] },
+    #            { in_leafs = [2, 3, 4], areas = [14] },
+    #        ] },
+    #
+    #    { in_area =   7, areas = [4, 5, 10], leafs = [
+    #            1298, 1327, 1364, 1367, 1370, 1669, 1974
+    #        ] },
+    #    { in_area =   9, areas = [6] },
+    #    { in_area =  10, areas = [7] },
+    #    { in_area =  11, areas = [13] },
+    #    { in_area =  13, areas = [11, 21, 23], leafs = [
+    #            2203, 2332, 2333
+    #        ], leaf_tweak = [
+    #            { in_leafs = [2328, 2331, 2334, 2366], areas = [6] },
+    #        ] },
+    #
+    #    { in_area =  21, areas = [13] },
+    #    { in_area =  23, areas = [13, 21] },
+    #]
+
     c1m1_hotel = [
-        { in_area =   2, areas = [6], leafs = [
-                1, 4, 6, 10, 11, 12
-            ], leaf_tweak = [
-                { in_leafs = [1], areas = [3] },
-            ], hide_areas = [
-                { areas = [3], N_leafs = [55] },
-                { areas = [5], N_leafs = [56] },
-            ], hide_leafs = [5, 15] },
-
-        { in_area =   3, areas = [6] },
-        { in_area =   4, areas = [7] },
-        { in_area =   5, areas = [4, 6, 7], leafs = [
-                615, 616, 620, 622, 624, 632, 633, 1501, 
-                1504, 1508, 1511
-            ], cull = 0 },
-
-        { in_area =   6, leaf_tweak = [
-                { in_leafs = [2203, 2332, 2333], areas = [13] },
-                { in_leafs = [2, 3, 4], areas = [14] },
+        { in_area =   7, nocull_dist = 600.000000, leaf_tweak = [
+                { in_leafs = [2498], areas = [14] },
             ] },
 
-        { in_area =   7, areas = [4, 5, 10], leafs = [
-                1298, 1327, 1364, 1367, 1370, 1669, 1974
-            ] },
-        { in_area =   9, areas = [6] },
-        { in_area =  10, areas = [7] },
-        { in_area =  11, areas = [13] },
-        { in_area =  13, areas = [11, 21, 23], leafs = [
-                2203, 2332, 2333
-            ], leaf_tweak = [
-                { in_leafs = [2328, 2331, 2334, 2366], areas = [6] },
+        { in_area =  13, areas = [23], leafs = [
+                2339
+            ], nocull_dist = 600.000000 },
+        { in_area =  14, cull = 4, nocull_dist = 600.000000, leaf_tweak = [
+                { in_leafs = [2508, 2511], areas = [7] },
             ] },
 
-        { in_area =  21, areas = [13] },
-        { in_area =  23, areas = [13, 21] },
+        { in_area =  23, areas = [13], nocull_dist = 600.000000 },
     ]
+
 
 
     c2m1_highway = [
         { in_area =   1, cull = 1 },
     ]
+
+    c4m1_milltown_a = [
+        { in_area =   2, cull = 5, nocull_dist = 600.0 },
+    ]
+
+    c5m3_cemetery = [
+        { in_area =   4, cull = 1 },
+    ]
+
+    c6m1_riverbank = [
+        { in_area =   1, cull = 1 },
+    ]
+
+
 
 
 
@@ -122,9 +160,22 @@
 [MARKER]
     c1m1_hotel = [
         { marker = 25, position = [620.000000, 5680.000000, 2920.000000], rotation = [0.000000, 0.000000, 0.000000] },
-        { nocull = 0, areas = [13], N_leafs = [2334, 2366, 2359, 2331], position = [1728.517944, 6075.494629, 2721.531006], rotation = [90.000000, 0.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
+        { nocull = 0, areas = [13], N_leafs = [2366, 2334, 2359, 2371, 2331, 2421], position = [1728.517944, 5713.995117, 2721.531006], rotation = [90.000000, 0.000000, 0.000000], scale = [2.080000, 2.120000, 1.000000] },
         { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1621.017944, 5627.995117, 2721.531006], rotation = [90.000000, 90.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1854.759033, 5599.157227, 2717.031250], rotation = [90.000000, 73.698997, 0.000000], scale = [3.240000, 2.940000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1854.759033, 5599.157227, 2717.031250], rotation = [90.000000, 73.698997, 0.000000], scale = [3.240000, 2.940000, 1.000000] },
+    ]
+
+    c3m1_plankcountry = [
+        { nocull = 300, areas = [], N_leafs = [], position = [-12668.542969, 10249.047852, 288.393005], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+        { nocull = 300, areas = [], N_leafs = [], position = [-7192.530762, 7555.255859, 129.031006], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+    ]
+
+
+    c3m2_swamp = [
+        { nocull = 300, areas = [], N_leafs = [], position = [-8232.350586, 7516.061035, 56.499001], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+        
+        # fix missing geo under-water (safezone)
+        { nocull = 0, areas = [], N_leafs = [], position = [-8170.187988, 7167.500000, -34.000000], rotation = [87.298000, 0.000000, 90.000000], scale = [0.500000, 2.500000, 1.000000] },
     ]
 
 

@@ -113,12 +113,17 @@ namespace components
 
 		enum AREA_CULL_MODE : uint8_t
 		{
-			AREA_CULL_MODE_NO_FRUSTUM = 0,
-			AREA_CULL_MODE_FRUSTUM = 1,
-			AREA_CULL_MODE_FRUSTUM_FORCE_AREA = 2,
-			AREA_CULL_COUNT = 3,
+			AREA_CULL_MODE_NO_FRUSTUM = 0,					// no frustum culling (everywhere)
+			AREA_CULL_MODE_NO_FRUSTUM_IN_CURRENT_AREA = 1,	// no frustum culling in current area
+			AREA_CULL_MODE_STOCK = 2,						// OG: frustum culling
+			AREA_CULL_MODE_FORCE_AREA = 3,					// frustum culling (outside current area) + force all leafs/nodes in current area
+			AREA_CULL_MODE_FORCE_AREA_DISTANCE = 4,			// frustum culling (outside current area) + force all leafs/nodes in current area and outside of current area within certain dist to player
+			AREA_CULL_MODE_DISTANCE = 5,					// force all leafs/nodes within certain dist to player
 			// -------------------
-			AREA_CULL_MODE_DEFAULT = AREA_CULL_MODE_FRUSTUM_FORCE_AREA,
+			AREA_CULL_INFO_COUNT = 6,
+			AREA_CULL_INFO_DEFAULT = AREA_CULL_MODE_DISTANCE,
+			AREA_CULL_INFO_NOCULLDIST_START = AREA_CULL_MODE_FORCE_AREA_DISTANCE,
+			AREA_CULL_INFO_NOCULLDIST_END = AREA_CULL_MODE_DISTANCE,
 		};
 
 		struct leaf_tweak_s
@@ -141,6 +146,7 @@ namespace components
 			std::vector<hide_area_s> hide_areas;
 			std::vector<leaf_tweak_s> leaf_tweaks;
 			AREA_CULL_MODE cull_mode;
+			float nocull_distance = 0.0f;
 			std::uint32_t area_index;
 		};
 
@@ -157,6 +163,7 @@ namespace components
 			DWORD fog_color = 0xFFFFFFFF;
 			float water_uv_scale = 1.0f;
 			std::unordered_map<std::uint32_t, area_overrides_s> area_settings;
+			float default_nocull_dist = 600.0f;
 			hide_models_s hide_models;
 			std::vector<remix_transition_s> remix_transitions;
 			std::vector<marker_settings_s> map_markers;

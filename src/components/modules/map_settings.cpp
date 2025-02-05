@@ -293,7 +293,7 @@ namespace components
 				auto& cull_table = config["CULL"];
 
 				// #
-				auto process_cull_entry = [to_uint](const toml::value& entry)
+				auto process_cull_entry = [to_uint, to_float](const toml::value& entry)
 					{
 						const auto contains_leafs = entry.contains("leafs");
 						const auto contains_areas = entry.contains("areas");
@@ -329,16 +329,23 @@ namespace components
 							}
 
 							// culling mode
-							AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_MODE_DEFAULT;
+							AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_INFO_DEFAULT;
 							if (contains_cull)
 							{
 								auto m = to_uint(entry.at("cull"));
-								if (m >= AREA_CULL_COUNT) 
+								if (m >= AREA_CULL_INFO_COUNT) 
 								{
 									game::console(); printf("MapSettings: param 'cull' was out-of-range (%d)\n", m);
 									m = 0u;
 								}
 								cmode = (AREA_CULL_MODE)(std::uint8_t)m;
+							}
+
+							// nocull dist for cullmode 3
+							float temp_nocull_dist = 600.0f;
+							if (entry.contains("nocull_dist"))
+							{
+								temp_nocull_dist = to_float(entry.at("nocull_dist"));
 							}
 
 							// hidden leafs
@@ -421,6 +428,7 @@ namespace components
 									std::move(temp_hidden_areas_set),
 									std::move(temp_leaf_tweak_set),
 									cmode,
+									temp_nocull_dist,
 									area
 								});
 						}
