@@ -278,7 +278,7 @@ namespace components
 		const Vector max_bounds = center + half_diagonal;
 
 		auto sq_dist = 0.0f;
-		for (auto i = 0u; i < 3; ++i)
+		for (auto i = 0; i < 3; ++i)
 		{
 			if (player_origin[i] < min_bounds[i])
 			{

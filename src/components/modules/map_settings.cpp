@@ -302,7 +302,7 @@ namespace components
 						const auto contains_hidden_areas = entry.contains("hide_areas");
 						const auto contains_cull = entry.contains("cull");
 
-						if (entry.contains("in_area") && (contains_leafs || contains_areas || contains_hidden_leafs || contains_hidden_areas || contains_leaf_tweak || contains_cull))
+						if (entry.contains("in_area"))
 						{
 							const auto area = to_uint(entry.at("in_area"));
 
