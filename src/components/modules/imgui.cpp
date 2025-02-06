@@ -1363,8 +1363,8 @@ namespace components
 								ImGuiTableFlags_Reorderable | ImGuiTableFlags_ContextMenuInBody))
 							{
 								ImGui::TableSetupColumn("Tweak in Leafs", ImGuiTableColumnFlags_WidthStretch, 100.0f);
-								ImGui::TableSetupColumn("Tweak Areas", ImGuiTableColumnFlags_WidthStretch, 60.0f);
-								ImGui::TableSetupColumn("Tweak Leafs", ImGuiTableColumnFlags_WidthStretch, 60.0f);
+								ImGui::TableSetupColumn("Tweak Areas", ImGuiTableColumnFlags_WidthStretch, 100.0f);
+								ImGui::TableSetupColumn("Tweak Leafs", ImGuiTableColumnFlags_WidthStretch, 100.0f);
 								ImGui::TableSetupColumn("##Delete", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip, 16.0f);
 								ImGui::TableHeadersRow();
 
@@ -2179,6 +2179,8 @@ namespace components
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
 		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 #if 1
 		{
