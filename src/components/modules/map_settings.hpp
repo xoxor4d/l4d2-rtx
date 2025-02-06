@@ -115,7 +115,7 @@ namespace components
 
 		static constexpr float DEFAULT_NOCULL_DIST = 600.0f;
 
-		const char* AREA_CULL_MODE_STR[] =
+		static constexpr const char* AREA_CULL_MODE_STR[] =
 		{
 			"NoFrustum",
 			"NoFrstmInAr",
