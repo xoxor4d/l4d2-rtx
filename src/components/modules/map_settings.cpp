@@ -341,10 +341,9 @@ namespace components
 								cmode = (AREA_CULL_MODE)(std::uint8_t)m;
 							}
 
-							// nocull dist for cullmode 3
-							float temp_nocull_dist = 600.0f;
-							if (entry.contains("nocull_dist"))
-							{
+							// nocull dist for certain cull modes
+							float temp_nocull_dist = DEFAULT_NOCULL_DIST;
+							if (entry.contains("nocull_dist")) {
 								temp_nocull_dist = to_float(entry.at("nocull_dist"));
 							}
 
@@ -391,6 +390,8 @@ namespace components
 
 							// leaf tweaks
 							std::vector<leaf_tweak_s> temp_leaf_tweak_set;
+							bool any_nocull_dist_overrides_in_leaf_tweaks = false;
+
 							if (contains_leaf_tweak)
 							{
 								auto& leaf_tweak = entry.at("leaf_tweak").as_array();
@@ -423,7 +424,19 @@ namespace components
 											}
 										}
 
-										temp_leaf_tweak_set.emplace_back(std::move(temp_in_leafs_set), std::move(temp_areas), std::move(temp_leafs));
+										// nocull dist for certain cull modes
+										float temp_leaf_tweak_nocull_dist = 0.0f; // 0 = no override
+										if (elem.contains("nocull_dist")) 
+										{
+											temp_leaf_tweak_nocull_dist = to_float(elem.at("nocull_dist"));
+											any_nocull_dist_overrides_in_leaf_tweaks = true;
+										}
+
+										temp_leaf_tweak_set.emplace_back(
+											std::move(temp_in_leafs_set), 
+											std::move(temp_areas), 
+											std::move(temp_leafs),
+											temp_leaf_tweak_nocull_dist);
 									}
 								}
 							}
@@ -438,6 +451,7 @@ namespace components
 									std::move(temp_leaf_tweak_set),
 									cmode,
 									temp_nocull_dist,
+									any_nocull_dist_overrides_in_leaf_tweaks,
 									area
 								});
 						}

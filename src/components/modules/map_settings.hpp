@@ -111,6 +111,10 @@ namespace components
 			float kill_delay = 0.0f;
 		};
 
+		// ---
+
+		static constexpr float DEFAULT_NOCULL_DIST = 600.0f;
+
 		enum AREA_CULL_MODE : uint8_t
 		{
 			AREA_CULL_MODE_NO_FRUSTUM = 0,					// no frustum culling (everywhere)
@@ -131,6 +135,7 @@ namespace components
 			std::unordered_set<std::uint32_t> in_leafs;
 			std::unordered_set<std::uint32_t> areas;
 			std::unordered_set<std::uint32_t> leafs;
+			float nocull_dist = 0.0f;
 		};
 
 		struct hide_area_s
@@ -147,7 +152,8 @@ namespace components
 			std::vector<hide_area_s> hide_areas;
 			std::vector<leaf_tweak_s> leaf_tweaks;
 			AREA_CULL_MODE cull_mode;
-			float nocull_distance = 0.0f;
+			float nocull_distance = DEFAULT_NOCULL_DIST;
+			bool nocull_distance_overrides_in_leaf_twk = false;
 			std::uint32_t area_index;
 		};
 
@@ -164,7 +170,7 @@ namespace components
 			DWORD fog_color = 0xFFFFFFFF;
 			float water_uv_scale = 1.0f;
 			std::unordered_map<std::uint32_t, area_overrides_s> area_settings;
-			float default_nocull_dist = 600.0f;
+			float default_nocull_dist = DEFAULT_NOCULL_DIST;
 			hide_models_s hide_models;
 			std::vector<remix_transition_s> remix_transitions;
 			std::vector<marker_settings_s> map_markers;

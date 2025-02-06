@@ -7,6 +7,7 @@
 [FOG]
     c1m1_hotel = { distance = 15000, color = [100, 100, 100] }
     c1m2_streets = { distance = 2500.000000, color = [22, 23, 20] }
+    c2m1_highway = { distance = 5000.000000, color = [18, 171, 85] }
     c4m1_milltown_a = { distance = 3000, color = [100, 100, 100] }
 
 
@@ -27,31 +28,33 @@
 # :: Useful console command: 'xo_debug_toggle_node_vis'
 # ~~ Parameters:
 #
-# in_area:          the area the player has to be in                        [int]
-# areas:            area/s with forced visibility                           [int array]
-# leafs:            leaf/s with forced visibility                           [int array]
+# in_area:          the area the player has to be in                [int]
+# areas:            area/s with forced visibility                   [int array]
+# leafs:            leaf/s with forced visibility                   [int array]
 #
-# cull:             [0] disable frustum culling                             [int 0-5]
+# cull:             [0] disable frustum culling                     [int 0-5]
 #                   [1] disable frustum culling in current area
 #                   [2] stock
 #                   [3] frustum culling (outside current area) + force all nodes/leafs in current area
 #                   [4] ^ + outside of current area within certain dist to player (param: nocull_dist)
-#                   [5] force all leafs/nodes within certain dist to player (param: nocull_dist)                        << default
+#                   [5] force all leafs/nodes within certain dist to player (param: nocull_dist)                            << default
 #
-# nocull_dist:      |> Distance around the player where objects wont get culled - only used on certain cull modes       << defaults to 600.0
+# nocull_dist:      |> Distance around the player where objects wont get culled - only used on certain cull modes   [float] << defaults to 600.0
 #
 # -----------       :: This can be used to disable frustum culling for specified areas when the player is in specified leafs 
 #                   :: Useful at area crossings when used in conjunction with nocull - area-specific markers that block visibility
-# leaf_tweak:                                                               [array of structure below]
-#                   |> in_leafs:   the leaf/s the player has to be in       [int array]
-#                   |>    areas:   area/s with forced visibility            [int array]
+# leaf_tweak:                                                                                   [array of structure below]
+#                   |>    in_leafs:     the leaf/s the player has to be in                      [int array]
+#                   |>       areas:     area/s with forced visibility                           [int array]
+#                   |>       leafs:     leaf/s with forced visibility                           [int array]
+#                   |> nocull_dist:     uses per leaf value instead of area value if defined    [float]                     << defaults to 0.0 (off)
 # 
 # -----------       :: This can be used to forcefully cull parts of the map
-# hide_areas:                                                               [array of structure below]
-#                   |>    areas:   area/s to hide                           [int array]
-#                   |>  N_leafs:   only hide area/s when NOT in leaf/s      [int array]
+# hide_areas:                                                                       [array of structure below]
+#                   |>    areas:   area/s to hide                                   [int array]
+#                   |>  N_leafs:   only hide area/s when NOT in leaf/s              [int array]
 #
-# hide_leafs:       force hide leaf/s                                       [int array]
+# hide_leafs:       force hide leaf/s                                               [int array]
 
 [CULL]
     #c1m1_hotel = [
@@ -107,11 +110,16 @@
         { in_area =  23, areas = [13], nocull_dist = 600.000000 },
     ]
 
-
-
     c2m1_highway = [
-        { in_area =   1, cull = 1 },
+        { in_area =   1, leafs = [
+                938, 1395
+            ], nocull_dist = 1000.000000, leaf_tweak = [
+                { in_leafs = [341], areas = [1] },
+                { in_leafs = [415], leafs = [559, 858] },
+                { in_leafs = [548], leafs = [559, 858] },
+            ] },
     ]
+
 
     c4m1_milltown_a = [
         { in_area =   2, cull = 5, nocull_dist = 600.0 },
@@ -164,6 +172,13 @@
         { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1621.017944, 5627.995117, 2721.531006], rotation = [90.000000, 90.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
         { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1854.759033, 5599.157227, 2717.031250], rotation = [90.000000, 73.698997, 0.000000], scale = [3.240000, 2.940000, 1.000000] },
     ]
+
+    c2m1_highway = [
+        { nocull = 101, areas = [], N_leafs = [], position = [10457.524414, 7875.057617, -551.203003], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+        { nocull = 0, areas = [], N_leafs = [], position = [1792.145996, 3136.987061, -815.197998], rotation = [90.000000, 0.000000, 90.000000], scale = [5.260000, 30.660000, 1.000000] },
+    ]
+
+
 
     c3m1_plankcountry = [
         { nocull = 300, areas = [], N_leafs = [], position = [-12668.542969, 10249.047852, 288.393005], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },

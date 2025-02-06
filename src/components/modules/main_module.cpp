@@ -367,12 +367,33 @@ namespace components
 			return 0;
 		}*/
 
-		const float nocull_dist = !g_player_current_area_override ? map_settings::get_map_settings().default_nocull_dist : g_player_current_area_override->nocull_distance;
+		// "global" nocull distance if area has no overrides
+		float nocull_dist = map_settings::get_map_settings().default_nocull_dist;
+		const bool using_distance_based_mode = cmode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START && cmode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END;
+
+		if (using_distance_based_mode && g_player_current_area_override)
+		{
+			// nocull distance if area has override
+			nocull_dist = g_player_current_area_override->nocull_distance;
+
+			// if any leaf tweak has a nocull override
+			if (g_player_current_area_override->nocull_distance_overrides_in_leaf_twk)
+			{
+				for (const auto& lt : g_player_current_area_override->leaf_tweaks)
+				{
+					// check if node the player is currently in has any overrides
+					if (lt.in_leafs.contains(g_current_leaf))
+					{
+						nocull_dist = lt.nocull_dist;
+						break;
+					}
+				}
+			}
+		}
 
 		// if no area override or if cull mode is distance based
 		if (   !g_player_current_area_override 
-			|| cmode == map_settings::AREA_CULL_MODE_DISTANCE
-			|| cmode == map_settings::AREA_CULL_MODE_FORCE_AREA_DISTANCE)
+			|| using_distance_based_mode)
 		{
 			if (is_aabb_within_distance(node->m_vecCenter, node->m_vecHalfDiagonal, *game::get_current_view_origin(), nocull_dist)) {
 				return 0;

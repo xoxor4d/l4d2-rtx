@@ -430,14 +430,14 @@ namespace components
 
 				if (ImGui::BeginTable("MarkerTable", 9,
 					ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
-					ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 240)))
+					ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 150)))
 				{
 					ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide, 12.0f);
 					ImGui::TableSetupColumn("Num", ImGuiTableColumnFlags_NoResize, 24.0f);
 					ImGui::TableSetupColumn("NC", ImGuiTableColumnFlags_NoResize, 24.0f);
 					ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 80.0f);
 					ImGui::TableSetupColumn("NLeafs", ImGuiTableColumnFlags_WidthStretch, 80.0f);
-					ImGui::TableSetupColumn("Pos", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 200.0f);
+					ImGui::TableSetupColumn("Pos", ImGuiTableColumnFlags_WidthFixed, 200.0f);
 					ImGui::TableSetupColumn("Rot", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 180.0f);
 					ImGui::TableSetupColumn("Scale", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 130.0f);
 					ImGui::TableSetupColumn("##Delete", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip, 16.0f);
@@ -473,7 +473,7 @@ namespace components
 							if (!is_selected) // only selectable if not selected
 							{
 								// never show selection
-								if (ImGui::Selectable(utils::va("%d", i), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap))
+								if (ImGui::Selectable(utils::va("%d", i), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap, ImVec2(0, 18)))
 								{
 									selection = &m;
 									m.imgui_is_selected = true;
@@ -938,8 +938,14 @@ namespace components
 										}
 									}
 
+									toml_str += "]";
+
+									if (lf.nocull_dist > 0.0f) {
+										toml_str += ", nocull_dist = " + std::to_string(lf.nocull_dist);
+									}
+
 									// }
-									toml_str += "] },\n";
+									toml_str += " },\n";
 								}
 							}
 							toml_str += "            ]";
@@ -1009,7 +1015,7 @@ namespace components
 						// }
 						toml_str += " },\n";
 
-						if (is_multiline && ar_num != sorted_area_settings.size()) {
+						if (is_multiline && ar_num != (int)sorted_area_settings.size()) {
 							toml_str += "\n";
 						}
 
@@ -1076,12 +1082,12 @@ namespace components
 
 				// # CULL TABLE
 				if (ImGui::BeginTable("CullTable", 6, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
-					ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollY, ImVec2(0, 580)))
+					ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollY, ImVec2(0, 380)))
 				{
 					ImGui::TableSetupScrollFreeze(0, 1); // make top row always visible
 					ImGui::TableSetupColumn("Ar", ImGuiTableColumnFlags_NoResize, 18.0f);
 					ImGui::TableSetupColumn("Mode", ImGuiTableColumnFlags_WidthStretch, 34.0f);
-					ImGui::TableSetupColumn("Leafs", ImGuiTableColumnFlags_WidthStretch, 120.0f);
+					ImGui::TableSetupColumn("Leafs", ImGuiTableColumnFlags_WidthStretch, 80.0f);
 					ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 60.0f);
 					ImGui::TableSetupColumn("Hide-Leafs", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_DefaultHide, 40.0f);
 					ImGui::TableSetupColumn("LeafTweaks & HideAreas", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_NoHide, 140.0f);
@@ -1222,7 +1228,7 @@ namespace components
 								if (ImGui::Button("+##Leafs")) {
 									get_and_add_integers_to_set(in_leafs_buf, area_selection->leafs);
 								}
-								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
+								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##Leafs")) 
 								{
 									auto c_leaf_str = utils::va("%d", g_current_leaf);
@@ -1283,7 +1289,7 @@ namespace components
 								if (ImGui::Button("+##AreasCull")) {
 									get_and_add_integers_to_set(in_areas_buf, area_selection->areas);
 								}
-								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
+								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##AreasCull"))
 								{
 									auto c_area_str = utils::va("%d", g_current_area);
@@ -1344,7 +1350,7 @@ namespace components
 								if (ImGui::Button("+##HLeafs")) {
 									get_and_add_integers_to_set(in_hide_leafs_buf, area_selection->hide_leafs);
 								}
-								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
+								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##HLeafs"))
 								{
 									auto c_leaf_str = utils::va("%d", g_current_leaf);
@@ -1356,15 +1362,17 @@ namespace components
 						// - tweak leafs + hide_areas
 						ImGui::TableNextColumn();
 
+						bool any_tweak_with_nocull_override = false;
 						if (!a.leaf_tweaks.empty())
 						{
 							// inline table for leaf tweaks
-							if (ImGui::BeginTable("tweak_leafs_nested_table", 4, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+							if (ImGui::BeginTable("tweak_leafs_nested_table", 5, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
 								ImGuiTableFlags_Reorderable | ImGuiTableFlags_ContextMenuInBody))
 							{
 								ImGui::TableSetupColumn("Tweak in Leafs", ImGuiTableColumnFlags_WidthStretch, 100.0f);
 								ImGui::TableSetupColumn("Tweak Areas", ImGuiTableColumnFlags_WidthStretch, 100.0f);
 								ImGui::TableSetupColumn("Tweak Leafs", ImGuiTableColumnFlags_WidthStretch, 100.0f);
+								ImGui::TableSetupColumn("NoCullDist", ImGuiTableColumnFlags_WidthStretch, 44.0f);
 								ImGui::TableSetupColumn("##Delete", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip, 16.0f);
 								ImGui::TableHeadersRow();
 
@@ -1400,19 +1408,6 @@ namespace components
 									float twk_start_y = ImGui::GetCursorPosY();
 
 									{
-										std::string arr_str;
-										for (auto it = lt.in_leafs.begin(); it != lt.in_leafs.end(); ++it)
-										{
-											if (it != lt.in_leafs.begin()) {
-												arr_str += ", ";
-											} arr_str += std::to_string(*it);
-										}
-
-										if (arr_str.empty()) {
-											arr_str = "// Empty";
-										}
-										ImGui::TextWrapped(arr_str.c_str());
-
 										// Input
 										if (is_tweak_selected)
 										{
@@ -1446,23 +1441,19 @@ namespace components
 											if (ImGui::Button("+##TwkInLeafs")) {
 												get_and_add_integers_to_set(in_twk_in_leafs_buf, tweak_selection->in_leafs);
 											}
-											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
+											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##TwkInLeafs"))
 											{
 												auto c_leaf_str = utils::va("%d", g_current_leaf);
 												get_and_add_integers_to_set((char*)c_leaf_str, tweak_selection->in_leafs, false);
 											} TT("Pick Current Leaf");
 										} // End Input
-									}
 
-									// Twk Areas
-									ImGui::TableNextColumn();
-									IMGUI_FIX_CELL_Y_OFFSET(is_tweak_selected, tweak_table_first_row_y_pos);
-									{
+										ImGui::Spacing();
 										std::string arr_str;
-										for (auto it = lt.areas.begin(); it != lt.areas.end(); ++it)
+										for (auto it = lt.in_leafs.begin(); it != lt.in_leafs.end(); ++it)
 										{
-											if (it != lt.areas.begin()) {
+											if (it != lt.in_leafs.begin()) {
 												arr_str += ", ";
 											} arr_str += std::to_string(*it);
 										}
@@ -1471,7 +1462,13 @@ namespace components
 											arr_str = "// Empty";
 										}
 										ImGui::TextWrapped(arr_str.c_str());
+										ImGui::Spacing();
+									}
 
+									// Twk Areas
+									ImGui::TableNextColumn();
+									//IMGUI_FIX_CELL_Y_OFFSET(is_tweak_selected, tweak_table_first_row_y_pos);
+									{
 										// Input
 										if (is_tweak_selected)
 										{
@@ -1505,23 +1502,19 @@ namespace components
 											if (ImGui::Button("+##TwkAreas")) {
 												get_and_add_integers_to_set(in_twk_areas_buf, tweak_selection->areas);
 											}
-											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
+											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##TwkAreas"))
 											{
 												auto c_area_str = utils::va("%d", g_current_area);
 												get_and_add_integers_to_set((char*)c_area_str, tweak_selection->areas, false);
 											} TT("Pick Current Area");
 										} // End Input
-									}
 
-									// Twk Forced Leafs
-									ImGui::TableNextColumn();
-									IMGUI_FIX_CELL_Y_OFFSET(is_tweak_selected, tweak_table_first_row_y_pos);
-									{
+										ImGui::Spacing();
 										std::string arr_str;
-										for (auto it = lt.leafs.begin(); it != lt.leafs.end(); ++it)
+										for (auto it = lt.areas.begin(); it != lt.areas.end(); ++it)
 										{
-											if (it != lt.leafs.begin()) {
+											if (it != lt.areas.begin()) {
 												arr_str += ", ";
 											} arr_str += std::to_string(*it);
 										}
@@ -1530,7 +1523,13 @@ namespace components
 											arr_str = "// Empty";
 										}
 										ImGui::TextWrapped(arr_str.c_str());
+										ImGui::Spacing();
+									}
 
+									// Twk Forced Leafs
+									ImGui::TableNextColumn();
+									//IMGUI_FIX_CELL_Y_OFFSET(is_tweak_selected, tweak_table_first_row_y_pos);
+									{
 										// Input
 										if (is_tweak_selected)
 										{
@@ -1564,14 +1563,47 @@ namespace components
 											if (ImGui::Button("+##TwkForcedLeafs")) {
 												get_and_add_integers_to_set(in_twk_force_leafs_buf, tweak_selection->leafs);
 											}
-											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
+											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##TwkForcedLeafs"))
 											{
 												auto c_leaf_str = utils::va("%d", g_current_leaf);
 												get_and_add_integers_to_set((char*)c_leaf_str, tweak_selection->leafs, false);
 											} TT("Pick Current Leaf");
 										} // End Input
+
+										ImGui::Spacing();
+										std::string arr_str;
+										for (auto it = lt.leafs.begin(); it != lt.leafs.end(); ++it)
+										{
+											if (it != lt.leafs.begin()) {
+												arr_str += ", ";
+											} arr_str += std::to_string(*it);
+										}
+
+										if (arr_str.empty()) {
+											arr_str = "// Empty";
+										}
+										ImGui::TextWrapped(arr_str.c_str());
+										ImGui::Spacing();
 									}
+
+									// Twk NoCullDist
+									ImGui::TableNextColumn();
+									//IMGUI_FIX_CELL_Y_OFFSET(is_tweak_selected, tweak_table_first_row_y_pos);
+
+									ImGui::PushID((int)cur_row);
+
+									ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+									if (ImGui::DragFloat("##NoCullDist", &lt.nocull_dist, 0.1f, 0.0f, FLT_MAX, "%.0f")) {
+										lt.nocull_dist = lt.nocull_dist < 0.0f ? 0.0f : lt.nocull_dist;
+									}
+									TT("NoCull Distance: Can be used to override the nocull distance for distance based cullmodes.\n"
+										"Priority: Leaf NoCull  >  Area NoCull  >  Global (Default) NoCull")
+
+									// this leaf overrides the nocull distance
+									any_tweak_with_nocull_override = lt.nocull_dist > 0.0f ? true : any_tweak_with_nocull_override;
+
+									ImGui::PopID();
 
 									// Delete Button
 									ImGui::TableNextColumn();
@@ -1583,10 +1615,14 @@ namespace components
 											ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 											ImGui::PushID((int)cur_row);
 
-											const auto btn_size = ImVec2(16, is_tweak_selected ? (ImGui::GetItemRectMax().y - tweak_table_first_row_y_pos - 6.0f) : 16.0f);
+											const auto pos = ImGui::GetCursorScreenPos();
+											ImGui::SetCursorScreenPos(ImVec2(pos.x, is_tweak_selected ? pos.y + 7.0f : pos.y + 4.0f));
+	
+											const auto btn_size = ImVec2(16, is_tweak_selected ? (ImGui::GetItemRectMax().y - tweak_table_first_row_y_pos + 8.0f) : 18.0f);
 											if (ImGui::Button("x##twkleaf", btn_size)) {
 												marked_for_deletion = &lt;
 											}
+											//ImGui::SetCursorScreenPos(pos);
 											ImGui::PopStyleVar(2);
 											ImGui::PopStyleColor();
 											ImGui::PopID();
@@ -1594,13 +1630,15 @@ namespace components
 
 										if (is_area_selected && !is_tweak_selected)
 										{
-											float content_height = ImGui::GetCursorPosY() - twk_start_y - 4.0f;
+											float content_height = ImGui::GetCursorPosY() - twk_start_y + 3.0f/*- 4.0f*/;
 											ImGui::SetCursorPosY(twk_start_y);
 
+											const auto pos = ImGui::GetCursorScreenPos();
 											// never show selection
 											if (ImGui::Selectable(utils::va("##TwkSel%d", cur_row), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, content_height))) {
 												tweak_selection = &lt;
 											}
+											ImGui::SetCursorScreenPos(pos);
 										}
 									}
 
@@ -1643,6 +1681,9 @@ namespace components
 								ImGui::EndTable();
 							}
 						}
+
+						// has this area any nocull overrides?
+						a.nocull_distance_overrides_in_leaf_twk = any_tweak_with_nocull_override;
 
 						if (is_area_selected)
 						{
