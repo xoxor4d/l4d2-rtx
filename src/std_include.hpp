@@ -30,6 +30,7 @@
 #include <filesystem>
 #include <cassert>
 #include <map>
+#include <set>
 #include <unordered_set>
 #include <fstream>
 #include <iostream>

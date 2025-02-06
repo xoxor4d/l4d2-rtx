@@ -1,8 +1,7 @@
 #include "std_include.hpp"
 #include "map_settings.hpp"
-#include <set>
-
-#include "map_settings.hpp"
+#include "components/common/imgui_helper.hpp"
+#include "components/common/toml.hpp"
 
 #ifdef USE_IMGUI
 #include "imgui_internal.h"
@@ -153,7 +152,7 @@ namespace components
 
 			ImGui::SameLine();
 			if (ImGui::Button("Kick Survivor Bots")) {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("kick rochelle; kick coach; kick ellis; kick roach");
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("kick rochelle; kick coach; kick ellis; kick roach; kick louis; kick zoey; kick francis; kick bill");
 			}
 
 			ImGui::SameLine();
@@ -294,7 +293,6 @@ namespace components
 
 	void imgui::tab_map_settings()
 	{
-		//if (ImGui::CollapsingHeader("Culling / Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			SPACING_INDENT_BEGIN;
 			ImGui::Checkbox("Disable R_CullNode", &m_disable_cullnode);
@@ -338,47 +336,8 @@ namespace components
 				auto& markers = map_settings::get_map_settings().map_markers;
 				if (ImGui::Button("Copy All Markers to Clipboard", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 				{
-					std::string toml_str = map_settings::get_map_settings().mapname + " = [\n"s;
-					for (auto& m : markers)
-					{
-						toml_str += "        { " + (m.no_cull ? "nocull = "s : "marker = "s) + std::to_string(m.index);
-
-						if (m.no_cull)
-						{
-							toml_str += ", areas = [";
-							for (auto it = m.areas.begin(); it != m.areas.end(); ++it)
-							{
-								if (it != m.areas.begin()) {
-									toml_str += ", ";
-								}
-								toml_str += std::to_string(*it);
-							}
-							toml_str += "]";
-
-							toml_str += ", N_leafs = [";
-							for (auto it = m.when_not_in_leafs.begin(); it != m.when_not_in_leafs.end(); ++it)
-							{
-								if (it != m.when_not_in_leafs.begin()) {
-									toml_str += ", ";
-								}
-								toml_str += std::to_string(*it);
-							}
-							toml_str += "]";
-						}
-
-						toml_str += ", position = [" + std::to_string(m.origin.x) + ", " + std::to_string(m.origin.y) + ", " + std::to_string(m.origin.z) + "]";
-						toml_str += ", rotation = [" + std::to_string(RAD2DEG(m.rotation.x)) + ", " + std::to_string(RAD2DEG(m.rotation.y)) + ", " + std::to_string(RAD2DEG(m.rotation.z)) + "]";
-
-						if (m.no_cull) {
-							toml_str += ", scale = [" + std::to_string(m.scale.x) + ", " + std::to_string(m.scale.y) + ", " + std::to_string(m.scale.z) + "]";
-						}
-
-						toml_str += " },\n";
-					}
-					toml_str += "    ]";
-
 					ImGui::LogToClipboard();
-					ImGui::LogText(toml_str.c_str());
+					ImGui::LogText("%s", common::toml::build_map_marker_string_for_current_map(markers).c_str());
 					ImGui::LogFinish();
 				}
 
@@ -395,35 +354,10 @@ namespace components
 				ImGui::Spacing();
 
 
-				static map_settings::marker_settings_s* selection = nullptr;
-				constexpr auto in_buflen = 256u;
+				constexpr auto in_buflen = 1024u;
 				static char in_area_buf[in_buflen], in_nleaf_buf[in_buflen];
-				ImGuiInputTextFlags input_text_flags = /*ImGuiInputTextFlags_CharsScientific |*/ ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll;
-
-				auto get_and_add_integers_to_marker = [](char* str, std::unordered_set<std::uint32_t>& set, bool clear_buf = true)
-					{
-						std::vector<int> temp_area;
-						utils::extract_integer_words(str, temp_area, true);
-						set.insert(temp_area.begin(), temp_area.end());
-
-						if (clear_buf) {
-							memset(str, 0, in_buflen);
-						}
-					};
-
-				auto get_and_remove_integers_from_marker = [](char* str, std::unordered_set<std::uint32_t>& set, bool clear_buf = true)
-					{
-						std::vector<int> temp_area;
-						utils::extract_integer_words(str, temp_area, true);
-
-						for (const auto& v : temp_area) {
-							set.erase(v);
-						}
-
-						if (clear_buf) {
-							memset(str, 0, in_buflen);
-						}
-					};
+				static map_settings::marker_settings_s* selection = nullptr;
+				ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll;
 
 				//
 				// MARKER TABLE
@@ -514,7 +448,7 @@ namespace components
 							{
 								if (ImGui::Button("-##Area"))
 								{
-									get_and_remove_integers_from_marker(in_area_buf, selection->areas);
+									common::get_and_remove_integers_from_set(in_area_buf, selection->areas, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -524,7 +458,7 @@ namespace components
 
 								if (ImGui::InputText("##AreaMarker", in_area_buf, IM_ARRAYSIZE(in_area_buf), input_text_flags)) 
 								{
-									get_and_add_integers_to_marker(in_area_buf, selection->areas);
+									common::get_and_add_integers_to_set(in_area_buf, selection->areas, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -544,14 +478,14 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("+##Area")) 
 								{
-									get_and_add_integers_to_marker(in_area_buf, selection->areas);
+									common::get_and_add_integers_to_set(in_area_buf, selection->areas, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##Areas"))
 								{
 									auto c_area_str = utils::va("%d", g_current_area);
-									get_and_add_integers_to_marker((char*)c_area_str, selection->areas, false);
+									common::get_and_add_integers_to_set((char*)c_area_str, selection->areas);
 									main_module::trigger_vis_logic();
 								} TT("Pick Current Area");
 							} // End Area Input
@@ -575,7 +509,7 @@ namespace components
 							{
 								if (ImGui::Button("-##NLeafs"))
 								{
-									get_and_remove_integers_from_marker(in_nleaf_buf, selection->when_not_in_leafs);
+									common::get_and_remove_integers_from_set(in_nleaf_buf, selection->when_not_in_leafs, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -584,7 +518,7 @@ namespace components
 								ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 								if (ImGui::InputText("##NLeafsMarker", in_nleaf_buf, IM_ARRAYSIZE(in_nleaf_buf), input_text_flags))
 								{
-									get_and_add_integers_to_marker(in_nleaf_buf, selection->when_not_in_leafs);
+									common::get_and_add_integers_to_set(in_nleaf_buf, selection->when_not_in_leafs, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -604,14 +538,14 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("+##NLeafs"))
 								{
-									get_and_add_integers_to_marker(in_nleaf_buf, selection->when_not_in_leafs);
+									common::get_and_add_integers_to_set(in_nleaf_buf, selection->when_not_in_leafs, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##Leafs"))
 								{
 									auto c_leaf_str = utils::va("%d", g_current_leaf);
-									get_and_add_integers_to_marker((char*)c_leaf_str, selection->when_not_in_leafs, false);
+									common::get_and_add_integers_to_set((char*)c_leaf_str, selection->when_not_in_leafs);
 									main_module::trigger_vis_logic();
 								} TT("Pick Current Leaf");
 							} // end Input
@@ -813,217 +747,8 @@ namespace components
 				auto& areas = map_settings::get_map_settings().area_settings;
 				if (ImGui::Button("Copy Settings to Clipboard##Cull", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 				{
-					// temp map to sort areas by area number
-					std::map<int, map_settings::area_overrides_s> sorted_area_settings(areas.begin(), areas.end());
-
-					std::string toml_str = map_settings::get_map_settings().mapname + " = [\n"s;
-					for (auto& [ar_num, a] : sorted_area_settings)
-					{
-						bool is_multiline = false;
-
-						// {
-						{
-							const auto num_spaces = ar_num < 10 ? 2u : ar_num < 100 ? 1u : 0u;
-							toml_str += "        { in_area = ";
-
-							for (auto i = 0u; i < num_spaces; i++) {
-								toml_str += " ";
-							}
-
-							toml_str += std::to_string(ar_num);
-						}
-
-						if (!a.areas.empty())
-						{
-							// temp set to sort areas
-							std::set<int> sorted_areas(a.areas.begin(), a.areas.end());
-
-							toml_str += ", areas = [";
-							for (auto it = sorted_areas.begin(); it != sorted_areas.end(); ++it)
-							{
-								if (it != sorted_areas.begin()) {
-									toml_str += ", ";
-								}
-								toml_str += std::to_string(*it);
-							}
-							toml_str += "]";
-						}
-
-						if (!a.leafs.empty())
-						{
-							// temp set to sort leafs
-							std::set<int> sorted_leafs(a.leafs.begin(), a.leafs.end());
-
-							auto leaf_count = 0u;
-							toml_str += ", leafs = [\n                ";
-							for (auto it = sorted_leafs.begin(); it != sorted_leafs.end(); ++it)
-							{
-								if (it != sorted_leafs.begin())
-								{
-									toml_str += ", ";
-
-									// new line every X leafs
-									if (!(leaf_count % 8)) 
-									{
-										toml_str += "\n                ";
-										is_multiline = true;
-									}
-								}
-
-								toml_str += std::to_string(*it);
-								leaf_count++;
-							}
-
-							toml_str += "\n            ]";
-						} // end leafs
-
-						if (a.cull_mode != map_settings::AREA_CULL_MODE::AREA_CULL_INFO_DEFAULT) {
-							toml_str += ", cull = " + std::to_string(a.cull_mode);
-						}
-
-						if (   a.cull_mode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START
-							&& a.cull_mode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END)
-						{
-							toml_str += ", nocull_dist = " + std::to_string(a.nocull_distance);
-						}
-
-						if (!a.leaf_tweaks.empty())
-						{
-							is_multiline = true;
-							toml_str += ", leaf_tweak = [\n";
-							for (auto& lf : a.leaf_tweaks)
-							{
-								if (!lf.in_leafs.empty() && !(lf.areas.empty() && lf.leafs.empty()))
-								{
-									// temp set to sort in_leafs
-									std::set<int> sorted_twk_inleafs(lf.in_leafs.begin(), lf.in_leafs.end());
-
-									// {
-									toml_str += "                { in_leafs = [";
-									for (auto it = sorted_twk_inleafs.begin(); it != sorted_twk_inleafs.end(); ++it)
-									{
-										if (it != sorted_twk_inleafs.begin()) {
-											toml_str += ", ";
-										}
-										toml_str += std::to_string(*it);
-									}
-
-									if (!lf.areas.empty())
-									{
-										// temp set to sort areas
-										std::set<int> sorted_twk_areas(lf.areas.begin(), lf.areas.end());
-
-										toml_str += "], areas = [";
-										for (auto it = sorted_twk_areas.begin(); it != sorted_twk_areas.end(); ++it)
-										{
-											if (it != sorted_twk_areas.begin()) {
-												toml_str += ", ";
-											}
-											toml_str += std::to_string(*it);
-										}
-									}
-
-									if (!lf.leafs.empty())
-									{
-										// temp set to sort leafs
-										std::set<int> sorted_twk_leafs(lf.leafs.begin(), lf.leafs.end());
-
-										toml_str += "], leafs = [";
-										for (auto it = sorted_twk_leafs.begin(); it != sorted_twk_leafs.end(); ++it)
-										{
-											if (it != sorted_twk_leafs.begin()) {
-												toml_str += ", ";
-											}
-											toml_str += std::to_string(*it);
-										}
-									}
-
-									toml_str += "]";
-
-									if (lf.nocull_dist > 0.0f) {
-										toml_str += ", nocull_dist = " + std::to_string(lf.nocull_dist);
-									}
-
-									// }
-									toml_str += " },\n";
-								}
-							}
-							toml_str += "            ]";
-						} // end leaf_tweaks
-
-						if (!a.hide_areas.empty())
-						{
-							is_multiline = true;
-							toml_str += ", hide_areas = [\n";
-							for (auto& hidearea : a.hide_areas)
-							{
-								if (!hidearea.areas.empty())
-								{
-									// temp set to sort hide-areas
-									std::set<int> sorted_hide_areas(hidearea.areas.begin(), hidearea.areas.end());
-
-									// { 
-									toml_str += "                { areas = [";
-									for (auto it = sorted_hide_areas.begin(); it != sorted_hide_areas.end(); ++it)
-									{
-										if (it != sorted_hide_areas.begin()) {
-											toml_str += ", ";
-										}
-										toml_str += std::to_string(*it);
-									}
-									toml_str += "]";
-
-									if (!hidearea.when_not_in_leafs.empty())
-									{
-										// temp set to sort hide-nleafs
-										std::set<int> sorted_hide_nleafs(hidearea.when_not_in_leafs.begin(), hidearea.when_not_in_leafs.end());
-
-										toml_str += ", N_leafs = [";
-										for (auto it = sorted_hide_nleafs.begin(); it != sorted_hide_nleafs.end(); ++it)
-										{
-											if (it != sorted_hide_nleafs.begin()) {
-												toml_str += ", ";
-											}
-											toml_str += std::to_string(*it);
-										}
-										toml_str += "]";
-									}
-									// }
-									toml_str += " },\n";
-								}
-							}
-							toml_str += "            ]";
-						} // end hide_areas
-
-						if (!a.hide_leafs.empty())
-						{
-							// temp set to sort hide-leafs
-							std::set<int> sorted_hide_leafs(a.hide_leafs.begin(), a.hide_leafs.end());
-
-
-							toml_str += ", hide_leafs = [";
-							for (auto it = sorted_hide_leafs.begin(); it != sorted_hide_leafs.end(); ++it)
-							{
-								if (it != sorted_hide_leafs.begin()) {
-									toml_str += ", ";
-								}
-								toml_str += std::to_string(*it);
-							}
-							toml_str += "]";
-						} // end hide_leafs
-
-						// }
-						toml_str += " },\n";
-
-						if (is_multiline && ar_num != (int)sorted_area_settings.size()) {
-							toml_str += "\n";
-						}
-
-					} // end loop
-					toml_str += "    ]";
-
 					ImGui::LogToClipboard();
-					ImGui::LogText(toml_str.c_str());
+					ImGui::LogText("%s", common::toml::build_culling_overrides_string_for_current_map(areas).c_str());
 					ImGui::LogFinish();
 				} // end copy to clipboard
 
@@ -1052,31 +777,6 @@ namespace components
 							in_twk_in_leafs_buf[in_buflen], in_twk_areas_buf[in_buflen], in_twk_force_leafs_buf[in_buflen],
 							in_hide_leafs_buf[in_buflen], in_hide_areas_buf[in_buflen], in_hide_nleafs_buf[in_buflen];
 
-				auto get_and_add_integers_to_set = [](char* str, std::unordered_set<std::uint32_t>& set, bool clear_buf = true)
-					{
-						std::vector<int> temp_vec;
-						utils::extract_integer_words(str, temp_vec, true);
-						set.insert(temp_vec.begin(), temp_vec.end());
-						if (clear_buf) {
-							memset(str, 0, in_buflen);
-						}
-					};
-
-				auto get_and_remove_integers_from_set = [](char* str, std::unordered_set<std::uint32_t>& set, bool clear_buf = true)
-					{
-						std::vector<int> temp_vec;
-						utils::extract_integer_words(str, temp_vec, true);
-
-						for (const auto& v : temp_vec) {
-							set.erase(v);
-						}
-
-						if (clear_buf) {
-							memset(str, 0, in_buflen);
-						}
-					};
-
-				
 				ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll;
 				static float culltable_saved_row_y_pos_last_button = 0.0f;
 
@@ -1122,11 +822,8 @@ namespace components
 						// -
 						ImGui::TableNextColumn();
 
-						// save row start of selector at the end of a row
-						float start_y = ImGui::GetCursorPosY();
-
-						// set background for first column
-						ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_TableHeaderBg));
+						float start_y = ImGui::GetCursorPosY(); // save row start of selector at the end of a row
+						ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGuiCol_TableHeaderBg)); // set background for first column
 
 						// - Area
 						ImGui::Text("%d", (int)area_num);
@@ -1138,16 +835,14 @@ namespace components
 						// Mode
 						ImGui::TableNextColumn();
 
-						const char* cullmode_items[] = { "NoFrustum", "NoFrstmInAr", "Stock", "ForceAr", "AreaDist", "Distance" };
-
 						ImGui::PushID((int)area_num);
 						ImGui::SetNextItemWidth(122.0f);
-						if (ImGui::BeginCombo("##ModeSelector", cullmode_items[a.cull_mode], ImGuiComboFlags_None))
+						if (ImGui::BeginCombo("##ModeSelector", map_settings::AREA_CULL_MODE_STR[a.cull_mode], ImGuiComboFlags_None))
 						{
-							for (int n = 0; n < IM_ARRAYSIZE(cullmode_items); n++)
+							for (int n = 0; n < IM_ARRAYSIZE(map_settings::AREA_CULL_MODE_STR); n++)
 							{
 								const bool is_selected = (a.cull_mode == n);
-								if (ImGui::Selectable(cullmode_items[n], is_selected)) {
+								if (ImGui::Selectable(map_settings::AREA_CULL_MODE_STR[n], is_selected)) {
 									a.cull_mode = (map_settings::AREA_CULL_MODE)n;
 								}
 
@@ -1200,7 +895,7 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, culltable_saved_row_y_pos_last_button + ImGui::GetStyle().ItemSpacing.y));
 								if (ImGui::Button("-##Leafs"))
 								{
-									get_and_remove_integers_from_set(in_leafs_buf, area_selection->leafs);
+									common::get_and_remove_integers_from_set(in_leafs_buf, area_selection->leafs, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -1208,7 +903,7 @@ namespace components
 								const auto spos = ImGui::GetCursorScreenPos();
 								ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 								if (ImGui::InputText("##LeafsCull", in_leafs_buf, IM_ARRAYSIZE(in_leafs_buf), input_text_flags)) {
-									get_and_add_integers_to_set(in_leafs_buf, area_selection->leafs);
+									common::get_and_add_integers_to_set(in_leafs_buf, area_selection->leafs, in_buflen, true);
 								}
 
 								ImGui::SetCursorScreenPos(spos);
@@ -1226,13 +921,13 @@ namespace components
 
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("+##Leafs")) {
-									get_and_add_integers_to_set(in_leafs_buf, area_selection->leafs);
+									common::get_and_add_integers_to_set(in_leafs_buf, area_selection->leafs, in_buflen, true);
 								}
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##Leafs")) 
 								{
 									auto c_leaf_str = utils::va("%d", g_current_leaf);
-									get_and_add_integers_to_set((char*)c_leaf_str, area_selection->leafs, false);
+									common::get_and_add_integers_to_set((char*)c_leaf_str, area_selection->leafs);
 								} TT("Pick Current Leaf");
 							} // End Leaf Input
 						}
@@ -1261,7 +956,7 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, culltable_saved_row_y_pos_last_button + ImGui::GetStyle().ItemSpacing.y));
 								if (ImGui::Button("-##AreasCull"))
 								{
-									get_and_remove_integers_from_set(in_areas_buf, area_selection->areas);
+									common::get_and_remove_integers_from_set(in_areas_buf, area_selection->areas, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -1269,7 +964,7 @@ namespace components
 								const auto spos = ImGui::GetCursorScreenPos();
 								ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 								if (ImGui::InputText("##AreasCull", in_areas_buf, IM_ARRAYSIZE(in_areas_buf), input_text_flags)) {
-									get_and_add_integers_to_set(in_areas_buf, area_selection->areas);
+									common::get_and_add_integers_to_set(in_areas_buf, area_selection->areas, in_buflen, true);
 								}
 
 								ImGui::SetCursorScreenPos(spos);
@@ -1287,13 +982,13 @@ namespace components
 
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("+##AreasCull")) {
-									get_and_add_integers_to_set(in_areas_buf, area_selection->areas);
+									common::get_and_add_integers_to_set(in_areas_buf, area_selection->areas, in_buflen, true);
 								}
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##AreasCull"))
 								{
 									auto c_area_str = utils::va("%d", g_current_area);
-									get_and_add_integers_to_set((char*)c_area_str, area_selection->areas, false);
+									common::get_and_add_integers_to_set((char*)c_area_str, area_selection->areas);
 								} TT("Pick Current Area");
 							} // End Area Input
 						}
@@ -1322,7 +1017,7 @@ namespace components
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetCursorScreenPos().x, culltable_saved_row_y_pos_last_button + ImGui::GetStyle().ItemSpacing.y));
 								if (ImGui::Button("-##HLeafs"))
 								{
-									get_and_remove_integers_from_set(in_hide_leafs_buf, area_selection->hide_leafs);
+									common::get_and_remove_integers_from_set(in_hide_leafs_buf, area_selection->hide_leafs, in_buflen, true);
 									main_module::trigger_vis_logic();
 								}
 
@@ -1330,7 +1025,7 @@ namespace components
 								const auto spos = ImGui::GetCursorScreenPos();
 								ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 								if (ImGui::InputText("##HLeafsCull", in_hide_leafs_buf, IM_ARRAYSIZE(in_hide_leafs_buf), input_text_flags)) {
-									get_and_add_integers_to_set(in_hide_leafs_buf, area_selection->hide_leafs);
+									common::get_and_add_integers_to_set(in_hide_leafs_buf, area_selection->hide_leafs, in_buflen, true);
 								}
 
 								ImGui::SetCursorScreenPos(spos);
@@ -1348,13 +1043,13 @@ namespace components
 
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("+##HLeafs")) {
-									get_and_add_integers_to_set(in_hide_leafs_buf, area_selection->hide_leafs);
+									common::get_and_add_integers_to_set(in_hide_leafs_buf, area_selection->hide_leafs, in_buflen, true);
 								}
 								ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 								if (ImGui::Button("P##HLeafs"))
 								{
 									auto c_leaf_str = utils::va("%d", g_current_leaf);
-									get_and_add_integers_to_set((char*)c_leaf_str, area_selection->hide_leafs, false);
+									common::get_and_add_integers_to_set((char*)c_leaf_str, area_selection->hide_leafs);
 								} TT("Pick Current Leaf");
 							} // End Hide Leafs Input
 						}
@@ -1413,7 +1108,7 @@ namespace components
 										{
 											if (ImGui::Button("-##TwkInLeafs"))
 											{
-												get_and_remove_integers_from_set(in_twk_in_leafs_buf, tweak_selection->in_leafs);
+												common::get_and_remove_integers_from_set(in_twk_in_leafs_buf, tweak_selection->in_leafs, in_buflen, true);
 												main_module::trigger_vis_logic();
 											}
 
@@ -1421,7 +1116,7 @@ namespace components
 											const auto spos = ImGui::GetCursorScreenPos();
 											ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 											if (ImGui::InputText("##TwkInLeafsInput", in_twk_in_leafs_buf, IM_ARRAYSIZE(in_twk_in_leafs_buf), input_text_flags)) {
-												get_and_add_integers_to_set(in_twk_in_leafs_buf, tweak_selection->in_leafs);
+												common::get_and_add_integers_to_set(in_twk_in_leafs_buf, tweak_selection->in_leafs, in_buflen, true);
 											}
 
 											ImGui::SetCursorScreenPos(spos);
@@ -1439,13 +1134,13 @@ namespace components
 
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("+##TwkInLeafs")) {
-												get_and_add_integers_to_set(in_twk_in_leafs_buf, tweak_selection->in_leafs);
+												common::get_and_add_integers_to_set(in_twk_in_leafs_buf, tweak_selection->in_leafs, in_buflen, true);
 											}
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##TwkInLeafs"))
 											{
 												auto c_leaf_str = utils::va("%d", g_current_leaf);
-												get_and_add_integers_to_set((char*)c_leaf_str, tweak_selection->in_leafs, false);
+												common::get_and_add_integers_to_set((char*)c_leaf_str, tweak_selection->in_leafs);
 											} TT("Pick Current Leaf");
 										} // End Input
 
@@ -1474,7 +1169,7 @@ namespace components
 										{
 											if (ImGui::Button("-##TwkAreas"))
 											{
-												get_and_remove_integers_from_set(in_twk_areas_buf, tweak_selection->areas);
+												common::get_and_remove_integers_from_set(in_twk_areas_buf, tweak_selection->areas, in_buflen, true);
 												main_module::trigger_vis_logic();
 											}
 
@@ -1482,7 +1177,7 @@ namespace components
 											const auto spos = ImGui::GetCursorScreenPos();
 											ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 											if (ImGui::InputText("##TwkAreasInput", in_twk_areas_buf, IM_ARRAYSIZE(in_twk_areas_buf), input_text_flags)) {
-												get_and_add_integers_to_set(in_twk_areas_buf, tweak_selection->areas);
+												common::get_and_add_integers_to_set(in_twk_areas_buf, tweak_selection->areas, in_buflen, true);
 											}
 
 											ImGui::SetCursorScreenPos(spos);
@@ -1500,13 +1195,13 @@ namespace components
 
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("+##TwkAreas")) {
-												get_and_add_integers_to_set(in_twk_areas_buf, tweak_selection->areas);
+												common::get_and_add_integers_to_set(in_twk_areas_buf, tweak_selection->areas, in_buflen, true);
 											}
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##TwkAreas"))
 											{
 												auto c_area_str = utils::va("%d", g_current_area);
-												get_and_add_integers_to_set((char*)c_area_str, tweak_selection->areas, false);
+												common::get_and_add_integers_to_set((char*)c_area_str, tweak_selection->areas);
 											} TT("Pick Current Area");
 										} // End Input
 
@@ -1535,7 +1230,7 @@ namespace components
 										{
 											if (ImGui::Button("-##TwkForcedLeafs"))
 											{
-												get_and_remove_integers_from_set(in_twk_force_leafs_buf, tweak_selection->leafs);
+												common::get_and_remove_integers_from_set(in_twk_force_leafs_buf, tweak_selection->leafs, in_buflen, true);
 												main_module::trigger_vis_logic();
 											}
 
@@ -1543,7 +1238,7 @@ namespace components
 											const auto spos = ImGui::GetCursorScreenPos();
 											ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 											if (ImGui::InputText("##TwkForcedLeafsInput", in_twk_force_leafs_buf, IM_ARRAYSIZE(in_twk_force_leafs_buf), input_text_flags)) {
-												get_and_add_integers_to_set(in_twk_force_leafs_buf, tweak_selection->leafs);
+												common::get_and_add_integers_to_set(in_twk_force_leafs_buf, tweak_selection->leafs, in_buflen, true);
 											}
 
 											ImGui::SetCursorScreenPos(spos);
@@ -1561,13 +1256,13 @@ namespace components
 
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("+##TwkForcedLeafs")) {
-												get_and_add_integers_to_set(in_twk_force_leafs_buf, tweak_selection->leafs);
+												common::get_and_add_integers_to_set(in_twk_force_leafs_buf, tweak_selection->leafs, in_buflen, true);
 											}
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x + 1.0f, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##TwkForcedLeafs"))
 											{
 												auto c_leaf_str = utils::va("%d", g_current_leaf);
-												get_and_add_integers_to_set((char*)c_leaf_str, tweak_selection->leafs, false);
+												common::get_and_add_integers_to_set((char*)c_leaf_str, tweak_selection->leafs);
 											} TT("Pick Current Leaf");
 										} // End Input
 
@@ -1756,7 +1451,7 @@ namespace components
 										{
 											if (ImGui::Button("-##HideArea"))
 											{
-												get_and_remove_integers_from_set(in_hide_areas_buf, hidearea_selection->areas);
+												common::get_and_remove_integers_from_set(in_hide_areas_buf, hidearea_selection->areas, in_buflen, true);
 												main_module::trigger_vis_logic();
 											}
 
@@ -1764,7 +1459,7 @@ namespace components
 											const auto spos = ImGui::GetCursorScreenPos();
 											ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 											if (ImGui::InputText("##HideAreaInput", in_hide_areas_buf, IM_ARRAYSIZE(in_hide_areas_buf), input_text_flags)) {
-												get_and_add_integers_to_set(in_hide_areas_buf, hidearea_selection->areas);
+												common::get_and_add_integers_to_set(in_hide_areas_buf, hidearea_selection->areas, in_buflen, true);
 											}
 
 											ImGui::SetCursorScreenPos(spos);
@@ -1782,13 +1477,13 @@ namespace components
 
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("+##HideArea")) {
-												get_and_add_integers_to_set(in_hide_areas_buf, hidearea_selection->areas);
+												common::get_and_add_integers_to_set(in_hide_areas_buf, hidearea_selection->areas, in_buflen, true);
 											}
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##HideArea"))
 											{
 												auto c_area_str = utils::va("%d", g_current_area);
-												get_and_add_integers_to_set((char*)c_area_str, hidearea_selection->areas, false);
+												common::get_and_add_integers_to_set((char*)c_area_str, hidearea_selection->areas);
 											} TT("Pick Current Area");
 										} // End Input
 									}
@@ -1814,14 +1509,14 @@ namespace components
 										if (is_hda_selected)
 										{
 											if (ImGui::Button("-##NLeafs")) {
-												get_and_remove_integers_from_set(in_hide_nleafs_buf, hidearea_selection->when_not_in_leafs);
+												common::get_and_remove_integers_from_set(in_hide_nleafs_buf, hidearea_selection->when_not_in_leafs, in_buflen, true);
 											}
 
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											const auto spos = ImGui::GetCursorScreenPos();
 											ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 40.0f);
 											if (ImGui::InputText("##NLeafsInput", in_hide_nleafs_buf, IM_ARRAYSIZE(in_hide_nleafs_buf), input_text_flags)) {
-												get_and_add_integers_to_set(in_hide_nleafs_buf, hidearea_selection->when_not_in_leafs);
+												common::get_and_add_integers_to_set(in_hide_nleafs_buf, hidearea_selection->when_not_in_leafs, in_buflen, true);
 											}
 
 											ImGui::SetCursorScreenPos(spos);
@@ -1839,13 +1534,13 @@ namespace components
 
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("+##NLeafs")) {
-												get_and_add_integers_to_set(in_hide_nleafs_buf, hidearea_selection->when_not_in_leafs);
+												common::get_and_add_integers_to_set(in_hide_nleafs_buf, hidearea_selection->when_not_in_leafs, in_buflen, true);
 											}
 											ImGui::SetCursorScreenPos(ImVec2(ImGui::GetItemRectMax().x, ImGui::GetItemRectMin().y));
 											if (ImGui::Button("P##NLeafs"))
 											{
 												auto c_leaf_str = utils::va("%d", g_current_leaf);
-												get_and_add_integers_to_set((char*)c_leaf_str, hidearea_selection->when_not_in_leafs, false);
+												common::get_and_add_integers_to_set((char*)c_leaf_str, hidearea_selection->when_not_in_leafs);
 											} TT("Pick Current Leaf");
 										} // End Input
 									}
@@ -2129,7 +1824,7 @@ namespace components
 		if (ImGui::BeginTabBar("devgui_tabs"))
 		{
 			ADD_TAB("General", tab_general);
-			ADD_TAB("Marker / Culling", tab_map_settings)
+			ADD_TAB("Map Settings", tab_map_settings)
 			ImGui::EndTabBar();
 		}
 

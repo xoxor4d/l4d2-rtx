@@ -115,6 +115,16 @@ namespace components
 
 		static constexpr float DEFAULT_NOCULL_DIST = 600.0f;
 
+		const char* AREA_CULL_MODE_STR[] =
+		{
+			"NoFrustum",
+			"NoFrstmInAr",
+			"Stock",
+			"ForceAr",
+			"AreaDist",
+			"Distance"
+		};
+
 		enum AREA_CULL_MODE : uint8_t
 		{
 			AREA_CULL_MODE_NO_FRUSTUM = 0,					// no frustum culling (everywhere)
