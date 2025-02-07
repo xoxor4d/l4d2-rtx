@@ -57,6 +57,10 @@ namespace common
 
 namespace ImGui
 {
+	//inline ImVec4 ImGuiCol_ContainerBackground = { 0.220f, 0.220f, 0.220f, 0.863f };
+	//inline ImVec4 ImGuiCol_ContainerBorder = { 0.099f, 0.099f, 0.099f, 0.901f };
+
+	void Spacing(const float& x, const float& y);
 	void TextWrapped_IntegersFromUnorderedSet(const std::unordered_set<std::uint32_t>& set);
 
 	enum Widget_UnorderedSetModifierFlags : std::uint8_t
@@ -66,4 +70,14 @@ namespace ImGui
 	};
 
 	void Widget_UnorderedSetModifier(const char* id, Widget_UnorderedSetModifierFlags flag, std::unordered_set<std::uint32_t>& set, char* buffer, std::uint32_t buffer_len);
+
+	void Style_DeleteButtonPush();
+	void Style_DeleteButtonPop();
+	void Style_ColorButtonPush(const ImVec4& base_color, bool black_border = false);
+	void Style_ColorButtonPop();
+	void Style_InvisibleSelectorPush();
+	void Style_InvisibleSelectorPop();
+
+	bool Widget_WrappedCollapsingHeader(const char* title_text, float height, const ImVec4& border_color, bool pre_spacing = false);
+	float Widget_ContainerWithTitleRounded(const char* child_name, float child_height, const std::function<void()>& callback, const ImVec4* bg_col = nullptr, const ImVec4* border_col = nullptr);
 }
