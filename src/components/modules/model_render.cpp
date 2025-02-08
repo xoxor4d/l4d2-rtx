@@ -1047,6 +1047,9 @@ namespace components
 				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 			}
+			else if (ctx.info.material_name.starts_with("particle/fire_")) {
+				set_remix_emissive_intensity(dev, ctx, 10.0f);
+			}
 		}
 
 		// shader: SpriteCard (spark) - stride 0x60
