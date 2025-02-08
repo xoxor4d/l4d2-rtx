@@ -1,7 +1,10 @@
 #include "std_include.hpp"
 #include "map_settings.hpp"
-#include "components/common/imgui_helper.hpp"
+#include "components/common/imgui/imgui_helper.hpp"
 #include "components/common/toml.hpp"
+#include "components/common/imgui/font_awesome_solid_900.hpp"
+#include "components/common/imgui/font_defines.hpp"
+#include "components/common/imgui/font_opensans.hpp"
 
 #ifdef USE_IMGUI
 #include "imgui_internal.h"
@@ -151,6 +154,7 @@ namespace components
 
 		if (ImGui::BeginPopupModal("Reload MapSettings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
 		{
+			common::imgui::draw_background_blur();
 			const auto half_width = ImGui::GetContentRegionMax().x * 0.5f;
 			auto line1_str = "You'll loose all unsaved changes if you continue!";
 			auto line2_str = "Use the copy to clipboard buttons and manually update";
@@ -620,7 +624,7 @@ namespace components
 			}
 
 			//ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.6f, 0.5f));
-			ImGui::Widget_PrettyDragFloatVec3("Origin", &selection->origin.x, true, 0.5f,
+			ImGui::Widget_PrettyDragVec3("Origin", &selection->origin.x, true, 0.5f,
 				-FLT_MAX, FLT_MAX, "X", "Y", "Z");
 			//ImGui::PopStyleVar();
 
@@ -628,7 +632,7 @@ namespace components
 			Vector temp_rot = { RAD2DEG(selection->rotation.x), RAD2DEG(selection->rotation.y), RAD2DEG(selection->rotation.z) };
 
 			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.6f, 0.5f));
-			if (ImGui::Widget_PrettyDragFloatVec3("Rotation", &temp_rot.x, true, 0.1f, 
+			if (ImGui::Widget_PrettyDragVec3("Rotation", &temp_rot.x, true, 0.1f, 
 				-360.0f, 360.0f, "Rx", "Ry", "Rz")) 
 			{
 				selection->rotation = { DEG2RAD(temp_rot.x), DEG2RAD(temp_rot.y), DEG2RAD(temp_rot.z) };
@@ -637,7 +641,7 @@ namespace components
 			if (selection->no_cull) 
 			{
 				ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.6f, 0.5f));
-				ImGui::Widget_PrettyDragFloatVec3("Scale", &selection->scale.x, true, 0.01f,
+				ImGui::Widget_PrettyDragVec3("Scale", &selection->scale.x, true, 0.01f,
 					-FLT_MAX, FLT_MAX, "Sx", "Sy", "Sz");
 				ImGui::PopStyleVar();
 			}
@@ -1311,24 +1315,25 @@ namespace components
 			ImGui::Spacing(0, 6.0f);
 			ImGui::SeparatorText("The following settings do NOT auto-save.");
 			ImGui::TextDisabled("Export to clipboard and override the settings manually!");
+
 			ImGui::Spacing(0, 6.0f);
 
 			// fog settings
 			{
 				static float cont_fog_height = 0.0f;
-				cont_fog_height = ImGui::Widget_ContainerWithCollapsingTitle("Fog Settings", cont_fog_height, cont_mapsettings_fog, false);
+				cont_fog_height = ImGui::Widget_ContainerWithCollapsingTitle("Fog Settings", cont_fog_height, cont_mapsettings_fog, false, ICON_FA_WATER);
 			}
 
 			// marker manipulation
 			{
 				static float cont_marker_manip_height = 0.0f;
-				cont_marker_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Marker Manipulation", cont_marker_manip_height, cont_mapsettings_marker_manipulation, false);
+				cont_marker_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Marker Manipulation", cont_marker_manip_height, cont_mapsettings_marker_manipulation, false, ICON_FA_DICE_D6);
 			}
 
 			// culling manipulation
 			{
 				static float cont_cull_manip_height = 0.0f;
-				cont_cull_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Culling Manipulation", cont_cull_manip_height, cont_mapsettings_culling_manipulation, false);
+				cont_cull_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Culling Manipulation", cont_cull_manip_height, cont_mapsettings_culling_manipulation, false, ICON_FA_EYE_SLASH);
 			}
 		}
 
@@ -1339,21 +1344,11 @@ namespace components
 	{
 		ImGui::SetNextWindowSize(ImVec2(900, 800), ImGuiCond_FirstUseEver);
 
-		std::function<void()> blur = []
-		{
-			ImGuiWindow* window = ImGui::GetCurrentWindow();
-			ImGui::PushClipRect(window->InnerClipRect.Min, window->InnerClipRect.Max, true);
-			common::draw_background_blur(ImGui::GetWindowDrawList(), game::get_d3d_device());
-			ImGui::PopClipRect();
-		};
-
-		if (!ImGui::Begin("Devgui", &m_menu_active/*, ImGuiWindowFlags_AlwaysVerticalScrollbar*/, 0, &blur))
+		if (!ImGui::Begin("Devgui", &m_menu_active/*, ImGuiWindowFlags_AlwaysVerticalScrollbar*/, 0, &common::imgui::draw_window_blur_callback))
 		{
 			ImGui::End();
 			return;
 		}
-
-		//common::draw_background_blur(ImGui::GetWindowDrawList(), game::get_d3d_device());//
 
 		m_im_window_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
 		m_im_window_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
@@ -1400,7 +1395,7 @@ namespace components
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			const char* movement_hint_str = "Press and Hold the Right Mouse Button outside ImGui to allow for Game Input";
+			const char* movement_hint_str = "Press and Hold the Right Mouse Button outside ImGui to allow for Game Input ";
 			const auto avail_width = ImGui::GetContentRegionAvail().x;
 			float cur_pos = avail_width - 50.0f;
 
@@ -1470,14 +1465,13 @@ namespace components
 #endif
 	}
 
-	void style_rust()
+	void style_xo()
 	{
-		// Rest style by AaronBeardless from ImThemes
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.Alpha = 1.0f;
 		style.DisabledAlpha = 0.5f;
 
-		style.WindowPadding = ImVec2(6.0f, 10.0f);
+		style.WindowPadding = ImVec2(8.0f, 10.0f);
 		style.FramePadding = ImVec2(7.0f, 6.0f);
 		style.ItemSpacing = ImVec2(3.0f, 3.0f);
 		style.ItemInnerSpacing = ImVec2(3.0f, 8.0f);
@@ -1561,6 +1555,40 @@ namespace components
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.56f);
 	}
 
+	void init_fonts()
+	{
+		using namespace common::imgui::font;
+
+		auto merge_icons_with_latest_font = [](const float& font_size, const bool font_data_owned_by_atlas = false)
+			{
+				static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0 };
+
+				ImFontConfig icons_config;
+				icons_config.MergeMode = true;
+				icons_config.PixelSnapH = true;
+				icons_config.FontDataOwnedByAtlas = font_data_owned_by_atlas;
+
+				ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)fa_solid_900, sizeof(fa_solid_900), font_size, &icons_config, icons_ranges);
+			};
+
+		ImGuiIO& io = ImGui::GetIO();
+
+		io.Fonts->AddFontFromMemoryCompressedTTF(opensans_bold_compressed_data, opensans_bold_compressed_size, 18.0f);
+		merge_icons_with_latest_font(12.0f, false);
+
+		io.Fonts->AddFontFromMemoryCompressedTTF(opensans_bold_compressed_data, opensans_bold_compressed_size, 17.0f);
+		merge_icons_with_latest_font(12.0f, false);
+
+		io.Fonts->AddFontFromMemoryCompressedTTF(opensans_regular_compressed_data, opensans_regular_compressed_size, 18.0f);
+		io.Fonts->AddFontFromMemoryCompressedTTF(opensans_regular_compressed_data, opensans_regular_compressed_size, 16.0f);
+
+		ImFontConfig font_cfg;
+		font_cfg.FontDataOwnedByAtlas = false;
+
+		io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(opensans_regular_compressed_data, opensans_regular_compressed_size, 17.0f, &font_cfg);
+		merge_icons_with_latest_font(17.0f, false);
+	}
+
 	imgui::imgui()
 	{
 		p_this = this;
@@ -1569,83 +1597,13 @@ namespace components
 
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
+		init_fonts();
+
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
 		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
-#if 0
-		{
-			ImGuiStyle* style = &ImGui::GetStyle();
-			ImVec4* colors = style->Colors;
-
-			style->WindowPadding = ImVec2(10, 6);
-			style->FramePadding = ImVec2(6, 5);
-			style->ItemSpacing = ImVec2(8, 4);
-			style->IndentSpacing = 5;
-			style->FrameRounding = 4.0f;
-			style->GrabRounding = 4.0f;
-			style->CellPadding = ImVec2(4, 4);
-
-			colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-			colors[ImGuiCol_TextDisabled] = ImVec4(0.21f, 0.21f, 0.21f, 1.00f);
-			colors[ImGuiCol_WindowBg] = ImVec4(0.01f, 0.01f, 0.01f, 0.93f);
-			colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.20f);
-			colors[ImGuiCol_PopupBg] = ImVec4(0.01f, 0.01f, 0.01f, 0.94f);
-			colors[ImGuiCol_Border] = ImVec4(0.15f, 0.15f, 0.21f, 0.50f);
-			colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-			colors[ImGuiCol_FrameBg] = ImVec4(0.04f, 0.04f, 0.04f, 0.54f);
-			colors[ImGuiCol_FrameBgHovered] = ImVec4(0.11f, 0.03f, 0.03f, 1.00f);
-			colors[ImGuiCol_FrameBgActive] = ImVec4(0.17f, 0.05f, 0.05f, 1.00f);
-			colors[ImGuiCol_TitleBg] = ImVec4(0.11f, 0.03f, 0.03f, 1.00f);
-			colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.02f, 0.02f, 1.00f);
-			colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
-			colors[ImGuiCol_MenuBarBg] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
-			colors[ImGuiCol_ScrollbarBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.53f);
-			colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
-			colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
-			colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
-			colors[ImGuiCol_CheckMark] = ImVec4(0.25f, 0.12f, 0.12f, 1.00f);
-			colors[ImGuiCol_SliderGrab] = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
-			colors[ImGuiCol_SliderGrabActive] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
-			colors[ImGuiCol_Button] = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
-			colors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.24f, 0.24f, 1.00f);
-			colors[ImGuiCol_ButtonActive] = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
-			colors[ImGuiCol_Header] = ImVec4(0.10f, 0.02f, 0.02f, 0.66f);
-			colors[ImGuiCol_HeaderHovered] = ImVec4(0.20f, 0.05f, 0.05f, 0.49f);
-			colors[ImGuiCol_HeaderActive] = ImVec4(0.20f, 0.05f, 0.05f, 1.00f);
-			colors[ImGuiCol_Separator] = ImVec4(0.15f, 0.15f, 0.21f, 0.50f);
-			colors[ImGuiCol_SeparatorHovered] = ImVec4(0.20f, 0.05f, 0.05f, 1.00f);
-			colors[ImGuiCol_SeparatorActive] = ImVec4(0.20f, 0.05f, 0.05f, 1.00f);
-			colors[ImGuiCol_ResizeGrip] = ImVec4(0.11f, 0.01f, 0.01f, 1.00f);
-			colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.28f, 0.07f, 0.07f, 1.00f);
-			colors[ImGuiCol_ResizeGripActive] = ImVec4(0.56f, 0.08f, 0.08f, 1.00f);
-			colors[ImGuiCol_TabHovered] = ImVec4(0.45f, 0.07f, 0.07f, 1.00f);
-			colors[ImGuiCol_Tab] = ImVec4(0.10f, 0.02f, 0.02f, 1.00f);
-			colors[ImGuiCol_TabSelected] = ImVec4(0.50f, 0.12f, 0.12f, 1.00f);
-			colors[ImGuiCol_TabSelectedOverline] = ImVec4(0.56f, 0.00f, 0.00f, 1.00f);
-			colors[ImGuiCol_TabDimmed] = ImVec4(0.06f, 0.02f, 0.02f, 1.00f);
-			colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.02f, 0.10f, 0.30f, 1.00f);
-			colors[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(0.50f, 0.50f, 0.50f, 0.00f);
-			colors[ImGuiCol_PlotLines] = ImVec4(0.33f, 0.33f, 0.33f, 1.00f);
-			colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.15f, 0.10f, 1.00f);
-			colors[ImGuiCol_PlotHistogram] = ImVec4(0.79f, 0.45f, 0.00f, 1.00f);
-			colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.32f, 0.00f, 1.00f);
-			colors[ImGuiCol_TableHeaderBg] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
-			colors[ImGuiCol_TableBorderStrong] = ImVec4(0.08f, 0.08f, 0.10f, 1.00f);
-			colors[ImGuiCol_TableBorderLight] = ImVec4(0.04f, 0.04f, 0.05f, 1.00f);
-			colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.49f);
-			colors[ImGuiCol_TableRowBgAlt] = ImVec4(0.10f, 0.10f, 0.10f, 0.44f);
-			colors[ImGuiCol_TextLink] = ImVec4(0.54f, 0.02f, 0.02f, 1.00f);
-			colors[ImGuiCol_TextSelectedBg] = ImVec4(0.22f, 0.04f, 0.04f, 1.00f);
-			colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-			colors[ImGuiCol_NavCursor] = ImVec4(0.05f, 0.31f, 0.96f, 1.00f);
-			colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
-			colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.60f, 0.60f, 0.60f, 0.20f);
-			colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.60f, 0.60f, 0.60f, 0.35f);
-		}
-#endif
-
-		style_rust();
+		style_xo();
 
 		ImGui_ImplWin32_Init(glob::main_window);
 		g_game_wndproc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(glob::main_window, GWLP_WNDPROC, LONG_PTR(wnd_proc_hk)));

@@ -1,19 +1,23 @@
 #pragma once
+#include <array>
+#include "font_defines.hpp"
 
-namespace common
+namespace common::imgui
 {
 	void get_and_add_integers_to_set(char* str, std::unordered_set<std::uint32_t>& set, const std::uint32_t& buf_len = 0u, bool clear_buf = false);
 	void get_and_remove_integers_from_set(char* str, std::unordered_set<std::uint32_t>& set, const std::uint32_t& buf_len = 0u, bool clear_buf = false);
 
 	// https://github.com/3r4y/imgui-blur-effect/blob/main/LICENSE
-	void draw_background_blur(ImDrawList* drawList, IDirect3DDevice9* device);
+	void draw_window_blur();
+	inline std::function draw_window_blur_callback = draw_window_blur;
+	void draw_background_blur();
 
 	namespace blur
 	{
 		template <std::size_t N>
 		constexpr auto decode_base85(const char(&input)[N]) noexcept
 		{
-			std::array<char, N * 4 / 5> out {};
+			std::array<char, N * 4 / 5> out = {};
 			constexpr auto decode85_byte = [](const char c) constexpr -> unsigned int { return c >= '\\' ? c - 36 : c - 35; };
 
 			for (std::size_t i = 0, j = 0; i < N - 1; i += 5, j += 4) 
@@ -61,6 +65,7 @@ namespace ImGui
 	//inline ImVec4 ImGuiCol_ContainerBorder = { 0.099f, 0.099f, 0.099f, 0.901f };
 
 	void Spacing(const float& x, const float& y);
+	void PushFont(common::imgui::font::FONTS font);
 	void TextWrapped_IntegersFromUnorderedSet(const std::unordered_set<std::uint32_t>& set);
 
 	enum Widget_UnorderedSetModifierFlags : std::uint8_t
@@ -81,9 +86,9 @@ namespace ImGui
 	float CalcWidgetWidthForChild(float label_width);
 	void CenterText(const char* text, bool disabled = false);
 
-	bool Widget_PrettyDragFloatVec3(const char* ID, float* vec_in, bool show_label = false, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
+	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label = false, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
 		const char* x_str = "X", const char* y_str = "Y", const char* z_str = "Z");
 
 	bool Widget_WrappedCollapsingHeader(const char* title_text, float height, const ImVec4& border_color, bool default_open = true, bool pre_spacing = false);
-	float Widget_ContainerWithCollapsingTitle(const char* child_name, float child_height, const std::function<void()>& callback, bool default_open = true, const ImVec4* bg_col = nullptr, const ImVec4* border_col = nullptr);
+	float Widget_ContainerWithCollapsingTitle(const char* child_name, float child_height, const std::function<void()>& callback, bool default_open = true, const char* icon = nullptr, const ImVec4* bg_col = nullptr, const ImVec4* border_col = nullptr);
 }

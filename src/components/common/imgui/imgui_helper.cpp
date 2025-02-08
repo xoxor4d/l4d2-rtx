@@ -2,7 +2,7 @@
 #include "imgui_internal.h"
 #include "imgui_helper.hpp"
 
-namespace common
+namespace common::imgui
 {
 	void get_and_add_integers_to_set(char* str, std::unordered_set<std::uint32_t>& set, const std::uint32_t& buf_len, const bool clear_buf)
 	{
@@ -117,34 +117,65 @@ namespace common
 		}
 	}
 
-	void draw_background_blur(ImDrawList* drawList, IDirect3DDevice9* device)
+	void draw_blur(ImDrawList* draw_list)
 	{
+		const auto dev = game::get_d3d_device();
+
 		const ImVec2 img_size = { (float)blur::backbuffer_width, (float)blur::backbuffer_height };
 
-		drawList->AddCallback(blur::begin_blur, device);
-		for (int i = 0; i < 8; ++i) 
+		draw_list->AddCallback(blur::begin_blur, dev);
+		for (int i = 0; i < 8; ++i)
 		{
-			drawList->AddCallback(blur::first_blur_pass, device);
-			drawList->AddImage((ImTextureID)blur::texture, { 0.0f, 0.0f }, img_size);
-			drawList->AddCallback(blur::second_blur_pass, device);
-			drawList->AddImage((ImTextureID)blur::texture, { 0.0f, 0.0f }, img_size);
+			draw_list->AddCallback(blur::first_blur_pass, dev);
+			draw_list->AddImage((ImTextureID)blur::texture, { 0.0f, 0.0f }, img_size);
+			draw_list->AddCallback(blur::second_blur_pass, dev);
+			draw_list->AddImage((ImTextureID)blur::texture, { 0.0f, 0.0f }, img_size);
 		}
 
-		drawList->AddCallback(blur::end_blur, device);
-		drawList->AddImageRounded((ImTextureID)blur::texture, 
-			{ 0.0f, 0.0f }, 
+		draw_list->AddCallback(blur::end_blur, dev);
+		draw_list->AddImageRounded((ImTextureID)blur::texture,
+			{ 0.0f, 0.0f },
 			img_size,
 			{ 0.00f, 0.00f },
 			{ 1.00f, 1.00f },
 			IM_COL32(255, 255, 255, 255),
 			0.f);
 	}
+
+	// Blur window background
+	void draw_window_blur()
+	{
+		// only blur the window, clip everything else
+		ImGuiWindow* window = ImGui::GetCurrentWindow();
+		ImGui::PushClipRect(window->InnerClipRect.Min, window->InnerClipRect.Max, true);
+
+		draw_blur(ImGui::GetWindowDrawList());
+		ImGui::PopClipRect();
+	}
+
+	// Blur entire background
+	void draw_background_blur()
+	{
+		draw_blur(ImGui::GetBackgroundDrawList());
+	}
 }
 
 namespace ImGui
 {
 	void Spacing(const float& x, const float& y) {
-		ImGui::Dummy(ImVec2(x, y));
+		Dummy(ImVec2(x, y));
+	}
+
+	void PushFont(common::imgui::font::FONTS font)
+	{
+		ImGuiIO& io = GetIO();
+
+		if (io.Fonts->Fonts[font]) {
+			PushFont(io.Fonts->Fonts[font]);
+		}
+		else {
+			PushFont(GetDefaultFont());
+		}
 	}
 
 	// Draw wrapped text containing all unsigned integers from the provided unordered_set
@@ -178,7 +209,7 @@ namespace ImGui
 		{
 			if (Button("-##Remove"))
 			{
-				common::get_and_remove_integers_from_set(buffer, set, buffer_len, true);
+				common::imgui::get_and_remove_integers_from_set(buffer, set, buffer_len, true);
 				main_module::trigger_vis_logic();
 			}
 			SetCursorScreenPos(ImVec2(GetItemRectMax().x, GetItemRectMin().y));
@@ -188,7 +219,7 @@ namespace ImGui
 		
 		SetNextItemWidth(GetContentRegionAvail().x - (narrow ? 0.0f : 40.0f));
 		if (InputText("##Input", buffer, buffer_len, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll)) {
-			common::get_and_add_integers_to_set(buffer, set, buffer_len, true);
+			common::imgui::get_and_add_integers_to_set(buffer, set, buffer_len, true);
 		}
 
 		SetCursorScreenPos(spos);
@@ -210,20 +241,20 @@ namespace ImGui
 			Dummy(ImVec2(0, GetFrameHeight()));
 			if (Button("-##Remove"))
 			{
-				common::get_and_remove_integers_from_set(buffer, set, buffer_len, true);
+				common::imgui::get_and_remove_integers_from_set(buffer, set, buffer_len, true);
 				main_module::trigger_vis_logic();
 			}
 		}
 
 		SetCursorScreenPos(ImVec2(GetItemRectMax().x, GetItemRectMin().y));
 		if (Button("+##Add")) {
-			common::get_and_add_integers_to_set(buffer, set, buffer_len, true);
+			common::imgui::get_and_add_integers_to_set(buffer, set, buffer_len, true);
 		}
 		SetCursorScreenPos(ImVec2(GetItemRectMax().x + 1.0f, GetItemRectMin().y));
 		if (Button("P##Picker"))
 		{
 			const auto c_str = utils::va("%d", flag == Widget_UnorderedSetModifierFlags_Leaf ? g_current_leaf : g_current_area);
-			common::get_and_add_integers_to_set((char*)c_str, set);
+			common::imgui::get_and_add_integers_to_set((char*)c_str, set);
 			main_module::trigger_vis_logic();
 		}
 		SetItemTooltip(flag == Widget_UnorderedSetModifierFlags_Leaf ? "Pick Current Leaf" : "Pick Current Area");
@@ -295,14 +326,14 @@ namespace ImGui
 		}
 	}
 
-	bool Widget_PrettyDragFloatVec3(const char* ID, float* vec_in, bool show_label, const float speed, const float min, const float max,
+	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label, const float speed, const float min, const float max,
 		const char* x_str, const char* y_str, const char* z_str)
 	{
 		auto left_label_button = [](const char* label, const ImVec2& button_size, const ImVec4& text_color, const ImVec4& bg_color)
 			{
 				bool clicked = false;
 
-				//ImGui::PushFontFromIndex(ggui::E_FONT::BOLD_18PX);
+				//PushFont(common::imgui::font::REGULAR);
 				PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 5.0f));
 				PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
 
@@ -315,13 +346,12 @@ namespace ImGui
 					clicked = true;
 				}
 
-				ImGui::PopStyleColor(4);
-				ImGui::PopStyleVar(2);
-				//ImGui::PopFont();
+				PopStyleColor(4);
+				PopStyleVar(2);
+				//PopFont();
 
-				ImGui::SameLine();
-				// make button slightly overlap the next item (frame rounding)
-				ImGui::SetCursorPosX(ImGui::GetCursorPosX() - 1.0f);
+				SameLine();
+				SetCursorPosX(GetCursorPosX() - 1.0f);
 
 				return clicked;
 			};
@@ -450,22 +480,40 @@ namespace ImGui
 		return state;
 	}
 
-	float Widget_ContainerWithCollapsingTitle(const char* child_name, const float child_height, const std::function<void()>& callback, const bool default_open, const ImVec4* bg_col, const ImVec4* border_col)
+	float Widget_ContainerWithCollapsingTitle(const char* child_name, const float child_height, const std::function<void()>& callback, const bool default_open, const char* icon, const ImVec4* bg_col, const ImVec4* border_col)
 	{
 		const std::string child_str = "[ "s + child_name + " ]"s;
 		const float child_indent = 2.0f;
 
 		const ImVec4 background_color = bg_col ? *bg_col : ImVec4(0.220f, 0.220f, 0.220f, 0.863f);
 		const ImVec4 border_color = border_col ? *border_col : ImVec4(0.099f, 0.099f, 0.099f, 0.901f);
-		
-		const auto window = GetCurrentWindow();
-		const auto min_x = window->WorkRect.Min.x - GetStyle().WindowPadding.x * 0.5f + 1.0f;
-		const auto max_x = window->WorkRect.Max.x + GetStyle().WindowPadding.x * 0.5f - 1.0f;
 
+		const auto& style = GetStyle();
+
+		const auto window = GetCurrentWindow();
+		const auto min_x = window->WorkRect.Min.x - style.WindowPadding.x * 0.5f + 1.0f;
+		const auto max_x = window->WorkRect.Max.x + style.WindowPadding.x * 0.5f - 1.0f;
+
+		PushFont(common::imgui::font::BOLD);
+
+		const auto spos_pre_header = GetCursorScreenPos();
 		const auto expanded = Widget_WrappedCollapsingHeader(child_str.c_str(), 12.0f, border_color, default_open, false);
+
+		PopFont();
+
+		if (icon)
+		{
+			const auto spos_post_header = GetCursorScreenPos();
+			const auto header_dims = GetItemRectSize();
+			const auto icon_dims = CalcTextSize(icon);
+			SetCursorScreenPos(spos_pre_header + ImVec2(header_dims.x - icon_dims.x - style.WindowPadding.x - 8.0f, header_dims.y * 0.5f - icon_dims.y * 0.5f));
+			TextUnformatted(icon);
+			SetCursorScreenPos(spos_post_header);
+		}
+
 		if (expanded)
 		{
-			const auto min = ImVec2(min_x, GetCursorScreenPos().y - GetStyle().ItemSpacing.y);
+			const auto min = ImVec2(min_x, GetCursorScreenPos().y - style.ItemSpacing.y);
 			const auto max = ImVec2(max_x, min.y + child_height);
 
 			GetWindowDrawList()->AddRect(min + ImVec2(-1, 1), max + ImVec2(1, 1), ColorConvertFloat4ToU32(border_color), 10.0f, ImDrawFlags_RoundCornersBottom);
@@ -473,7 +521,7 @@ namespace ImGui
 
 			PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2.0f, 4.0f));
 			PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(6.0f, 8.0f));
-			BeginChild(child_name, ImVec2(max.x - min.x - GetStyle().FramePadding.x - 2.0f, 0.0f), 
+			BeginChild(child_name, ImVec2(max.x - min.x - style.FramePadding.x - 2.0f, 0.0f),
 				/*ImGuiChildFlags_Borders | */ ImGuiChildFlags_AlwaysUseWindowPadding | ImGuiChildFlags_AutoResizeY);
 
 			Indent(child_indent);
