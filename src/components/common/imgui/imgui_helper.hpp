@@ -61,9 +61,6 @@ namespace common::imgui
 
 namespace ImGui
 {
-	//inline ImVec4 ImGuiCol_ContainerBackground = { 0.220f, 0.220f, 0.220f, 0.863f };
-	//inline ImVec4 ImGuiCol_ContainerBorder = { 0.099f, 0.099f, 0.099f, 0.901f };
-
 	void Spacing(const float& x, const float& y);
 	void PushFont(common::imgui::font::FONTS font);
 	void TextWrapped_IntegersFromUnorderedSet(const std::unordered_set<std::uint32_t>& set);
@@ -82,6 +79,13 @@ namespace ImGui
 	void Style_ColorButtonPop();
 	void Style_InvisibleSelectorPush();
 	void Style_InvisibleSelectorPop();
+
+	// #
+
+	void SetItemTooltipBlur(const char* fmt, ...);
+	void TableHeadersRowWithTooltip(const char** tooltip_strings);
+
+	// #
 
 	float CalcWidgetWidthForChild(float label_width);
 	void CenterText(const char* text, bool disabled = false);

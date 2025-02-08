@@ -257,7 +257,7 @@ namespace ImGui
 			common::imgui::get_and_add_integers_to_set((char*)c_str, set);
 			main_module::trigger_vis_logic();
 		}
-		SetItemTooltip(flag == Widget_UnorderedSetModifierFlags_Leaf ? "Pick Current Leaf" : "Pick Current Area");
+		SetItemTooltipBlur(flag == Widget_UnorderedSetModifierFlags_Leaf ? "Pick Current Leaf" : "Pick Current Area");
 		PopID();
 	}
 
@@ -265,36 +265,38 @@ namespace ImGui
 
 	void Style_DeleteButtonPush()
 	{
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.05f, 0.05f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.68f, 0.05f, 0.05f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.2f, 0.2f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 1.0f));
+		PushStyleColor(ImGuiCol_Button, ImVec4(0.55f, 0.05f, 0.05f, 1.0f));
+		PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.68f, 0.05f, 0.05f, 1.0f));
+		PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.2f, 0.2f, 1.0f));
+		PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 1.0f));
 
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+		PushFont(common::imgui::font::BOLD);
 	}
 
 	void Style_DeleteButtonPop()
 	{
-		ImGui::PopStyleVar(2);
-		ImGui::PopStyleColor(4);
+		PopStyleVar(2);
+		PopStyleColor(4);
+		PopFont();
 	}
 
 	// #
 
 	void Style_ColorButtonPush(const ImVec4& base_color, bool black_border)
 	{
-		ImGui::PushStyleColor(ImGuiCol_Button, base_color);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, base_color * ImVec4(1.4f, 1.4f, 1.4f, 1.0f));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, base_color * ImVec4(1.8f, 1.8f, 1.8f, 1.0f));
+		PushStyleColor(ImGuiCol_Button, base_color);
+		PushStyleColor(ImGuiCol_ButtonHovered, base_color * ImVec4(1.4f, 1.4f, 1.4f, 1.0f));
+		PushStyleColor(ImGuiCol_ButtonActive, base_color * ImVec4(1.8f, 1.8f, 1.8f, 1.0f));
 
-		ImGui::PushStyleColor(ImGuiCol_Border, black_border 
+		PushStyleColor(ImGuiCol_Border, black_border 
 			? ImVec4(0, 0, 0, 1.0f) 
-			: ImGui::GetStyleColorVec4(ImGuiCol_Border));
+			: GetStyleColorVec4(ImGuiCol_Border));
 	}
 
 	void Style_ColorButtonPop() {
-		ImGui::PopStyleColor(4);
+		PopStyleColor(4);
 	}
 
 	// #
@@ -306,6 +308,103 @@ namespace ImGui
 
 	void Style_InvisibleSelectorPop() {
 		PopStyleColor(2);
+	}
+
+	// #
+
+	bool BeginTooltipBlurEx(ImGuiTooltipFlags tooltip_flags, ImGuiWindowFlags extra_window_flags)
+	{
+		ImGuiContext& g = *GImGui;
+
+		const bool is_dragdrop_tooltip = g.DragDropWithinSource || g.DragDropWithinTarget;
+		if (is_dragdrop_tooltip)
+		{
+			if ((g.NextWindowData.Flags & ImGuiNextWindowDataFlags_HasPos) == 0)
+			{
+				ImVec2 tooltip_pos = (g.IO.MousePos * g.Style.MouseCursorScale);
+				ImVec2 tooltip_pivot = ImVec2(0.0f, 0.0f);
+				SetNextWindowPos(tooltip_pos, ImGuiCond_None, tooltip_pivot);
+			}
+
+			SetNextWindowBgAlpha(g.Style.Colors[ImGuiCol_PopupBg].w * 0.60f);
+			tooltip_flags |= ImGuiTooltipFlags_OverridePrevious;
+		}
+
+		const char* window_name_template = is_dragdrop_tooltip ? "##Tooltip_DragDrop_%02d" : "##Tooltip_%02d";
+		char window_name[32];
+		ImFormatString(window_name, IM_ARRAYSIZE(window_name), window_name_template, g.TooltipOverrideCount);
+
+		if ((tooltip_flags & ImGuiTooltipFlags_OverridePrevious) && g.TooltipPreviousWindow != nullptr && g.TooltipPreviousWindow->Active)
+		{
+			SetWindowHiddenAndSkipItemsForCurrentFrame(g.TooltipPreviousWindow);
+			ImFormatString(window_name, IM_ARRAYSIZE(window_name), window_name_template, ++g.TooltipOverrideCount);
+		}
+
+		ImGuiWindowFlags flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+		Begin(window_name, nullptr, flags | extra_window_flags, &common::imgui::draw_window_blur_callback);
+		return true;
+	}
+
+	void SetItemTooltipBlur(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+
+		if (IsItemHovered(ImGuiHoveredFlags_ForTooltip))
+		{
+			// (0.124f, 0.124f, 0.124f, 0.776f)
+			PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.124f, 0.124f, 0.124f, 0.776f));
+
+			if (!BeginTooltipBlurEx(ImGuiTooltipFlags_OverridePrevious, ImGuiWindowFlags_None)) {
+				return;
+			}
+			PopStyleColor();
+
+			const auto padding = 4.0f;
+
+			Spacing(0, padding);			 // top padding
+			Spacing(padding, 0); SameLine(); // left padding
+
+			TextV(fmt, args);
+
+			SameLine(); Spacing(padding, 0); // right padding
+			Spacing(0, padding);			 // bottom padding
+
+			EndTooltip();
+		}
+
+		va_end(args);
+	}
+
+	void TableHeadersRowWithTooltip(const char** tooltip_strings)
+	{
+		const float row_height = TableGetHeaderRowHeight();
+		TableNextRow(ImGuiTableRowFlags_Headers, row_height);
+		const float row_y1 = GetCursorScreenPos().y;
+
+		const int columns_count = TableGetColumnCount();
+		for (int column_n = 0; column_n < columns_count; column_n++)
+		{
+			if (!TableSetColumnIndex(column_n)) {
+				continue;
+			}
+
+			TableHeader(TableGetColumnName(column_n));
+
+			if (!std::string_view(tooltip_strings[column_n]).empty()) {
+				SetItemTooltipBlur("%s", tooltip_strings[column_n]);
+			}
+
+			// Allow opening popup from the right-most section after the last column.
+			ImVec2 mouse_pos = GetMousePos();
+
+			if (IsMouseReleased(1) && TableGetHoveredColumn() == columns_count)
+			{
+				if (mouse_pos.y >= row_y1 && mouse_pos.y < row_y1 + row_height) {
+					TableOpenContextMenu(columns_count); // Will open a non-column-specific popup.
+				}
+			}
+		}
 	}
 
 	// #
@@ -326,6 +425,7 @@ namespace ImGui
 		}
 	}
 
+	// Labelwidth = 80
 	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label, const float speed, const float min, const float max,
 		const char* x_str, const char* y_str, const char* z_str)
 	{
@@ -379,7 +479,7 @@ namespace ImGui
 
 		// label if window width < min
 		if (narrow_window) {
-			ImGui::SeparatorText(ID);
+			SeparatorText(ID);
 		}
 
 		// -------
@@ -463,7 +563,16 @@ namespace ImGui
 		ImGuiWindow* window = GetCurrentWindow();
 		ImGuiID storage_id = (g.NextItemData.HasFlags & ImGuiNextItemDataFlags_HasStorageID) ? g.NextItemData.StorageId : window->GetID(title_text);
 		const bool is_open = TreeNodeUpdateNextOpen(storage_id, open_flag);
+
+		if (is_open) {
+			PushStyleColor(ImGuiCol_Header, ImVec4(0.3f, 0.3f, 0.3f, 0.8f));
+		}
+
 		const auto state = CollapsingHeader(title_text, open_flag | ImGuiTreeNodeFlags_SpanFullWidth);
+
+		if (is_open) {
+			PopStyleColor();
+		}
 
 		if (IsItemHovered() && IsMouseClicked(ImGuiMouseButton_Middle, false)) {
 			SetScrollHereY(0.0f);

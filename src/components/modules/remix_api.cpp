@@ -370,12 +370,12 @@ namespace components
 					ext.shaping_hasvalue = TRUE;
 					ext.shaping_value = {};
 
-					if (im->m_flashlight_use_custom_dir)
+					/*if (im->m_flashlight_use_custom_dir)
 					{
 						auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
 						ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
 					}
-					else
+					else*/
 					{
 						ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
 					}

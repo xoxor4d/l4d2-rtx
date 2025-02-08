@@ -14,7 +14,7 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
 #define SPACING_INDENT_BEGIN ImGui::Spacing(); ImGui::Indent()
 #define SPACING_INDENT_END ImGui::Spacing(); ImGui::Unindent()
-#define TT(TXT) ImGui::SetItemTooltip((TXT));
+#define TT(TXT) ImGui::SetItemTooltipBlur((TXT));
 
 #define SET_CHILD_WIDGET_WIDTH			ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild(80.0f));
 #define SET_CHILD_WIDGET_WIDTH_MAN(V)	ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild((V)));
@@ -190,87 +190,104 @@ namespace components
 
 	// ------
 
-	void imgui::tab_general()
+	void cont_general_quickcommands()
 	{
-		if (ImGui::CollapsingHeader("Game Settings", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			SPACING_INDENT_BEGIN;
-
-			if (ImGui::Button("Director Start")) {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("director_start");
-			}
-
-			ImGui::SameLine();
-			if (ImGui::Button("Director Stop")) {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("director_stop");
-			}
-
-			ImGui::SameLine();
-			if (ImGui::Button("Kick Survivor Bots")) {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("kick rochelle; kick coach; kick ellis; kick roach; kick louis; kick zoey; kick francis; kick bill");
-			}
-
-			ImGui::SameLine();
-			if (ImGui::Button("Give Autoshotgun")) {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("give autoshotgun");
-			}
-
-			ImGui::Spacing();
-
-			static bool im_zignore_player = false;
-			if (ImGui::Checkbox("Z ignore Player", &im_zignore_player))
-			{
-				if (!im_zignore_player) {
-					interfaces::get()->m_engine->execute_client_cmd_unrestricted("nb_vision_ignore_survivors 0");
-				}
-				else {
-					interfaces::get()->m_engine->execute_client_cmd_unrestricted("nb_vision_ignore_survivors 1");
-				}
-			}
-
-			SPACING_INDENT_END;
+		if (ImGui::Button("Director Start")) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("director_start");
 		}
 
-		ImGui::Spacing(); ImGui::Spacing();
+		ImGui::SameLine();
+		if (ImGui::Button("Director Stop")) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("director_stop");
+		}
 
-		if (ImGui::CollapsingHeader("Flashlight"))
+		ImGui::SameLine();
+		if (ImGui::Button("Kick Survivor Bots")) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("kick rochelle; kick coach; kick ellis; kick roach; kick louis; kick zoey; kick francis; kick bill");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Autoshotgun")) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("give autoshotgun");
+		}
+
+		ImGui::Spacing();
+
+		static bool im_zignore_player = false;
+		if (ImGui::Checkbox("Infected Ignore Player", &im_zignore_player))
 		{
-			SPACING_INDENT_BEGIN;
-
-			ImGui::SeparatorText("Player");
-			{
-				SPACING_INDENT_BEGIN;
-
-				ImGui::DragFloat("Forward Offset", &m_flashlight_fwd_offset, 0.1f);
-				ImGui::DragFloat("Horizontal Offset", &m_flashlight_horz_offset, 0.1f);
-				ImGui::DragFloat("Vertical Offset", &m_flashlight_vert_offset, 0.1f);
-
-				ImGui::DragFloat("Intensity", &m_flashlight_intensity, 0.1f);
-				ImGui::DragFloat("Radius", &m_flashlight_radius, 0.1f);
-
-				ImGui::Checkbox("Custom Direction", &m_flashlight_use_custom_dir);
-				ImGui::DragFloat3("Direction", &m_flashlight_direction.x, 0.01f, 0, 0, "%.2f");
-				ImGui::DragFloat("Spot Angle", &m_flashlight_angle, 0.1f);
-				ImGui::DragFloat("Spot Softness", &m_flashlight_softness, 0.1f);
-				ImGui::DragFloat("Spot Expo", &m_flashlight_exp, 0.1f);
-
-				SPACING_INDENT_END;
+			if (!im_zignore_player) {
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("nb_vision_ignore_survivors 0");
 			}
-
-			ImGui::SeparatorText("Bots");
-			{
-				SPACING_INDENT_BEGIN;
-
-				ImGui::PushID("bot");
-				ImGui::DragFloat("Forward Offset", &m_flashlight_bot_fwd_offset, 0.1f);
-				ImGui::DragFloat("Horizontal Offset", &m_flashlight_bot_horz_offset, 0.1f);
-				ImGui::DragFloat("Vertical Offset", &m_flashlight_bot_vert_offset, 0.1f);
-				ImGui::PopID();
-
-				SPACING_INDENT_END;
+			else {
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted("nb_vision_ignore_survivors 1");
 			}
+		}
+	}
 
-			SPACING_INDENT_END;
+	void cont_general_flashlight()
+	{
+		const auto im = imgui::get();
+		
+		float temp_player_offset_arr[3] = {
+			im->m_flashlight_fwd_offset, im->m_flashlight_horz_offset, im->m_flashlight_vert_offset
+		};
+
+		if (ImGui::Widget_PrettyDragVec3("Offsets Player", temp_player_offset_arr, true, 0.1f, -1000.0f, 1000.0f,
+			"F", "H", "V"))
+		{
+			im->m_flashlight_fwd_offset = temp_player_offset_arr[0];
+			im->m_flashlight_horz_offset = temp_player_offset_arr[1];
+			im->m_flashlight_vert_offset = temp_player_offset_arr[2];
+		}
+
+		// --
+
+		float temp_bot_offset_arr[3] = {
+			im->m_flashlight_bot_fwd_offset, im->m_flashlight_bot_horz_offset, im->m_flashlight_bot_vert_offset
+		};
+
+		if (ImGui::Widget_PrettyDragVec3("Offsets Bot", temp_bot_offset_arr, true, 0.1f, -1000.0f, 1000.0f,
+			"F", "H", "V"))
+		{
+			im->m_flashlight_bot_fwd_offset = temp_bot_offset_arr[0];
+			im->m_flashlight_bot_horz_offset = temp_bot_offset_arr[1];
+			im->m_flashlight_bot_vert_offset = temp_bot_offset_arr[2];
+		}
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Intensity", &im->m_flashlight_intensity, 0.1f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Radius", &im->m_flashlight_radius, 0.1f);
+
+		//ImGui::Checkbox("Custom Direction", &im->m_flashlight_use_custom_dir);
+		//ImGui::Widget_PrettyDragVec3("Direction", &im->m_flashlight_direction.x, true, 0.01f, -360.0f, 360.0f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Angle", &im->m_flashlight_angle, 0.1f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Softness", &im->m_flashlight_softness, 0.1f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Expo", &im->m_flashlight_exp, 0.1f);
+	}
+
+	void imgui::tab_general()
+	{
+		// game settings
+		{
+			static float cont_quickcmd_height = 0.0f;
+			cont_quickcmd_height = ImGui::Widget_ContainerWithCollapsingTitle("Quick Commands", cont_quickcmd_height, cont_general_quickcommands,
+				true, ICON_FA_CHESS, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		// flashlight
+		{
+			static float cont_flashlight_height = 0.0f;
+			cont_flashlight_height = ImGui::Widget_ContainerWithCollapsingTitle("Flashlight", cont_flashlight_height, cont_general_flashlight,
+				true, ICON_FA_LIGHTBULB, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 	}
 
@@ -285,7 +302,7 @@ namespace components
 		}
 
 		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-		ImGui::SliderInt2("HUD: Area Debug Position", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
+		ImGui::SliderInt2("HUD: Area Debug Pos", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
 
 		{
 			auto* default_nocull_dist = &map_settings::get_map_settings().default_nocull_dist;
@@ -295,6 +312,21 @@ namespace components
 			}
 			TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
 		}
+
+#if DEBUG
+
+		ImGui::Spacing(0, 12);
+		ImGui::SeparatorText(" DEBUG Build Section ");
+
+		const auto coloredit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Float;
+
+		ImGui::ColorEdit4("ContainerBg", &imgui::get()->ImGuiCol_ContainerBackground.x, coloredit_flags);
+		ImGui::ColorEdit4("ContainerBorder", &imgui::get()->ImGuiCol_ContainerBorder.x, coloredit_flags);
+
+		ImGui::ColorEdit4("ButtonGreen", &imgui::get()->ImGuiCol_ButtonGreen.x, coloredit_flags);
+		ImGui::ColorEdit4("ButtonYellow", &imgui::get()->ImGuiCol_ButtonYellow.x, coloredit_flags);
+		ImGui::ColorEdit4("ButtonRed", &imgui::get()->ImGuiCol_ButtonRed.x, coloredit_flags);
+#endif
 	}
 
 	void cont_mapsettings_fog()
@@ -540,7 +572,7 @@ namespace components
 			ImGui::EndTable();
 		}
 
-		ImGui::Style_ColorButtonPush(ImVec4(0.2f, 0.3f, 0.05f, 0.7f), true);
+		ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonGreen, true);
 		if (ImGui::Button("++ Marker"))
 		{
 			std::uint32_t free_marker = 0u;
@@ -564,7 +596,7 @@ namespace components
 		if (selection)
 		{
 			ImGui::SameLine();
-			ImGui::Style_ColorButtonPush(ImVec4(0.4f, 0.3f, 0.1f, 0.8f), true);
+			ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonYellow, true);
 			if (ImGui::Button("Duplicate Current Marker"))
 			{
 				markers.emplace_back(map_settings::marker_settings_s{
@@ -695,7 +727,8 @@ namespace components
 			in_hide_leafs_buf[in_buflen], in_hide_areas_buf[in_buflen], in_hide_nleafs_buf[in_buflen];
 
 		// # CULL TABLE
-		if (ImGui::BeginTable("CullTable", 6, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+		constexpr auto cull_table_num_columns = 6;
+		if (ImGui::BeginTable("CullTable", cull_table_num_columns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
 			ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_ScrollY, ImVec2(0, 480)))
 		{
 			ImGui::TableSetupScrollFreeze(0, 1); // make top row always visible
@@ -705,7 +738,20 @@ namespace components
 			ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 60.0f);
 			ImGui::TableSetupColumn("Hide-Leafs", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_DefaultHide, 40.0f);
 			ImGui::TableSetupColumn("LeafTweaks & HideAreas", ImGuiTableColumnFlags_WidthStretch | ImGuiTableColumnFlags_NoHide, 140.0f);
-			ImGui::TableHeadersRow();
+
+			const char* cull_table_tooltips[cull_table_num_columns] =
+			{
+				"The Area the player has to be in to trigger any override functionality.\n",
+				"Different anti/culling modes and additional settings for various use-cases.",
+				"The Leafs which will have their visibility forced.",
+				"The Areas which will have their visibility forced.",
+				"The Leafs with forced invisibility.",
+				("LeafTweaks: Additional per leaf overrides that only trigger if the player is in specified Leafs.\n"
+				 "~ Can be quite useful at area crossings when used in conjunction with area-specific markers that spawn visibility blockers (eg. a flat plane)\n\n"
+				 "HideAreas: This can be used to forcefully cull parts of the map when the game is drawing too much.\n")
+			};
+
+			ImGui::TableHeadersRowWithTooltip(cull_table_tooltips);
 
 			bool area_selection_matches_any_entry = false;
 			auto row_num = 0u;
@@ -756,7 +802,7 @@ namespace components
 				first_col_width = ImGui::GetCursorScreenPos().x - first_col_width;
 
 				ImGui::PushID((int)area_num);
-				ImGui::SetNextItemWidth(122.0f);
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 				if (ImGui::BeginCombo("##ModeSelector", map_settings::AREA_CULL_MODE_STR[a.cull_mode], ImGuiComboFlags_None))
 				{
 					for (int n = 0; n < IM_ARRAYSIZE(map_settings::AREA_CULL_MODE_STR); n++)
@@ -773,21 +819,22 @@ namespace components
 					}
 					ImGui::EndCombo();
 				}
-				TT("No Frustum:\t\t   compl. disable frustum culling (everywhere)\n"
-					"No Frustum in Area:   compl. disable frustum culling when in current area\n"
-					"Stock:\t\t\t    stock frustum culling\n"
-					"Force Area:\t\t   ^ + force all nodes/leafs in current area\n"
-					"Force Area Dist:\t  ^ + all outside of current area within certain dist to player\n"
-					"Distance:\t\t\t force all nodes/leafs within certain dist to player");
+				TT( "No Frustum:\t\t\t      Compl. disable frustum culling (everywhere)\n"
+					"No Frustum in Area:    Compl. disable frustum culling when in current area\n"
+					"Stock:\t\t\t\t\t		 Stock frustum culling\n"
+					"Force Area:\t\t\t\t   ^ + force all nodes/leafs in current area\n"
+					"Force Area Dist:\t\t   ^ + all outside of current area within certain dist to player\n"
+					"Distance:\t\t\t\t       Force all nodes/leafs within certain dist to player");
 
 				if (a.cull_mode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START
 					&& a.cull_mode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END)
 				{
-					if (ImGui::DragFloat("Dist##NocullDist", &a.nocull_distance, 0.1f, 0.0f, FLT_MAX, "%.2f"))
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					if (ImGui::DragFloat("##NocullDist", &a.nocull_distance, 0.1f, 0.0f, FLT_MAX, "%.0f"))
 					{
 						a.nocull_distance = a.nocull_distance < 0.0f ? 0.0f : a.nocull_distance;
 						main_module::trigger_vis_logic();
-					}
+					} TT("NoCull Distance - Radius around the player where nothing will get culled.")
 				}
 
 				auto row_max_y_pos = ImGui::GetItemRectMax().y;
@@ -812,7 +859,7 @@ namespace components
 				{
 					// Area Input
 					if (is_area_selected) {
-						ImGui::Widget_UnorderedSetModifier("CullAreas", ImGui::Widget_UnorderedSetModifierFlags_Leaf, area_selection->areas, in_areas_buf, in_buflen);
+						ImGui::Widget_UnorderedSetModifier("CullAreas", ImGui::Widget_UnorderedSetModifierFlags_Area, area_selection->areas, in_areas_buf, in_buflen);
 					}
 
 					ImGui::Spacing();
@@ -848,7 +895,8 @@ namespace components
 				if (!a.leaf_tweaks.empty())
 				{
 					// inline table for leaf tweaks
-					if (ImGui::BeginTable("tweak_leafs_nested_table", 5, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
+					constexpr auto twk_leaf_num_columns = 5;
+					if (ImGui::BeginTable("tweak_leafs_nested_table", twk_leaf_num_columns, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable |
 						ImGuiTableFlags_Reorderable | ImGuiTableFlags_ContextMenuInBody))
 					{
 						ImGui::TableSetupColumn("Tweak in Leafs", ImGuiTableColumnFlags_WidthStretch, 100.0f);
@@ -856,7 +904,17 @@ namespace components
 						ImGui::TableSetupColumn("Tweak Leafs", ImGuiTableColumnFlags_WidthStretch, 100.0f);
 						ImGui::TableSetupColumn("NoCullDist", ImGuiTableColumnFlags_WidthStretch, 44.0f);
 						ImGui::TableSetupColumn("##Delete", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip, 16.0f);
-						ImGui::TableHeadersRow();
+
+						const char* twk_leaf_tooltips[twk_leaf_num_columns] =
+						{
+							"The leaf/s the player has to be in to trigger any leaf tweak functionality.\n",
+							"The Areas which will have their visibility forced.",
+							"The Leafs which will have their visibility forced.",
+							"Can be used to override the 'NoCull Distance' value specified in the area (if > 0).",
+							""
+						};
+
+						ImGui::TableHeadersRowWithTooltip(twk_leaf_tooltips);
 
 						std::uint32_t cur_row = 0;
 						bool selection_matches_any_entry = false;
@@ -1025,7 +1083,7 @@ namespace components
 
 				if (is_area_selected)
 				{
-					ImGui::Style_ColorButtonPush(ImVec4(0.3f, 0.4f, 0.05f, 0.7f), true);
+					ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonGreen, true);
 					if (ImGui::Button("++ Tweak Leaf Entry", ImVec2(ImGui::GetContentRegionAvail().x, 28))) {
 						area_selection->leaf_tweaks.emplace_back();
 					}
@@ -1173,7 +1231,7 @@ namespace components
 
 				if (is_area_selected)
 				{
-					ImGui::Style_ColorButtonPush(ImVec4(0.3f, 0.4f, 0.05f, 0.7f), true);
+					ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonGreen, true);
 					if (ImGui::Button("++ Tweak Hide Area Entry", ImVec2(ImGui::GetContentRegionAvail().x, 28))) {
 						area_selection->hide_areas.emplace_back();
 					}
@@ -1230,10 +1288,11 @@ namespace components
 
 		bool was_area_removed = false;
 		const auto it = areas.find(g_current_area);
-		if (it == areas.end())
+		const auto can_area_be_added = it == areas.end();
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.3f, 0.05f, 0.7f));
-			if (ImGui::Button("Add current Area##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+			ImGui::BeginDisabled(!can_area_be_added);
+			ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonGreen, true);
+			if (ImGui::Button("Add Current Area##Cull", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 			{
 				areas.emplace((std::uint32_t)g_current_area, map_settings::area_overrides_s{
 						.cull_mode = map_settings::AREA_CULL_MODE::AREA_CULL_INFO_DEFAULT,
@@ -1241,13 +1300,15 @@ namespace components
 						.area_index = (std::uint32_t)g_current_area,
 					});
 			}
-			ImGui::PopStyleColor();
+			ImGui::Style_ColorButtonPop();
+			ImGui::EndDisabled();
+			ImGui::SameLine();
 		}
 
 		if (area_selection)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.05f, 0.05f, 0.8f));
-			if (ImGui::Button("Remove Selected Area Entry##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+			ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonRed, true);
+			if (ImGui::Button("X Remove Selected Area Entry##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 			{
 				// if selection = the area the player is in
 				if ((int)area_selection->area_index == g_current_area)
@@ -1261,7 +1322,7 @@ namespace components
 
 				was_area_removed = true;
 			}
-			ImGui::PopStyleColor();
+			ImGui::Style_ColorButtonPop();
 		}
 
 		// resets
@@ -1276,27 +1337,36 @@ namespace components
 		{
 			ImGui::TextUnformatted(
 				"# Override culling per game area\n"
-				"# Useful console command: 'xo_debug_toggle_node_vis'\n"
-				"# Parameters ---------------------------------------------------------------------------------------------------------------------------------\n"
+				"# :: Useful console command: 'xo_debug_toggle_node_vis'\n"
+				"# ~~ Parameters:\n"
 				"#\n"
-				"# in_area ]                 the area the player has to be in    [int]\n"
-				"#         |>       areas:   area/s with forced visibility       [int array]\n"
-				"#         |>       leafs:   leaf/s with forced visibility       [int array]\n"
-				"#         |>        cull:   [0] disable frustum culling\n"
-				"#         |>                [1] frustum culling                 (still forces leaf/s)\n"
-				"#         |>                [2] frustum culling (default)       (still forces leaf/s + forces all leafs in current area)\n"
+				"# in_area:          the area the player has to be in                [int]\n"
+				"# areas:            area/s with forced visibility                   [int array]\n"
+				"# leafs:            leaf/s with forced visibility                   [int array]\n"
 				"#\n"
-				"#                           # This can be used to disable frustum culling for specified areas when the player in specified leafs\n"
-				"#                           # - Useful at area crossings when used in conjunction with nocull-area-specific markers that block visibility\n"
-				"#         |>  leaf_tweak:   per leaf overrides                  [array of structure below]\n"
-				"#         :: |> in_leafs:   the leaf/s the player has to be in  [int array]\n"
-				"#         :: |>    areas:   area/s with forced visibility       [int array]\n"
+				"# cull:             [0] disable frustum culling                     [int 0-5]\n"
+				"#                   [1] disable frustum culling in current area\n"
+				"#                   [2] stock\n"
+				"#                   [3] frustum culling (outside current area) + force all nodes/leafs in current area\n"
+				"#                   [4] ^ + outside of current area within certain dist to player (param: nocull_dist)\n"
+				"#                   [5] force all leafs/nodes within certain dist to player (param: nocull_dist) << default\n"
 				"#\n"
-				"#                           # This can be used to forcefully cull parts of the map\n"
-				"#         |>  hide_areas:   force hide area/s                   [array of structure below]\n"
-				"#         :: |>    areas:   area/s to hide                      [int array]\n"
-				"#         :: |>  N_leafs:   only hide area/s when NOT in leaf/s [int array]\n"
-				"#         |>  hide_leafs:   force hide leaf/s                   [int array]\n");
+				"# nocull_dist:      |> Distance around the player where objects wont get culled - only used on certain cull modes [float] << defaults to 600.0\n"
+				"#\n"
+				"# -----------       :: This can be used to disable frustum culling for specified areas when the player is in specified leafs\n"
+				"#                   :: Useful at area crossings when used in conjunction with nocull - area-specific markers that block visibility\n"
+				"# leaf_tweak:																					[array of structure below]\n"
+				"#                   |>    in_leafs:     the leaf/s the player has to be in                     [int array]\n"
+				"#                   |>       areas:     area/s with forced visibility                          [int array]\n"
+				"#                   |>       leafs:     leaf/s with forced visibility                          [int array]\n"
+				"#                   |> nocull_dist:     uses per leaf value instead of area value if defined	[float]	<< defaults to 0.0 (off)\n"
+				"#\n"
+				"# -----------       :: This can be used to forcefully cull parts of the map\n"
+				"# hide_areas :																					[array of structure below]\n"
+				"#                   |>    areas:   area/s to hide												[int array]\n"
+				"#                   |>  N_leafs:   only hide area/s when NOT in leaf/s							[int array]\n"
+				"#\n"
+				"# hide_leafs :		force hide leaf/s															[int array]\n");
 
 			ImGui::TreePop();
 		}
@@ -1305,36 +1375,37 @@ namespace components
 
 	void imgui::tab_map_settings()
 	{
+		// general settings
 		{
-			// general settings
-			{
-				static float cont_general_height = 0.0f;
-				cont_general_height = ImGui::Widget_ContainerWithCollapsingTitle("General Settings", cont_general_height, cont_mapsettings_general);
-			}
+			static float cont_general_height = 0.0f;
+			cont_general_height = ImGui::Widget_ContainerWithCollapsingTitle("General Settings", cont_general_height, cont_mapsettings_general,
+				true, "", &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
 
-			ImGui::Spacing(0, 6.0f);
-			ImGui::SeparatorText("The following settings do NOT auto-save.");
-			ImGui::TextDisabled("Export to clipboard and override the settings manually!");
+		ImGui::Spacing(0, 6.0f);
+		ImGui::SeparatorText("The following settings do NOT auto-save.");
+		ImGui::TextDisabled("Export to clipboard and override the settings manually!");
+		ImGui::Spacing(0, 6.0f);
 
-			ImGui::Spacing(0, 6.0f);
+		// fog settings
+		{
+			static float cont_fog_height = 0.0f;
+			cont_fog_height = ImGui::Widget_ContainerWithCollapsingTitle("Fog Settings", cont_fog_height, cont_mapsettings_fog, 
+				false, ICON_FA_WATER, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
 
-			// fog settings
-			{
-				static float cont_fog_height = 0.0f;
-				cont_fog_height = ImGui::Widget_ContainerWithCollapsingTitle("Fog Settings", cont_fog_height, cont_mapsettings_fog, false, ICON_FA_WATER);
-			}
+		// marker manipulation
+		{
+			static float cont_marker_manip_height = 0.0f;
+			cont_marker_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Marker Manipulation", cont_marker_manip_height, cont_mapsettings_marker_manipulation, 
+				false, ICON_FA_DICE_D6, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
 
-			// marker manipulation
-			{
-				static float cont_marker_manip_height = 0.0f;
-				cont_marker_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Marker Manipulation", cont_marker_manip_height, cont_mapsettings_marker_manipulation, false, ICON_FA_DICE_D6);
-			}
-
-			// culling manipulation
-			{
-				static float cont_cull_manip_height = 0.0f;
-				cont_cull_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Culling Manipulation", cont_cull_manip_height, cont_mapsettings_culling_manipulation, false, ICON_FA_EYE_SLASH);
-			}
+		// culling manipulation
+		{
+			static float cont_cull_manip_height = 0.0f;
+			cont_cull_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Culling Manipulation", cont_cull_manip_height, cont_mapsettings_culling_manipulation, 
+				false, ICON_FA_EYE_SLASH, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 
 		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "\nLeaf: " + std::to_string(g_current_leaf);
@@ -1344,7 +1415,7 @@ namespace components
 	{
 		ImGui::SetNextWindowSize(ImVec2(900, 800), ImGuiCond_FirstUseEver);
 
-		if (!ImGui::Begin("Devgui", &m_menu_active/*, ImGuiWindowFlags_AlwaysVerticalScrollbar*/, 0, &common::imgui::draw_window_blur_callback))
+		if (!ImGui::Begin("Devgui", &m_menu_active, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse, &common::imgui::draw_window_blur_callback))
 		{
 			ImGui::End();
 			return;
@@ -1354,51 +1425,63 @@ namespace components
 		m_im_window_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 
 		static bool im_demo_menu = false;
-
 		if (im_demo_menu) {
 			ImGui::ShowDemoWindow(&im_demo_menu);
 		}
 
-		/*ImGui::SameLine();
-		ImGui::Text("Focused: %s", (m_im_window_focused ? "true" : "false"));
-
-		ImGui::SameLine();
-		ImGui::Spacing();
-
-		ImGui::SameLine();
-		ImGui::Text("Hovered: %s", (m_im_window_hovered ? "true" : "false"));*/
-
-		
-		
-
 #define ADD_TAB(NAME, FUNC) \
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0)));			\
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 8));			\
 	if (ImGui::BeginTabItem(NAME)) {																		\
+		ImGui::PopStyleVar(1);																				\
 		if (ImGui::BeginChild("##child_" NAME, ImVec2(0, ImGui::GetContentRegionAvail().y - 38), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_AlwaysVerticalScrollbar )) {	\
 			FUNC(); ImGui::EndChild();																		\
 		} else {																							\
 			ImGui::EndChild();																				\
 		} ImGui::EndTabItem();																				\
-	} ImGui::PopStyleColor();
+	} else { ImGui::PopStyleVar(1); } ImGui::PopStyleColor();
 
+		// ---------------------------------------
+
+		const auto col_top = ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.0f));
+		const auto col_bottom = ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.4f));
+		const auto col_border = ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.8f));
+		const auto pre_tabbar_spos = ImGui::GetCursorScreenPos() - ImGui::GetStyle().WindowPadding;
+
+		ImGui::GetWindowDrawList()->AddRectFilledMultiColor(pre_tabbar_spos, pre_tabbar_spos + ImVec2(ImGui::GetWindowWidth(), 40.0f),
+			col_top, col_top, col_bottom, col_bottom);
+
+		ImGui::GetWindowDrawList()->AddLine(pre_tabbar_spos + ImVec2(0, 40.0f), pre_tabbar_spos + ImVec2(ImGui::GetWindowWidth(), 40.0f),
+			col_border, 1.0f);
+
+		ImGui::SetCursorScreenPos(pre_tabbar_spos + ImVec2(12,8));
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 8));
+		ImGui::PushStyleColor(ImGuiCol_TabSelected, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 		if (ImGui::BeginTabBar("devgui_tabs"))
 		{
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar(1);
 			ADD_TAB("General", tab_general);
-			ADD_TAB("Map Settings", tab_map_settings)
+			ADD_TAB("Map Settings", tab_map_settings);
 			ImGui::EndTabBar();
 		}
-
+		else {
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar(1);
+		}
 #undef ADD_TAB
 
 		{
 
 			ImGui::Separator();
-			ImGui::Spacing();
+			//ImGui::Spacing();
 
 			const char* movement_hint_str = "Press and Hold the Right Mouse Button outside ImGui to allow for Game Input ";
 			const auto avail_width = ImGui::GetContentRegionAvail().x;
-			float cur_pos = avail_width - 50.0f;
+			float cur_pos = avail_width - 54.0f;
 
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 			{
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y);
 				const auto spos = ImGui::GetCursorScreenPos();
@@ -1408,17 +1491,17 @@ namespace components
 			}
 			
 
-			ImGui::SetCursorPosX(cur_pos);
+			ImGui::SetCursorPos(ImVec2(cur_pos, ImGui::GetCursorPosY() + 2.0f));
 			if (ImGui::Button("Demo", ImVec2(50, 0))) {
 				im_demo_menu = !im_demo_menu;
 			}
 
 			ImGui::SameLine();
-			cur_pos = cur_pos - ImGui::CalcTextSize(movement_hint_str).x - 8.0f;
+			cur_pos = cur_pos - ImGui::CalcTextSize(movement_hint_str).x - 6.0f;
 			ImGui::SetCursorPosX(cur_pos);
 			ImGui::TextUnformatted(movement_hint_str);
 		}
-
+		ImGui::PopStyleVar(1);
 		ImGui::End();
 	}
 #endif
@@ -1465,7 +1548,7 @@ namespace components
 #endif
 	}
 
-	void style_xo()
+	void imgui::style_xo()
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.Alpha = 1.0f;
@@ -1480,7 +1563,7 @@ namespace components
 		style.ScrollbarSize = 10.0f;
 		style.GrabMinSize = 10.0f;
 
-		style.WindowBorderSize = 0.0f;
+		style.WindowBorderSize = 1.0f;
 		style.ChildBorderSize = 1.0f;
 		style.PopupBorderSize = 1.0f;
 		style.FrameBorderSize = 1.0f;
@@ -1530,9 +1613,9 @@ namespace components
 		colors[ImGuiCol_ResizeGrip] = ImVec4(0.43f, 0.43f, 0.43f, 0.51f);
 		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.07f, 0.39f, 0.47f, 0.59f);
 		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.30f, 0.69f, 0.84f, 0.39f);
-		colors[ImGuiCol_TabHovered] = ImVec4(0.30f, 0.69f, 0.84f, 0.39f);
-		colors[ImGuiCol_Tab] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-		colors[ImGuiCol_TabSelected] = ImVec4(0.17f, 0.53f, 0.67f, 0.30f);
+		colors[ImGuiCol_TabHovered] = ImVec4(0.19f, 0.53f, 0.66f, 0.39f);
+		colors[ImGuiCol_Tab] = ImVec4(0.00f, 0.00f, 0.00f, 0.37f);
+		colors[ImGuiCol_TabSelected] = ImVec4(0.11f, 0.39f, 0.51f, 0.64f);
 		colors[ImGuiCol_TabSelectedOverline] = ImVec4(0.10f, 0.34f, 0.43f, 0.30f);
 		colors[ImGuiCol_TabDimmed] = ImVec4(0.00f, 0.00f, 0.00f, 0.16f);
 		colors[ImGuiCol_TabDimmedSelected] = ImVec4(1.00f, 1.00f, 1.00f, 0.24f);
@@ -1553,6 +1636,13 @@ namespace components
 		colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 		colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.56f);
+
+		// custom colors
+		ImGuiCol_ButtonGreen = ImVec4(0.3f, 0.4f, 0.05f, 0.7f);
+		ImGuiCol_ButtonYellow = ImVec4(0.4f, 0.3f, 0.1f, 0.8f);
+		ImGuiCol_ButtonRed = ImVec4(0.48f, 0.15f, 0.15f, 1.00f);
+		ImGuiCol_ContainerBackground = ImVec4(0.220f, 0.220f, 0.220f, 0.863f);
+		ImGuiCol_ContainerBorder = ImVec4(0.099f, 0.099f, 0.099f, 0.901f);
 	}
 
 	void init_fonts()
