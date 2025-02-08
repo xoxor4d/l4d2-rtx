@@ -78,6 +78,12 @@ namespace ImGui
 	void Style_InvisibleSelectorPush();
 	void Style_InvisibleSelectorPop();
 
-	bool Widget_WrappedCollapsingHeader(const char* title_text, float height, const ImVec4& border_color, bool pre_spacing = false);
-	float Widget_ContainerWithTitleRounded(const char* child_name, float child_height, const std::function<void()>& callback, const ImVec4* bg_col = nullptr, const ImVec4* border_col = nullptr);
+	float CalcWidgetWidthForChild(float label_width);
+	void CenterText(const char* text, bool disabled = false);
+
+	bool Widget_PrettyDragFloatVec3(const char* ID, float* vec_in, bool show_label = false, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
+		const char* x_str = "X", const char* y_str = "Y", const char* z_str = "Z");
+
+	bool Widget_WrappedCollapsingHeader(const char* title_text, float height, const ImVec4& border_color, bool default_open = true, bool pre_spacing = false);
+	float Widget_ContainerWithCollapsingTitle(const char* child_name, float child_height, const std::function<void()>& callback, bool default_open = true, const ImVec4* bg_col = nullptr, const ImVec4* border_col = nullptr);
 }

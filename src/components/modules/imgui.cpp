@@ -12,6 +12,9 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 #define SPACING_INDENT_BEGIN ImGui::Spacing(); ImGui::Indent()
 #define SPACING_INDENT_END ImGui::Spacing(); ImGui::Unindent()
 #define TT(TXT) ImGui::SetItemTooltip((TXT));
+
+#define SET_CHILD_WIDGET_WIDTH			ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild(80.0f));
+#define SET_CHILD_WIDGET_WIDTH_MAN(V)	ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild((V)));
 #endif
 
 namespace components
@@ -267,6 +270,29 @@ namespace components
 		}
 	}
 
+	void cont_mapsettings_general()
+	{
+		//ImGui::Checkbox("Disable R_CullNode", &imgui::get()->m_disable_cullnode);
+		//ImGui::Checkbox("Enable Area Forcing", &imgui::get()->m_enable_area_forcing);
+
+		bool im_area_debug_state = main_module::is_node_debug_enabled();
+		if (ImGui::Checkbox("Toggle Area Debug Info", &im_area_debug_state)) {
+			main_module::set_node_vis_info(im_area_debug_state);
+		}
+
+		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+		ImGui::SliderInt2("HUD: Area Debug Position", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
+
+		{
+			auto* default_nocull_dist = &map_settings::get_map_settings().default_nocull_dist;
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			if (ImGui::DragFloat("Def. NoCull Dist", default_nocull_dist, 0.5f, 0.0f)) {
+				*default_nocull_dist = *default_nocull_dist < 0.0f ? 0.0f : *default_nocull_dist;
+			}
+			TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
+		}
+	}
+
 	void cont_mapsettings_fog()
 	{
 		auto& ms = map_settings::get_map_settings();
@@ -293,12 +319,12 @@ namespace components
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("Fog");
 
-		ImGui::TextDisabled("No auto-save or file writing. You need to export to clipboard and override the settings yourself!");
 		ImGui::Spacing();
 		ImGui::Spacing();
 
 		bool fog_enabled = ms.fog_dist != 0.0f;
 		static float old_fog_val = 0.0f;
+		SET_CHILD_WIDGET_WIDTH;
 		if (ImGui::Checkbox("Enable Fog", &fog_enabled))
 		{
 			if (!fog_enabled) 
@@ -315,10 +341,12 @@ namespace components
 			}
 		}
 
+		SET_CHILD_WIDGET_WIDTH;
 		if (ImGui::DragFloat("Distance", &ms.fog_dist, 1.0f, 0.0f)) {
 			ms.fog_dist = ms.fog_dist < 0.0f ? 0.0f : ms.fog_dist;
 		}
 
+		SET_CHILD_WIDGET_WIDTH;
 		if (ImGui::ColorEdit3("Transmission", &fog_color.x, ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar)) {
 			ms.fog_color = D3DCOLOR_COLORVALUE(fog_color.x, fog_color.y, fog_color.z, 1.0f);
 		}
@@ -336,10 +364,7 @@ namespace components
 
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("MapMarker");
-
-		ImGui::TextDisabled("No auto-save or file writing. You need to export to clipboard and override the settings yourself!");
-		ImGui::Spacing();
-		ImGui::Spacing();
+		ImGui::Spacing(0, 4);
 
 		constexpr auto in_buflen = 1024u;
 		static char in_area_buf[in_buflen], in_nleaf_buf[in_buflen];
@@ -580,7 +605,9 @@ namespace components
 		if (selection)
 		{
 			int temp_num = (int)selection->index;
-			if (ImGui::DragInt("Marker Number", &temp_num, 0.1f, 0))
+
+			SET_CHILD_WIDGET_WIDTH;
+			if (ImGui::DragInt("Number", &temp_num, 0.1f, 0))
 			{
 				if (temp_num < 0) {
 					temp_num = 0;
@@ -591,16 +618,28 @@ namespace components
 
 				selection->index = (std::uint32_t)temp_num;
 			}
-			ImGui::DragFloat3("Marker Position", &selection->origin.x, 0.5f);
+
+			//ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.6f, 0.5f));
+			ImGui::Widget_PrettyDragFloatVec3("Origin", &selection->origin.x, true, 0.5f,
+				-FLT_MAX, FLT_MAX, "X", "Y", "Z");
+			//ImGui::PopStyleVar();
 
 			// RAD2DEG -> DEG2RAD 
 			Vector temp_rot = { RAD2DEG(selection->rotation.x), RAD2DEG(selection->rotation.y), RAD2DEG(selection->rotation.z) };
-			if (ImGui::DragFloat3("Marker Rotation", &temp_rot.x, 0.1f)) {
-				selection->rotation = { DEG2RAD(temp_rot.x), DEG2RAD(temp_rot.y), DEG2RAD(temp_rot.z) };
-			}
 
-			if (selection->no_cull) {
-				ImGui::DragFloat3("Marker Scale", &selection->scale.x, 0.01f);
+			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.6f, 0.5f));
+			if (ImGui::Widget_PrettyDragFloatVec3("Rotation", &temp_rot.x, true, 0.1f, 
+				-360.0f, 360.0f, "Rx", "Ry", "Rz")) 
+			{
+				selection->rotation = { DEG2RAD(temp_rot.x), DEG2RAD(temp_rot.y), DEG2RAD(temp_rot.z) };
+			} ImGui::PopStyleVar();
+
+			if (selection->no_cull) 
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.6f, 0.5f));
+				ImGui::Widget_PrettyDragFloatVec3("Scale", &selection->scale.x, true, 0.01f,
+					-FLT_MAX, FLT_MAX, "Sx", "Sy", "Sz");
+				ImGui::PopStyleVar();
 			}
 		} // selection
 
@@ -637,11 +676,7 @@ namespace components
 
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("Cull");
-
-		ImGui::TextDisabled("No auto-save or file writing. You need to export to clipboard and override the settings yourself!");
-		ImGui::SameLine();
-		ImGui::Spacing();
-		ImGui::Spacing();
+		ImGui::Spacing(0, 4);
 
 		static map_settings::area_overrides_s* area_selection = nullptr;
 		static map_settings::area_overrides_s* area_selection_old = nullptr;
@@ -1267,45 +1302,33 @@ namespace components
 	void imgui::tab_map_settings()
 	{
 		{
-			ImGui::Checkbox("Disable R_CullNode", &m_disable_cullnode);
-			ImGui::Checkbox("Enable Area Forcing", &m_enable_area_forcing);
-
-			bool im_area_debug_state = main_module::is_node_debug_enabled();
-			if (ImGui::Checkbox("Toggle Area Debug Info", &im_area_debug_state)) {
-				main_module::set_node_vis_info(im_area_debug_state);
-			}
-
-			ImGui::SliderInt2("HUD: Area Debug Position", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
-
+			// general settings
 			{
-				auto* default_nocull_dist = &map_settings::get_map_settings().default_nocull_dist;
-				if (ImGui::DragFloat("Default NoCull Distance", default_nocull_dist, 0.5f, 0.0f)) {
-					*default_nocull_dist = *default_nocull_dist < 0.0f ? 0.0f : *default_nocull_dist;
-				}
-				TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
+				static float cont_general_height = 0.0f;
+				cont_general_height = ImGui::Widget_ContainerWithCollapsingTitle("General Settings", cont_general_height, cont_mapsettings_general);
 			}
-			
 
-			ImGui::Spacing();
-			ImGui::Spacing();
-			ImGui::Spacing();
+			ImGui::Spacing(0, 6.0f);
+			ImGui::SeparatorText("The following settings do NOT auto-save.");
+			ImGui::TextDisabled("Export to clipboard and override the settings manually!");
+			ImGui::Spacing(0, 6.0f);
 
 			// fog settings
 			{
 				static float cont_fog_height = 0.0f;
-				cont_fog_height = ImGui::Widget_ContainerWithTitleRounded("Fog Settings", cont_fog_height, cont_mapsettings_fog);
+				cont_fog_height = ImGui::Widget_ContainerWithCollapsingTitle("Fog Settings", cont_fog_height, cont_mapsettings_fog, false);
 			}
 
 			// marker manipulation
 			{
 				static float cont_marker_manip_height = 0.0f;
-				cont_marker_manip_height = ImGui::Widget_ContainerWithTitleRounded("Marker Manipulation", cont_marker_manip_height, cont_mapsettings_marker_manipulation);
+				cont_marker_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Marker Manipulation", cont_marker_manip_height, cont_mapsettings_marker_manipulation, false);
 			}
 
 			// culling manipulation
 			{
 				static float cont_cull_manip_height = 0.0f;
-				cont_cull_manip_height = ImGui::Widget_ContainerWithTitleRounded("Culling Manipulation", cont_cull_manip_height, cont_mapsettings_culling_manipulation);
+				cont_cull_manip_height = ImGui::Widget_ContainerWithCollapsingTitle("Culling Manipulation", cont_cull_manip_height, cont_mapsettings_culling_manipulation, false);
 			}
 		}
 
@@ -1316,13 +1339,21 @@ namespace components
 	{
 		ImGui::SetNextWindowSize(ImVec2(900, 800), ImGuiCond_FirstUseEver);
 
-		if (!ImGui::Begin("Devgui", &m_menu_active/*, ImGuiWindowFlags_AlwaysVerticalScrollbar*/))
+		std::function<void()> blur = []
+		{
+			ImGuiWindow* window = ImGui::GetCurrentWindow();
+			ImGui::PushClipRect(window->InnerClipRect.Min, window->InnerClipRect.Max, true);
+			common::draw_background_blur(ImGui::GetWindowDrawList(), game::get_d3d_device());
+			ImGui::PopClipRect();
+		};
+
+		if (!ImGui::Begin("Devgui", &m_menu_active/*, ImGuiWindowFlags_AlwaysVerticalScrollbar*/, 0, &blur))
 		{
 			ImGui::End();
 			return;
 		}
 
-		common::draw_background_blur(ImGui::GetWindowDrawList(), game::get_d3d_device());//
+		//common::draw_background_blur(ImGui::GetWindowDrawList(), game::get_d3d_device());//
 
 		m_im_window_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
 		m_im_window_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
@@ -1348,7 +1379,7 @@ namespace components
 #define ADD_TAB(NAME, FUNC) \
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0)));			\
 	if (ImGui::BeginTabItem(NAME)) {																		\
-		if (ImGui::BeginChild("##child_" NAME, ImVec2(0, ImGui::GetContentRegionAvail().y - 38), ImGuiChildFlags_AlwaysUseWindowPadding )) {	\
+		if (ImGui::BeginChild("##child_" NAME, ImVec2(0, ImGui::GetContentRegionAvail().y - 38), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_AlwaysVerticalScrollbar )) {	\
 			FUNC(); ImGui::EndChild();																		\
 		} else {																							\
 			ImGui::EndChild();																				\
@@ -1374,6 +1405,7 @@ namespace components
 			float cur_pos = avail_width - 50.0f;
 
 			{
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y);
 				const auto spos = ImGui::GetCursorScreenPos();
 				ImGui::TextUnformatted(m_devgui_custom_footer_content.c_str());
 				ImGui::SetCursorScreenPos(spos);
@@ -1473,7 +1505,7 @@ namespace components
 		auto& colors = style.Colors;
 		colors[ImGuiCol_Text] = ImVec4(0.80f, 0.80f, 0.80f, 1.00f);
 		colors[ImGuiCol_TextDisabled] = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
-		colors[ImGuiCol_WindowBg] = ImVec4(0.35f, 0.35f, 0.35f, 0.59f);
+		colors[ImGuiCol_WindowBg] = ImVec4(0.26f, 0.26f, 0.26f, 0.90f);
 		colors[ImGuiCol_ChildBg] = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
 		colors[ImGuiCol_PopupBg] = ImVec4(0.28f, 0.28f, 0.28f, 0.92f);
 		colors[ImGuiCol_Border] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
@@ -1499,11 +1531,11 @@ namespace components
 		colors[ImGuiCol_HeaderHovered] = ImVec4(0.17f, 0.25f, 0.27f, 0.78f);
 		colors[ImGuiCol_HeaderActive] = ImVec4(0.17f, 0.25f, 0.27f, 0.78f);
 		colors[ImGuiCol_Separator] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-		colors[ImGuiCol_SeparatorHovered] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-		colors[ImGuiCol_SeparatorActive] = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-		colors[ImGuiCol_ResizeGrip] = ImVec4(0.84f, 0.84f, 0.84f, 0.39f);
-		colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.59f);
-		colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.78f);
+		colors[ImGuiCol_SeparatorHovered] = ImVec4(0.15f, 0.52f, 0.66f, 0.30f);
+		colors[ImGuiCol_SeparatorActive] = ImVec4(0.30f, 0.69f, 0.84f, 0.39f);
+		colors[ImGuiCol_ResizeGrip] = ImVec4(0.43f, 0.43f, 0.43f, 0.51f);
+		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.07f, 0.39f, 0.47f, 0.59f);
+		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.30f, 0.69f, 0.84f, 0.39f);
 		colors[ImGuiCol_TabHovered] = ImVec4(0.30f, 0.69f, 0.84f, 0.39f);
 		colors[ImGuiCol_Tab] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 		colors[ImGuiCol_TabSelected] = ImVec4(0.17f, 0.53f, 0.67f, 0.30f);
