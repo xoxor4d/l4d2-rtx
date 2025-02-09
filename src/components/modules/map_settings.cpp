@@ -1,4 +1,5 @@
 #include "std_include.hpp"
+#include "components/common/toml.hpp"
 
 namespace components
 {
@@ -167,9 +168,6 @@ namespace components
 		m_map_settings.map_markers.clear();
 		m_spawned_markers = false;
 	}
-
-#define TOML_ERROR(TITLE, ENTRY, MSG, ...) \
-	game::console(); std::cout << toml::format_error(toml::make_error_info(#TITLE, (ENTRY), utils::va(#MSG, __VA_ARGS__))) << std::endl; \
 
 	bool map_settings::parse_toml()
 	{

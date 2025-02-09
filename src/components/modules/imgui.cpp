@@ -188,7 +188,8 @@ namespace components
 		}
 	}
 
-	// ------
+	// #
+	// #
 
 	void cont_general_quickcommands()
 	{
@@ -225,55 +226,6 @@ namespace components
 		}
 	}
 
-	void cont_general_flashlight()
-	{
-		const auto im = imgui::get();
-		
-		float temp_player_offset_arr[3] = {
-			im->m_flashlight_fwd_offset, im->m_flashlight_horz_offset, im->m_flashlight_vert_offset
-		};
-
-		if (ImGui::Widget_PrettyDragVec3("Offsets Player", temp_player_offset_arr, true, 0.1f, -1000.0f, 1000.0f,
-			"F", "H", "V"))
-		{
-			im->m_flashlight_fwd_offset = temp_player_offset_arr[0];
-			im->m_flashlight_horz_offset = temp_player_offset_arr[1];
-			im->m_flashlight_vert_offset = temp_player_offset_arr[2];
-		}
-
-		// --
-
-		float temp_bot_offset_arr[3] = {
-			im->m_flashlight_bot_fwd_offset, im->m_flashlight_bot_horz_offset, im->m_flashlight_bot_vert_offset
-		};
-
-		if (ImGui::Widget_PrettyDragVec3("Offsets Bot", temp_bot_offset_arr, true, 0.1f, -1000.0f, 1000.0f,
-			"F", "H", "V"))
-		{
-			im->m_flashlight_bot_fwd_offset = temp_bot_offset_arr[0];
-			im->m_flashlight_bot_horz_offset = temp_bot_offset_arr[1];
-			im->m_flashlight_bot_vert_offset = temp_bot_offset_arr[2];
-		}
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Intensity", &im->m_flashlight_intensity, 0.1f);
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Radius", &im->m_flashlight_radius, 0.005f);
-
-		//ImGui::Checkbox("Custom Direction", &im->m_flashlight_use_custom_dir);
-		//ImGui::Widget_PrettyDragVec3("Direction", &im->m_flashlight_direction.x, true, 0.01f, -360.0f, 360.0f);
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Angle", &im->m_flashlight_angle, 0.001f);
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Softness", &im->m_flashlight_softness, 0.001f);
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Expo", &im->m_flashlight_exp, 0.001f);
-	}
-
 	void imgui::tab_general()
 	{
 		// quick commands
@@ -282,14 +234,10 @@ namespace components
 			cont_quickcmd_height = ImGui::Widget_ContainerWithCollapsingTitle("Quick Commands", cont_quickcmd_height, cont_general_quickcommands,
 				true, ICON_FA_TERMINAL, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
-
-		// flashlight
-		{
-			static float cont_flashlight_height = 0.0f;
-			cont_flashlight_height = ImGui::Widget_ContainerWithCollapsingTitle("Flashlight", cont_flashlight_height, cont_general_flashlight,
-				true, ICON_FA_LIGHTBULB, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
-		}
 	}
+
+	// #
+	// #
 
 	void cont_mapsettings_general()
 	{
@@ -1423,7 +1371,6 @@ namespace components
 			ImGui::TreePop();
 		}
 	}
-	
 
 	void imgui::tab_map_settings()
 	{
@@ -1463,9 +1410,34 @@ namespace components
 		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "\nLeaf: " + std::to_string(g_current_leaf);
 	}
 
+	// #
+	// #
 
-	// --
-	// --
+	void cont_gamesettings_flashlight()
+	{
+		const auto gs = game_settings::get();
+
+		ImGui::Widget_PrettyDragVec3("Offsets Player", gs->flashlight_offset_player.get_as<float*>(), true, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
+		TT(gs->flashlight_offset_player.get_tooltip_string().c_str());
+
+		ImGui::Widget_PrettyDragVec3("Offsets Bot", gs->flashlight_offset_bot.get_as<float*>(), true, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
+		TT(gs->flashlight_offset_bot.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Intensity", gs->flashlight_intensity.get_as<float*>(), 0.1f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Radius", gs->flashlight_radius.get_as<float*>(), 0.005f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Angle", gs->flashlight_angle.get_as<float*>(), 0.001f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Softness", gs->flashlight_softness.get_as<float*>(), 0.001f);
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Expo", gs->flashlight_expo.get_as<float*>(), 0.001f);
+	}
 
 	void cont_gamesettings_quick_cmd()
 	{
@@ -1527,15 +1499,15 @@ namespace components
 	void cont_gamesettings_renderer_settings()
 	{
 		const auto gs = game_settings::get();
-		ImGui::Checkbox("Enable LOD Forcing", gs->lod_forcing.get_ptr_as<bool>()); TT(gs->lod_forcing.get_tooltip_string().c_str());
+		ImGui::Checkbox("Enable LOD Forcing", gs->lod_forcing.get_as<bool*>()); TT(gs->lod_forcing.get_tooltip_string().c_str());
 
-		if (ImGui::Checkbox("Enable 3D Skybox (very unstable)", gs->enable_3d_sky.get_ptr_as<bool>())) {
+		if (ImGui::Checkbox("Enable 3D Skybox (very unstable)", gs->enable_3d_sky.get_as<bool*>())) {
 			remix_vars::set_option(remix_vars::get_option("rtx.skyAutoDetect"), remix_vars::string_to_option_value(remix_vars::OPTION_TYPE_FLOAT, gs->enable_3d_sky.get_as<bool>() ? "1" : "0"));
 		}
 		TT(gs->enable_3d_sky.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-		auto gs_nocull_dist_ptr = game_settings::get()->default_nocull_distance.get_ptr_as<float>();
+		auto gs_nocull_dist_ptr = game_settings::get()->default_nocull_distance.get_as<float*>();
 		if (ImGui::DragFloat("Def. NoCull Dist", gs_nocull_dist_ptr, 0.5f, 0.0f, FLT_MAX, "%.2f")) 
 		{
 			*gs_nocull_dist_ptr = *gs_nocull_dist_ptr < 0.0f ? 0.0f : *gs_nocull_dist_ptr;
@@ -1559,8 +1531,17 @@ namespace components
 			cont_rendersettings_height = ImGui::Widget_ContainerWithCollapsingTitle("Renderer Related Settings", cont_rendersettings_height, cont_gamesettings_renderer_settings,
 				true, ICON_FA_CAMERA, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
+
+		// flashlight
+		{
+			static float cont_flashlight_height = 0.0f;
+			cont_flashlight_height = ImGui::Widget_ContainerWithCollapsingTitle("Flashlight", cont_flashlight_height, cont_gamesettings_flashlight,
+				true, ICON_FA_LIGHTBULB, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
 	}
 
+	// #
+	// #
 
 	void imgui::devgui()
 	{

@@ -351,7 +351,7 @@ namespace components
 
 				if (fl.is_enabled)
 				{
-					const auto* im = imgui::get();
+					const auto gs = game_settings::get();
 
 					auto& info = fl.info;
 					auto& ext = fl.ext;
@@ -359,35 +359,28 @@ namespace components
 					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
 					ext.pNext = nullptr;
 
-					const Vector light_org = fl.def.pos
-						+ (fl.def.fwd * (fl.is_player ? im->m_flashlight_fwd_offset : im->m_flashlight_bot_fwd_offset))
-						+ (fl.def.up * (fl.is_player ? im->m_flashlight_vert_offset : im->m_flashlight_bot_vert_offset))
-						+ (fl.def.rt * (fl.is_player ? im->m_flashlight_horz_offset : im->m_flashlight_bot_horz_offset));
+					const Vector light_org = fl.def.pos + 
+						(fl.is_player ? gs->flashlight_offset_player.get_as<float*>() :
+										gs->flashlight_offset_bot.get_as<float*>());
 
 					ext.position = light_org.ToRemixFloat3D();
 
-					ext.radius = im->m_flashlight_radius;
+					ext.radius = gs->flashlight_radius.get_as<float>();
 					ext.shaping_hasvalue = TRUE;
 					ext.shaping_value = {};
 
-					/*if (im->m_flashlight_use_custom_dir)
-					{
-						auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
-						ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
-					}
-					else*/
-					{
-						ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
-					}
+					ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
 
-					ext.shaping_value.coneAngleDegrees = im->m_flashlight_angle;
-					ext.shaping_value.coneSoftness = im->m_flashlight_softness;
-					ext.shaping_value.focusExponent = im->m_flashlight_exp;
+					ext.shaping_value.coneAngleDegrees = gs->flashlight_angle.get_as<float>();
+					ext.shaping_value.coneSoftness = gs->flashlight_softness.get_as<float>();
+					ext.shaping_value.focusExponent = gs->flashlight_expo.get_as<float>();
 
 					info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
 					info.pNext = &fl.ext;
 					info.hash = utils::string_hash64(utils::va("fl%s", name.c_str()));
-					info.radiance = remixapi_Float3D{ 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity };
+
+					const float intensity = gs->flashlight_intensity.get_as<float>();
+					info.radiance = remixapi_Float3D{ 20.0f * intensity, 20.0f * intensity, 20.0f * intensity };
 
 					api->m_bridge.CreateLight(&fl.info, &fl.handle);
 				}

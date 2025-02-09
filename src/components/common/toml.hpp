@@ -1,5 +1,8 @@
 #pragma once
 
+#define TOML_ERROR(TITLE, ENTRY, MSG, ...) \
+	game::console(); std::cout << toml::format_error(toml::make_error_info(#TITLE, (ENTRY), utils::va(#MSG, __VA_ARGS__))) << std::endl; \
+
 namespace common::toml
 {
 	std::string build_map_marker_string_for_current_map(const std::vector<map_settings::marker_settings_s>& markers);
