@@ -6,7 +6,6 @@
 #include "components/common/imgui/font_defines.hpp"
 #include "components/common/imgui/font_opensans.hpp"
 
-#ifdef USE_IMGUI
 #include "imgui_internal.h"
 
 // Allow us to directly call the ImGui WndProc function.
@@ -18,11 +17,9 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
 #define SET_CHILD_WIDGET_WIDTH			ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild(80.0f));
 #define SET_CHILD_WIDGET_WIDTH_MAN(V)	ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild((V)));
-#endif
 
 namespace components
 {
-#if USE_IMGUI
 	WNDPROC g_game_wndproc = nullptr;
 	
 	LRESULT __stdcall wnd_proc_hk(HWND window, UINT message_type, WPARAM wparam, LPARAM lparam)
@@ -1637,11 +1634,9 @@ namespace components
 		ImGui::PopStyleVar(1);
 		ImGui::End();
 	}
-#endif
 
 	void imgui::endscene_stub()
 	{
-#if USE_IMGUI
 		if (auto* im = imgui::get(); im)
 		{
 			if (const auto dev = game::get_d3d_device(); dev)
@@ -1658,16 +1653,6 @@ namespace components
 					ImGui_ImplWin32_NewFrame();
 					ImGui::NewFrame();
 
-#if 0
-					ImGui::GetIO().MouseDrawCursor = false;
-					if (menu_state_changed) 
-					{
-						if (im->m_menu_active ^ interfaces::get()->m_surface->is_cursor_visible()) {
-							interfaces::get()->m_engine->execute_client_cmd_unrestricted("debugsystemui");
-						}
-					}
-#endif
-
 					if (im->m_menu_active) {
 						im->devgui();
 					}
@@ -1678,7 +1663,6 @@ namespace components
 				}
 			}
 		}
-#endif
 	}
 
 	void imgui::style_xo()
@@ -1816,8 +1800,6 @@ namespace components
 	{
 		p_this = this;
 
-#if USE_IMGUI
-
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		init_fonts();
@@ -1830,7 +1812,6 @@ namespace components
 
 		ImGui_ImplWin32_Init(glob::main_window);
 		g_game_wndproc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(glob::main_window, GWLP_WNDPROC, LONG_PTR(wnd_proc_hk)));
-#endif
 	}
 
 	imgui::~imgui()

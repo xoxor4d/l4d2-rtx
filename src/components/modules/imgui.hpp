@@ -13,7 +13,6 @@ namespace components
 
 		static void endscene_stub();
 
-#if USE_IMGUI
 		void devgui();
 		bool input_message(UINT message_type, WPARAM wparam, LPARAM lparam);
 
@@ -27,10 +26,8 @@ namespace components
 		ImVec4 ImGuiCol_ButtonRed = ImVec4(0.48f, 0.15f, 0.15f, 1.00f);
 		ImVec4 ImGuiCol_ContainerBackground = ImVec4(0.220f, 0.220f, 0.220f, 0.863f);
 		ImVec4 ImGuiCol_ContainerBorder = ImVec4(0.099f, 0.099f, 0.099f, 0.901f);
-#endif
 
 		// the following default values will be used on release builds
-
 		bool m_disable_cullnode = false;
 		bool m_enable_area_forcing = true;
 
