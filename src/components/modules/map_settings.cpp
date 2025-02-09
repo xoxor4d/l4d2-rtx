@@ -33,6 +33,8 @@ namespace components
 			remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
 		}
 
+		m_map_settings.default_nocull_dist = game_settings::get()->default_nocull_distance.get_as<float>();
+
 		// are we using any sound hashes or names to trigger configvar transitions?
 		{
 			if (!m_map_settings.remix_transitions.empty())
@@ -342,7 +344,7 @@ namespace components
 							}
 
 							// nocull dist for certain cull modes
-							float temp_nocull_dist = DEFAULT_NOCULL_DIST;
+							float temp_nocull_dist = game_settings::get()->default_nocull_distance.get_as<float>();
 							if (entry.contains("nocull_dist")) {
 								temp_nocull_dist = to_float(entry.at("nocull_dist"));
 							}

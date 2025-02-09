@@ -3,6 +3,11 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		bool debug_node_vis = false;
+	}
+
 	int g_current_leaf = -1;
 	int g_current_area = -1;
 
@@ -511,7 +516,7 @@ namespace components
 	void main_module::hud_draw_area_info()
 	{
 		// Draw current node/leaf as HUD
-		if (is_node_debug_enabled() && d3d_font)
+		if (cmd::debug_node_vis && d3d_font)
 		{
 			RECT rect;
 			if (g_current_area != -1)
@@ -556,7 +561,7 @@ namespace components
 		// visualize current leaf + forced leafs (map_settings)
 		if (g_current_leaf < world->numleafs)
 		{
-			if (main_module::is_node_debug_enabled())
+			if (cmd::debug_node_vis)
 			{
 				const auto curr_leaf = &world->leafs[g_current_leaf];
 				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN); // current leaf
@@ -1150,9 +1155,9 @@ namespace components
 	// #
 
 	ConCommand xo_debug_toggle_node_vis_cmd {};
-	void main_module::toggle_node_vis_info()
+	void main_module::xo_debug_toggle_node_vis_fn()
 	{
-		set_node_vis_info(!get()->m_cmd_debug_node_vis);
+		cmd::debug_node_vis = !cmd::debug_node_vis;
 	}
 
 	main_module::main_module()
@@ -1273,7 +1278,7 @@ namespace components
 		// #
 		// commands
 
-		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", toggle_node_vis_info, "Toggle bsp node/leaf debug visualization using the remix api");
+		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
 	}
 
 	main_module::~main_module()

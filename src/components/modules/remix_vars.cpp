@@ -693,7 +693,7 @@ namespace components
 	}
 
 	ConCommand xo_vars_parse_options_cmd{};
-	void xo_vars_parse_options_fn()
+	void remix_vars::xo_vars_parse_options_fn()
 	{
 		remix_vars::options.clear();
 		remix_vars::custom_options.clear();

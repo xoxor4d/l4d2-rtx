@@ -11,6 +11,8 @@ namespace components
 		static inline remix_vars* p_this = nullptr;
 		static remix_vars* get() { return p_this; }
 
+		static void xo_vars_parse_options_fn();
+
 		enum EASE_TYPE
 		{
 			EASE_TYPE_LINEAR,

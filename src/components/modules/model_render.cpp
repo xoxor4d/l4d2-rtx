@@ -302,7 +302,7 @@ namespace components
 
 			if (cmd::model_info_vis)
 			{
-				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < 1000.0f * 1000.0f)
+				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < 500.0f * 500.0f)
 				{
 					game::debug_add_text_overlay(&pInfo.origin.x, pInfo.pModel->szPathName, 0);
 					game::debug_add_text_overlay(&pInfo.origin.x, utils::va("Radius: %.7f", pInfo.pModel->radius), 1);
@@ -1689,7 +1689,7 @@ namespace components
 	// Commands
 
 	ConCommand xo_debug_toggle_model_info_cmd{};
-	void xo_debug_toggle_model_info_fn()
+	void model_render::xo_debug_toggle_model_info_fn()
 	{
 		cmd::model_info_vis = !cmd::model_info_vis;
 	}

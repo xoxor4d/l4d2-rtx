@@ -157,30 +157,30 @@ namespace components
 			common::imgui::draw_background_blur();
 			const auto half_width = ImGui::GetContentRegionMax().x * 0.5f;
 			auto line1_str = "You'll loose all unsaved changes if you continue!";
-			auto line2_str = "Use the copy to clipboard buttons and manually update";
+			auto line2_str = "Use the copy to clipboard buttons and manually update  ";
 			auto line3_str = "the map_settings.toml file if you've made changes.";
 
 			ImGui::Spacing();
 			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line1_str).x * 0.5f));
-			ImGui::Text(line1_str);
+			ImGui::TextUnformatted(line1_str);
 
 			ImGui::Spacing();
 			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line2_str).x * 0.5f));
-			ImGui::Text(line2_str);
+			ImGui::TextUnformatted(line2_str);
 			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line3_str).x * 0.5f));
-			ImGui::Text(line3_str);
+			ImGui::TextUnformatted(line3_str);
 
-			ImGui::Spacing();
-			ImGui::Spacing();
+			ImGui::Spacing(0, 8);
+			ImGui::Spacing(0, 0); ImGui::SameLine();
 
-			ImVec2 button_size(half_width - 10.0f, 0.0f);
+			ImVec2 button_size(half_width - 6.0f - ImGui::GetStyle().WindowPadding.x, 0.0f);
 			if (ImGui::Button("Reload", button_size))
 			{
 				map_settings::reload();
 				ImGui::CloseCurrentPopup();
 			}
 
-			ImGui::SameLine();
+			ImGui::SameLine(0, 6);
 			if (ImGui::Button("Cancel", button_size)) {
 				ImGui::CloseCurrentPopup();
 			}
@@ -259,28 +259,28 @@ namespace components
 		ImGui::DragFloat("Intensity", &im->m_flashlight_intensity, 0.1f);
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Radius", &im->m_flashlight_radius, 0.1f);
+		ImGui::DragFloat("Radius", &im->m_flashlight_radius, 0.005f);
 
 		//ImGui::Checkbox("Custom Direction", &im->m_flashlight_use_custom_dir);
 		//ImGui::Widget_PrettyDragVec3("Direction", &im->m_flashlight_direction.x, true, 0.01f, -360.0f, 360.0f);
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Angle", &im->m_flashlight_angle, 0.1f);
+		ImGui::DragFloat("Spot Angle", &im->m_flashlight_angle, 0.001f);
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Softness", &im->m_flashlight_softness, 0.1f);
+		ImGui::DragFloat("Spot Softness", &im->m_flashlight_softness, 0.001f);
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Expo", &im->m_flashlight_exp, 0.1f);
+		ImGui::DragFloat("Spot Expo", &im->m_flashlight_exp, 0.001f);
 	}
 
 	void imgui::tab_general()
 	{
-		// game settings
+		// quick commands
 		{
 			static float cont_quickcmd_height = 0.0f;
 			cont_quickcmd_height = ImGui::Widget_ContainerWithCollapsingTitle("Quick Commands", cont_quickcmd_height, cont_general_quickcommands,
-				true, ICON_FA_CHESS, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+				true, ICON_FA_TERMINAL, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 
 		// flashlight
@@ -293,13 +293,58 @@ namespace components
 
 	void cont_mapsettings_general()
 	{
-		//ImGui::Checkbox("Disable R_CullNode", &imgui::get()->m_disable_cullnode);
-		//ImGui::Checkbox("Enable Area Forcing", &imgui::get()->m_enable_area_forcing);
-
-		bool im_area_debug_state = main_module::is_node_debug_enabled();
-		if (ImGui::Checkbox("Toggle Area Debug Info", &im_area_debug_state)) {
-			main_module::set_node_vis_info(im_area_debug_state);
+		if (ImGui::Button("Reload rtx.conf", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
+		{
+			if (!ImGui::IsPopupOpen("Reload RtxConf?")) {
+				ImGui::OpenPopup("Reload RtxConf?");
+			}
 		}
+
+		// popup
+		if (ImGui::BeginPopupModal("Reload RtxConf?", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+		{
+			common::imgui::draw_background_blur();
+			ImGui::Spacing(0.0f, 0.0f);
+
+			const auto half_width = ImGui::GetContentRegionMax().x * 0.5f;
+			auto line1_str = "This will reload the rtx.conf file and re-apply all of it's variables.  ";
+			auto line3_str = "(excluding texture hashes)";
+
+			ImGui::Spacing();
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line1_str).x * 0.5f));
+			ImGui::TextUnformatted(line1_str);
+
+			ImGui::PushFont(common::imgui::font::BOLD);
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line3_str).x * 0.5f));
+			ImGui::TextUnformatted(line3_str);
+			ImGui::PopFont();
+
+			ImGui::Spacing(0, 8);
+			ImGui::Spacing(0, 0); ImGui::SameLine();
+
+			ImVec2 button_size(half_width - 6.0f - ImGui::GetStyle().WindowPadding.x, 0.0f);
+			if (ImGui::Button("Reload", button_size))
+			{
+				remix_vars::xo_vars_parse_options_fn();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine(0, 6.0f);
+			if (ImGui::Button("Cancel", button_size)) {
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::SameLine();
+		reload_mapsettings_button_with_popup("General");
+
+		ImGui::Checkbox("Show Area Debug Info", &cmd::debug_node_vis);
+		TT("Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
+
+		ImGui::Checkbox("Show Static Prop Debug Info", &cmd::model_info_vis);
+		TT("Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
 
 		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 		ImGui::SliderInt2("HUD: Area Debug Pos", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
@@ -314,18 +359,25 @@ namespace components
 		}
 
 #if DEBUG
+		{
+			const auto im = imgui::get();
 
-		ImGui::Spacing(0, 12);
-		ImGui::SeparatorText(" DEBUG Build Section ");
+			ImGui::Spacing(0,8);
+			if (ImGui::CollapsingHeader("DEBUG Build Section", ImGuiTreeNodeFlags_SpanFullWidth))
+			{
+				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Disable R_CullNode", &im->m_disable_cullnode);
+				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Enable Area Forcing", &im->m_enable_area_forcing);
 
-		const auto coloredit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Float;
+				const auto coloredit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Float;
 
-		ImGui::ColorEdit4("ContainerBg", &imgui::get()->ImGuiCol_ContainerBackground.x, coloredit_flags);
-		ImGui::ColorEdit4("ContainerBorder", &imgui::get()->ImGuiCol_ContainerBorder.x, coloredit_flags);
+				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ContainerBg", &im->ImGuiCol_ContainerBackground.x, coloredit_flags);
+				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ContainerBorder", &im->ImGuiCol_ContainerBorder.x, coloredit_flags);
 
-		ImGui::ColorEdit4("ButtonGreen", &imgui::get()->ImGuiCol_ButtonGreen.x, coloredit_flags);
-		ImGui::ColorEdit4("ButtonYellow", &imgui::get()->ImGuiCol_ButtonYellow.x, coloredit_flags);
-		ImGui::ColorEdit4("ButtonRed", &imgui::get()->ImGuiCol_ButtonRed.x, coloredit_flags);
+				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ButtonGreen", &im->ImGuiCol_ButtonGreen.x, coloredit_flags);
+				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ButtonYellow", &im->ImGuiCol_ButtonYellow.x, coloredit_flags);
+				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ButtonRed", &im->ImGuiCol_ButtonRed.x, coloredit_flags);
+			}
+		}
 #endif
 	}
 
@@ -1379,7 +1431,7 @@ namespace components
 		{
 			static float cont_general_height = 0.0f;
 			cont_general_height = ImGui::Widget_ContainerWithCollapsingTitle("General Settings", cont_general_height, cont_mapsettings_general,
-				true, "", &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+				true, ICON_FA_ELLIPSIS_H, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 
 		ImGui::Spacing(0, 6.0f);
@@ -1410,6 +1462,105 @@ namespace components
 
 		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "\nLeaf: " + std::to_string(g_current_leaf);
 	}
+
+
+	// --
+	// --
+
+	void cont_gamesettings_quick_cmd()
+	{
+		if (ImGui::Button("Save Current Settings", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
+			game_settings::write_toml();
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Reload GameSettings", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+		{
+			if (!ImGui::IsPopupOpen("Reload GameSettings?")) {
+				ImGui::OpenPopup("Reload GameSettings?");
+			}
+		}
+
+		// popup
+		if (ImGui::BeginPopupModal("Reload GameSettings?", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+		{
+			common::imgui::draw_background_blur();
+			ImGui::Spacing(0.0f, 0.0f);
+
+			const auto half_width = ImGui::GetContentRegionMax().x * 0.5f;
+			auto line1_str = "You'll loose all unsaved changes if you continue!   ";
+			auto line2_str = "To save your changes, use:";
+			auto line3_str = "Save Current Settings";
+
+			ImGui::Spacing();
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line1_str).x * 0.5f));
+			ImGui::TextUnformatted(line1_str);
+
+			ImGui::Spacing();
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line2_str).x * 0.5f));
+			ImGui::TextUnformatted(line2_str);
+
+			ImGui::PushFont(common::imgui::font::BOLD);
+			ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line3_str).x * 0.5f));
+			ImGui::TextUnformatted(line3_str);
+			ImGui::PopFont();
+
+			ImGui::Spacing(0, 8);
+			ImGui::Spacing(0, 0); ImGui::SameLine();
+
+			ImVec2 button_size(half_width - 6.0f - ImGui::GetStyle().WindowPadding.x, 0.0f);
+			if (ImGui::Button("Reload", button_size))
+			{
+				game_settings::xo_gamesettings_update_fn();
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::SameLine(0, 6.0f);
+			if (ImGui::Button("Cancel", button_size)) {
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	void cont_gamesettings_renderer_settings()
+	{
+		const auto gs = game_settings::get();
+		ImGui::Checkbox("Enable LOD Forcing", gs->lod_forcing.get_ptr_as<bool>()); TT(gs->lod_forcing.get_tooltip_string().c_str());
+
+		if (ImGui::Checkbox("Enable 3D Skybox (very unstable)", gs->enable_3d_sky.get_ptr_as<bool>())) {
+			remix_vars::set_option(remix_vars::get_option("rtx.skyAutoDetect"), remix_vars::string_to_option_value(remix_vars::OPTION_TYPE_FLOAT, gs->enable_3d_sky.get_as<bool>() ? "1" : "0"));
+		}
+		TT(gs->enable_3d_sky.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+		auto gs_nocull_dist_ptr = game_settings::get()->default_nocull_distance.get_ptr_as<float>();
+		if (ImGui::DragFloat("Def. NoCull Dist", gs_nocull_dist_ptr, 0.5f, 0.0f, FLT_MAX, "%.2f")) 
+		{
+			*gs_nocull_dist_ptr = *gs_nocull_dist_ptr < 0.0f ? 0.0f : *gs_nocull_dist_ptr;
+			map_settings::get_map_settings().default_nocull_dist = *gs_nocull_dist_ptr;
+		}
+		TT(gs->default_nocull_distance.get_tooltip_string().c_str());
+	}
+
+	void imgui::tab_game_settings()
+	{
+		// quick commands
+		{
+			static float cont_quickcmd_height = 0.0f;
+			cont_quickcmd_height = ImGui::Widget_ContainerWithCollapsingTitle("Quick Commands", cont_quickcmd_height, cont_gamesettings_quick_cmd,
+				true, ICON_FA_TERMINAL, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		// renderer related settings
+		{
+			static float cont_rendersettings_height = 0.0f;
+			cont_rendersettings_height = ImGui::Widget_ContainerWithCollapsingTitle("Renderer Related Settings", cont_rendersettings_height, cont_gamesettings_renderer_settings,
+				true, ICON_FA_CAMERA, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+	}
+
 
 	void imgui::devgui()
 	{
@@ -1464,6 +1615,7 @@ namespace components
 			ImGui::PopStyleVar(1);
 			ADD_TAB("General", tab_general);
 			ADD_TAB("Map Settings", tab_map_settings);
+			ADD_TAB("Game Settings", tab_game_settings);
 			ImGui::EndTabBar();
 		}
 		else {

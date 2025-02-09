@@ -35,14 +35,14 @@ namespace components
 				auto config = toml::parse("l4d2-rtx\\game_settings.toml");
 
 				// #
-				auto to_float = [](const toml::value& entry, float default_setting = 0.0f)
+				auto to_float = [](const toml::value& entry, const float default_setting = 0.0f)
 					{
-						if (entry.is_floating()) {
-							return static_cast<float>(entry.as_floating());
-						}
-
 						if (entry.is_integer()) {
 							return static_cast<float>(entry.as_integer());
+						}
+
+						if (entry.is_floating()) {
+							return static_cast<float>(entry.as_floating());
 						}
 
 						try { // this will fail and let the user know whats wrong
@@ -56,14 +56,18 @@ namespace components
 					};
 
 				// #
-				auto to_int = [](const toml::value& entry, int default_setting = 0)
+				auto to_int = [](const toml::value& entry, const int default_setting = 0)
 					{
-						if (entry.is_floating()) {
-							return static_cast<int>(entry.as_floating());
+						if (entry.is_boolean()) {
+							return static_cast<int>(entry.as_boolean());
 						}
 
 						if (entry.is_integer()) {
 							return static_cast<int>(entry.as_integer());
+						}
+
+						if (entry.is_floating()) {
+							return static_cast<int>(entry.as_floating());
 						}
 
 						try { // this will fail and let the user know whats wrong
@@ -76,16 +80,39 @@ namespace components
 						return default_setting;
 					};
 
+				// #
+				auto to_bool = [](const toml::value& entry, const bool default_setting = false)
+					{
+						if (entry.is_boolean()) {
+							return static_cast<bool>(entry.as_boolean());
+						}
+
+						if (entry.is_integer()) {
+							return static_cast<bool>(entry.as_integer());
+						}
+
+						try { // this will fail and let the user know whats wrong
+							return static_cast<bool>(entry.as_boolean());
+						}
+						catch (toml::type_error& err) {
+							game::console(); printf("%s\n", err.what());
+						}
+
+						return default_setting;
+					};
+
 				// ---------------------------------------
 
-			#define ASSIGN(name) \
-				if (config.contains((#name))) { \
-					switch (vars.##name.get_type()) { \
-						case (var_type_integer): \
-							vars.##name.set_var(to_int(config.at(#name), vars.##name.get_as<int>()), true); break; \
-						case (var_type_value): \
-							vars.##name.set_var(to_float(config.at(#name), vars.##name.get_as<float>()), true); break; \
-					} \
+			#define ASSIGN(name)																							\
+				if (config.contains((#name))) {																				\
+					switch (vars.##name.get_type()) {																		\
+						case (var_type_boolean):																			\
+							vars.##name.set_var(to_bool(config.at(#name), vars.##name.get_as<bool>()), true); break;		\
+						case (var_type_integer):																			\
+							vars.##name.set_var(to_int(config.at(#name), vars.##name.get_as<int>()), true); break;			\
+						case (var_type_value):																				\
+							vars.##name.set_var(to_float(config.at(#name), vars.##name.get_as<float>()), true); break;		\
+					}																										\
 				} 
 
 				ASSIGN(lod_forcing);
@@ -109,7 +136,7 @@ namespace components
 	}
 
 	ConCommand xo_gamesettings_update {};
-	void xo_gamesettings_update_fn()
+	void game_settings::xo_gamesettings_update_fn()
 	{
 		game_settings::parse_toml();
 		main_module::cross_handle_map_and_game_settings();
