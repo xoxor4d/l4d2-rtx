@@ -88,13 +88,13 @@ namespace components
 				// shaping
 				bool use_shaping = false;
 				Vector direction = { 0.0f, 0.0f, 1.0f };
-				float degrees = 90.0; // cone angle
+				float degrees = 180.0; // cone angle
 				float softness = 0.0f; // cone
 				float exponent = 0.0f; // focus
 			};
 
 			std::vector<point_s> points;
-			bool run_once = 0u;
+			bool run_once = false;
 			bool loop = false;
 			bool loop_smoothing = false;
 			bool trigger_always = false;
@@ -109,6 +109,8 @@ namespace components
 			std::string kill_choreo_name;
 			std::uint32_t kill_sound_hash;
 			float kill_delay = 0.0f;
+
+			std::string comment;
 		};
 
 		// ---

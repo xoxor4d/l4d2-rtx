@@ -27,11 +27,15 @@ namespace components
 				// apply other manually defined configs
 				for (const auto& f : m_map_settings.api_var_configs) {
 					open_and_set_var_config(f);
-				}
+				} 
 			}
 
 			main_module::cross_handle_map_and_game_settings();
-			remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
+
+			// lights are spawned manually in edit mode
+			if (!imgui::get()->m_light_edit_mode) {
+				remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
+			}
 		}
 
 		m_map_settings.default_nocull_dist = game_settings::get()->default_nocull_distance.get_as<float>();
@@ -235,6 +239,27 @@ namespace components
 					}
 
 					return default_val;
+				};
+
+			// #
+			auto to_bool = [](const toml::value& entry, const bool default_setting = false)
+				{
+					if (entry.is_boolean()) {
+						return static_cast<bool>(entry.as_boolean());
+					}
+
+					if (entry.is_integer()) {
+						return static_cast<bool>(entry.as_integer());
+					}
+
+					try { // this will fail and let the user know whats wrong
+						return static_cast<bool>(entry.as_boolean());
+					}
+					catch (toml::type_error& err) {
+						game::console(); printf("%s\n", err.what());
+					}
+
+					return default_setting;
 				};
 
 			// ####################
@@ -838,7 +863,7 @@ namespace components
 				auto& light_table = config["LIGHTS"];
 
 				// #
-				auto process_light_entry = [to_int, to_uint, to_float](const toml::value& entry)
+				auto process_light_entry = [to_bool, to_int, to_uint, to_float](const toml::value& entry)
 					{
 						if (entry.contains("points") && !entry.at("points").as_array().empty())
 						{
@@ -852,6 +877,13 @@ namespace components
 							std::uint32_t temp_trigger_sound = 0u;
 							float temp_trigger_delay = 0.0f;
 							bool temp_trigger_always = false;
+
+							std::string temp_comment;
+							if (!entry.comments().empty()) 
+							{
+								temp_comment = entry.comments().at(0);
+								temp_comment.erase(0, 2); // rem '# '
+							}
 
 							if (entry.contains("trigger"))
 							{
@@ -898,7 +930,7 @@ namespace components
 									}
 
 									if (trigger.contains("always")) {
-										temp_trigger_always = to_int(trigger.at("always"), 0);
+										temp_trigger_always = to_bool(trigger.at("always"), false);
 									}
 								} else { TOML_ERROR("[LIGHTS] #trigger", trigger, "defined trigger with no choreo / sound hash"); }
 							}
@@ -941,11 +973,6 @@ namespace components
 
 							const auto& parray = entry.at("points").as_array();
 							std::vector<remix_light_settings_s::point_s> temp_points;
-
-							bool temp_loop_smoothing = false;
-							if (entry.contains("loop_smoothing")) {
-								temp_loop_smoothing = to_int(entry.at("loop_smoothing"), 0);
-							}
 
 							// for each point
 							for (auto i = 0u; i < parray.size(); i++)
@@ -1067,12 +1094,17 @@ namespace components
 							{
 								bool temp_run_once = false;
 								if (entry.contains("run_once")) {
-									temp_run_once = to_uint(entry.at("run_once"), 0);
+									temp_run_once = to_bool(entry.at("run_once"), false);
 								}
 
 								bool temp_loop = false;
 								if (entry.contains("loop")) {
-									temp_loop = to_int(entry.at("loop"), 0);
+									temp_loop = to_bool(entry.at("loop"), false);
+								}
+
+								bool temp_loop_smoothing = false;
+								if (entry.contains("loop_smoothing")) {
+									temp_loop_smoothing = to_bool(entry.at("loop_smoothing"), false);
 								}
 
 								m_map_settings.remix_lights.push_back(
@@ -1090,7 +1122,8 @@ namespace components
 										temp_trigger_delay,
 										std::move(temp_kill_choreo_name),
 										temp_kill_sound,
-										temp_kill_delay)
+										temp_kill_delay,
+										std::move(temp_comment))
 								);
 							}
 						}
@@ -1194,8 +1227,11 @@ namespace components
 
 	void map_settings::clear_map_settings()
 	{
-		remix_lights::get()->destroy_and_clear_all_map_lights();
+		remix_lights::get()->destroy_and_clear_all_active_lights();
 		m_map_settings.remix_lights.clear();
+		m_map_settings.using_any_light_sound_hash = false;
+		m_map_settings.using_any_transition_sound_hash = false;
+		m_map_settings.using_any_transition_sound_name = false;
 
 		m_map_settings.area_settings.clear();
 		m_map_settings.remix_transitions.clear();
