@@ -393,6 +393,32 @@ public:
 		return Vector(-x, -y, -z);
 	}
 
+	bool operator==(const Vector& vec) const
+	{
+		if (   std::fabs(x - vec.x) < 1.e-6f
+			&& std::fabs(y - vec.y) < 1.e-6f
+			&& std::fabs(z - vec.z) < 1.e-6f)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	bool operator!=(const Vector& vec) const
+	{
+		if (   std::fabs(x - vec.x) >= 1.e-6f
+			|| std::fabs(y - vec.y) >= 1.e-6f
+			|| std::fabs(z - vec.z) >= 1.e-6f)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	// return std::fabs(a - b) < eps;
+
 	float Length(void) const
 	{
 		return sqrtf(x * x + y * y + z * z);
