@@ -12,6 +12,7 @@ namespace components
 		static imgui* get() { return p_this; }
 
 		static void endscene_stub();
+		static void on_map_load();
 
 		void devgui();
 		bool input_message(UINT message_type, WPARAM wparam, LPARAM lparam);
@@ -30,6 +31,7 @@ namespace components
 		// the following default values will be used on release builds
 		bool m_disable_cullnode = false;
 		bool m_enable_area_forcing = true;
+		bool m_light_edit_mode = false;
 
 	private:
 		void tab_general();

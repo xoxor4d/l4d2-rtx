@@ -2,6 +2,125 @@
 
 namespace common::toml
 {
+	/// Builds a toml string for the provided light definition
+	/// @param def	ref to the light def
+	/// @return		the final string in toml format
+	std::string build_light_string_for_single_light(const map_settings::remix_light_settings_s& def)
+	{
+		std::string toml_str = "        # " + def.comment + "\n";
+
+		toml_str += "        {";
+
+		// choreo trigger
+		if (!def.trigger_choreo_name.empty())
+		{
+			toml_str += " trigger = { choreo = \"" + def.trigger_choreo_name + "\"";
+
+			if (!def.trigger_choreo_actor.empty()) {
+				toml_str += ", actor = \"" + def.trigger_choreo_actor + "\"";
+			}
+
+			if (!def.trigger_choreo_event.empty()) {
+				toml_str += ", event = \"" + def.trigger_choreo_event + "\"";
+			}
+
+			if (!def.trigger_choreo_param1.empty()) {
+				toml_str += ", param1 = \"" + def.trigger_choreo_param1 + "\"";
+			}
+
+			if (!utils::float_equal(def.trigger_delay, 0.0f)) {
+				toml_str += ", delay = " + std::to_string(def.trigger_delay);
+			}
+
+			if (def.trigger_always) {
+				toml_str += ", always = " + (def.trigger_always ? "true"s : "false"s);
+			}
+
+			toml_str += " },"; // end table
+		}
+		// sound trigger
+		else if (def.trigger_sound_hash)
+		{
+			toml_str += " trigger = { sound = " + std::format("0x{:X}", def.trigger_sound_hash);
+
+			if (!utils::float_equal(def.trigger_delay, 0.0f)) {
+				toml_str += ", delay = " + std::to_string(def.trigger_delay);
+			}
+
+			if (def.trigger_always) {
+				toml_str += ", always = " + (def.trigger_always ? "true"s : "false"s);
+			}
+
+			toml_str += " },"; // end table
+		}
+
+		// kill
+		if (const auto has_kill_choreo = !def.kill_choreo_name.empty(); 
+			has_kill_choreo || def.kill_sound_hash != 0u)
+		{
+			if (has_kill_choreo) {
+				toml_str += " kill = { choreo = \"" + def.kill_choreo_name + "\"";
+			} 
+			else { // sound
+				toml_str += " kill = { sound = " + std::format("0x{:X}", def.kill_sound_hash);
+			}
+
+			if (!utils::float_equal(def.kill_delay, 0.0f)) {
+				toml_str += ", delay = " + std::to_string(def.kill_delay);
+			}
+
+			toml_str += " },"; // end table
+		}
+
+		// points
+		toml_str += " points = [\n";
+
+		for (const auto& p : def.points)
+		{
+			toml_str += "            { ";
+
+			toml_str += "position = [" + std::to_string(p.position.x) + ", " + std::to_string(p.position.y) + ", " + std::to_string(p.position.z) + "]";
+			toml_str += ", radiance = [" + std::to_string(p.radiance.x) + ", " + std::to_string(p.radiance.y) + ", " + std::to_string(p.radiance.z) + "]";
+			toml_str += ", scalar = " + std::to_string(p.radiance_scalar);
+			toml_str += ", radius = " + std::to_string(p.radius);
+			toml_str += ", smoothness = " + std::to_string(p.smoothness);
+
+			// only write shaping if deg != 180
+			if (!utils::float_equal(p.degrees, 180.0f))
+			{
+				toml_str += ", direction = [" + std::to_string(p.direction.x) + ", " + std::to_string(p.direction.y) + ", " + std::to_string(p.direction.z) + "]";
+				toml_str += ", degrees = " + std::to_string(p.degrees);
+				toml_str += ", softness = " + std::to_string(p.softness);
+				toml_str += ", exponent = " + std::to_string(p.exponent);
+			}
+
+			// ignore t0
+			if (!utils::float_equal(p.timepoint, 0.0f)) {
+				toml_str += ", timepoint = " + std::to_string(p.timepoint);
+			}
+
+			toml_str += " },\n";
+		}
+
+		// end points
+		toml_str += "        ]";
+
+		if (def.run_once) {
+			toml_str += ", run_once = " + (def.run_once ? "true"s : "false"s);
+		}
+
+		if (def.loop) {
+			toml_str += ", loop = " + (def.loop ? "true"s : "false"s);
+		}
+
+		if (def.loop_smoothing) {
+			toml_str += ", loop_smoothing = " + (def.loop_smoothing ? "true"s : "false"s);
+		}
+
+		toml_str += " },";
+		return toml_str;
+	}
+
 	/// Builds a string containing all map markers for the current map
 	/// @param areas	map_settings -> area overrides
 	/// @return			the final string in toml format

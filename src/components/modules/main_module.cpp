@@ -898,6 +898,7 @@ namespace components
 	 */
 	void on_map_load_hk(const char* map_name)
 	{
+		imgui::on_map_load();
 		remix_vars::on_map_load();
 		remix_lights::on_map_load();
 		map_settings::on_map_load(map_name);
