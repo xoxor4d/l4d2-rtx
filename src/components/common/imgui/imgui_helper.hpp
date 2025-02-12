@@ -4,6 +4,8 @@
 
 namespace common::imgui
 {
+	bool world2screen(const Vector& in, Vector& out);
+
 	void get_and_add_integers_to_set(char* str, std::unordered_set<std::uint32_t>& set, const std::uint32_t& buf_len = 0u, bool clear_buf = false);
 	void get_and_remove_integers_from_set(char* str, std::unordered_set<std::uint32_t>& set, const std::uint32_t& buf_len = 0u, bool clear_buf = false);
 
@@ -89,8 +91,12 @@ namespace ImGui
 
 	float CalcWidgetWidthForChild(float label_width);
 	void CenterText(const char* text, bool disabled = false);
+	bool TextUnformatted_ClippedByColumnTooltip(const char* str);
 
-	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label = false, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
+	void Draw3DCircle(ImDrawList* draw_list, const Vector& world_pos, const Vector& normal, float radius, bool filled, const ImColor& color, const float& thickness, int num_points = 200);
+	void TableHeaderDropshadow(float height = 12.0f, float max_alpha = 0.6f, float neg_y_offset = 0.0f);
+
+	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label = false, float label_size = 80.0f, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
 		const char* x_str = "X", const char* y_str = "Y", const char* z_str = "Z");
 
 	bool Widget_WrappedCollapsingHeader(const char* title_text, float height, const ImVec4& border_color, bool default_open = true, bool pre_spacing = false);

@@ -4,6 +4,34 @@
 
 namespace common::imgui
 {
+	bool world2screen(const Vector& in, Vector& out)
+	{
+		auto& matrix = interfaces::get()->m_engine->world_to_screen_matrix();
+
+		out.x = in.Dot(matrix.m[0]) + matrix.m[0][3];
+		out.y = in.Dot(matrix.m[1]) + matrix.m[1][3];
+		out.z = 0.0f;
+
+		const float perspective_div = in.Dot(matrix.m[3]) + matrix.m[3][3];
+		if (perspective_div < 0.001f)
+		{
+			out.x *= 100000.0f;
+			out.y *= 100000.0f;
+			return false;
+		}
+
+		out.x /= perspective_div;
+		out.y /= perspective_div;
+
+		int screen_w, screen_h;
+		interfaces::get()->m_engine->get_screen_size(screen_w, screen_h);
+
+		out.x = ((float)screen_w / 2.0f) + (out.x * (float)screen_w) / 2.0f;
+		out.y = ((float)screen_h / 2.0f) - (out.y * (float)screen_h) / 2.0f;
+
+		return true;
+	}
+
 	void get_and_add_integers_to_set(char* str, std::unordered_set<std::uint32_t>& set, const std::uint32_t& buf_len, const bool clear_buf)
 	{
 		std::vector<int> temp_vec;
@@ -425,8 +453,68 @@ namespace ImGui
 		}
 	}
 
+	bool TextUnformatted_ClippedByColumnTooltip(const char* str)
+	{
+		TextUnformatted(str);
+		if (CalcTextSize(str).x > GetColumnWidth()) 
+		{
+			SetItemTooltipBlur(str);
+			return true;
+		}
+
+		return false;
+	}
+
+	void Draw3DCircle(ImDrawList* draw_list, const Vector& world_pos, const Vector& normal, const float radius, const bool filled, const ImColor& color, const float& thickness, int num_points)
+	{
+		num_points = std::clamp(num_points, 7, 200);
+		static ImVec2 points[200];
+
+		float step = 6.2831f / (float)num_points;
+		float theta = 0.f;
+
+		// Create a vector that's not parallel to the normal
+		Vector temp = (std::abs(normal.x) > 0.9f) ? Vector(0, 1, 0) : Vector(1, 0, 0);
+
+		// Right vector is perpendicular to the normal and temp vector
+		Vector right = normal.Cross(temp);
+		right.Normalize();
+
+		// Up vector is perpendicular to both normal and right vectors
+		Vector up = right.Cross(normal);
+		up.Normalize();
+
+		for (auto i = 0u; i < (std::uint32_t)num_points; i++, theta += step) 
+		{
+			//Vector world_space = { world_pos.x + radius * cos(theta), world_pos.y, world_pos.z - radius * sin(theta) };
+			Vector world_space = world_pos + (right * cos(theta) + up * sin(theta)) * radius;
+			Vector screen_space;
+			common::imgui::world2screen(world_space, screen_space);
+
+			points[i].x = screen_space.x;
+			points[i].y = screen_space.y;
+		}
+
+		if (filled) {
+			draw_list->AddConvexPolyFilled(points, num_points, color);
+		} else {
+			draw_list->AddPolyline(points, num_points, color, true, thickness);
+		}
+	}
+
+	void TableHeaderDropshadow(const float height, const float max_alpha, const float neg_y_offset)
+	{
+		const float dshadow_height = height;
+		const auto dshadow_pmin = GetCursorScreenPos() - ImVec2(0, neg_y_offset);
+		const auto dshadow_pmax = dshadow_pmin + ImVec2(GetContentRegionAvail().x, dshadow_height);
+		const auto col_top = ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.0f));
+		const auto col_bottom = ColorConvertFloat4ToU32(ImVec4(0, 0, 0, max_alpha));
+		GetWindowDrawList()->AddRectFilledMultiColor(dshadow_pmin, dshadow_pmax, col_top, col_top, col_bottom, col_bottom);
+		Spacing(0, dshadow_height - 3.0f - neg_y_offset);
+	}
+
 	// Labelwidth = 80
-	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label, const float speed, const float min, const float max,
+	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label, const float label_size, const float speed, const float min, const float max,
 		const char* x_str, const char* y_str, const char* z_str)
 	{
 		auto left_label_button = [](const char* label, const ImVec2& button_size, const ImVec4& text_color, const ImVec4& bg_color)
@@ -459,8 +547,8 @@ namespace ImGui
 		// ---------------
 		bool dirty = false;
 
-		ImGui::PushID(ID);
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
+		PushID(ID);
+		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
 
 		const float line_height = GetFrameHeight();
 		const auto  button_size = ImVec2(line_height - 2.0f, line_height);
@@ -470,7 +558,7 @@ namespace ImGui
 		//label_size.x = ImMax(label_size.x, 80.0f);
 
 		const float widget_width_horz = (GetContentRegionAvail().x - 3.0f * button_size.x - 2.0f * widget_spacing -
-			(show_label ? /*label_size.x*/ 80.0f + GetStyle().ItemInnerSpacing.x + GetStyle().FramePadding.y : 0.0f)) * 0.333333f;
+			(show_label ? label_size + GetStyle().ItemInnerSpacing.x + GetStyle().FramePadding.y : 0.0f)) * 0.333333f;
 
 		/*const float widget_width_vert = (GetContentRegionAvail().x - 3.0f * button_size.x - 2.0f * widget_spacing -
 			(show_label ? label_size.x + GetStyle().ItemInnerSpacing.x + GetStyle().FramePadding.y : 0.0f));*/
@@ -628,6 +716,16 @@ namespace ImGui
 			GetWindowDrawList()->AddRect(min + ImVec2(-1, 1), max + ImVec2(1, 1), ColorConvertFloat4ToU32(border_color), 10.0f, ImDrawFlags_RoundCornersBottom);
 			GetWindowDrawList()->AddRectFilled(min, max, ColorConvertFloat4ToU32(background_color), 10.0f, ImDrawFlags_RoundCornersBottom);
 
+			// dropshadow
+			{
+				const auto dshadow_pmin = GetCursorScreenPos() - ImVec2(GetStyle().WindowPadding.x * 0.5f, 4);
+				const auto dshadow_pmax = dshadow_pmin + ImVec2(GetContentRegionAvail().x + GetStyle().WindowPadding.x, 48.0f);
+
+				const auto col_bottom = ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.0f));
+				const auto col_top = ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.4f));
+				GetWindowDrawList()->AddRectFilledMultiColor(dshadow_pmin, dshadow_pmax, col_top, col_top, col_bottom, col_bottom);
+			}
+
 			PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2.0f, 4.0f));
 			PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(6.0f, 8.0f));
 			BeginChild(child_name, ImVec2(max.x - min.x - style.FramePadding.x - 2.0f, 0.0f),
@@ -645,6 +743,4 @@ namespace ImGui
 		SetCursorScreenPos(GetCursorScreenPos() + ImVec2(0, expanded ? 36.0f : 8.0f));
 		return GetItemRectSize().y + 6.0f/*- 28.0f*/;
 	}
-
-
 }
