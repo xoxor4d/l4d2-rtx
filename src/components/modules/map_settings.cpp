@@ -568,6 +568,13 @@ namespace components
 							return;
 						}
 
+						std::string temp_comment;
+						if (!entry.comments().empty())
+						{
+							temp_comment = entry.comments().at(0);
+							temp_comment.erase(0, 2); // rem '# '
+						}
+
 						if (entry.contains("position"))
 						{
 							if (const auto& pos = entry.at("position").as_array();
@@ -626,6 +633,7 @@ namespace components
 										.scale = temp_scale,
 										.areas = std::move(temp_area_set),
 										.when_not_in_leafs = std::move(temp_not_in_leaf_set),
+										.comment = std::move(temp_comment)
 									});
 							}
 							else { TOML_ERROR("[MARKER] #position", entry.at("position"), "expected a 3D vector but got => %d ", entry.at("position").as_array().size()); }

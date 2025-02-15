@@ -129,6 +129,10 @@ namespace common::toml
 		std::string toml_str = map_settings::get_map_settings().mapname + " = [\n"s;
 		for (auto& m : markers)
 		{
+			if (!m.comment.empty()) {
+				toml_str += "\n        # " + m.comment + "\n";
+			}
+			
 			toml_str += "        { " + (m.no_cull ? "nocull = "s : "marker = "s) + std::to_string(m.index);
 
 			if (m.no_cull)

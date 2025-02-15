@@ -63,9 +63,10 @@ namespace components
 			Vector scale = { 1.0f, 1.0f, 1.0f }; // no_cull only
 			std::unordered_set<std::uint32_t> areas; // no_cull only
 			std::unordered_set<std::uint32_t> when_not_in_leafs; // no_cull only
-			void* handle = nullptr;
-			bool is_hidden = false;
-			bool imgui_is_selected = false;
+			std::string comment;
+
+			void* handle = nullptr; // internal use
+			bool is_hidden = false; // internal use
 		};
 
 		struct api_config_var

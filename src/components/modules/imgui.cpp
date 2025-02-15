@@ -88,17 +88,25 @@ namespace components
 	{
 		if (message_type == WM_KEYUP && wparam == VK_F5) 
 		{
-			m_menu_active = !m_menu_active;
-
-			// reset cursor to center when closing the menu to not affect player angles
-			if (interfaces::get()->m_surface->is_cursor_visible() && !m_menu_active) 
+			const auto& io = ImGui::GetIO();
+			if (!io.MouseDown[1])
 			{
-				center_cursor();
-				SendMessage(glob::main_window, WM_ACTIVATEAPP, TRUE, 0);
-				SendMessage(glob::main_window, WM_MOUSEACTIVATE, TRUE, 0);
+				m_menu_active = !m_menu_active;
+
+				// reset cursor to center when closing the menu to not affect player angles
+				if (interfaces::get()->m_surface->is_cursor_visible() && !m_menu_active)
+				{
+					center_cursor();
+					SendMessage(glob::main_window, WM_ACTIVATEAPP, TRUE, 0);
+					SendMessage(glob::main_window, WM_MOUSEACTIVATE, TRUE, 0);
+				}
+
+				interfaces::get()->m_surface->set_cursor_always_visible(m_menu_active);
 			}
 
-			interfaces::get()->m_surface->set_cursor_always_visible(m_menu_active);
+			else {
+				ImGui_ImplWin32_WndProcHandler(glob::main_window, message_type, wparam, lparam);
+			}
 		}
 
 		if (m_menu_active)
@@ -420,7 +428,7 @@ namespace components
 		// MARKER TABLE
 
 		ImGui::TableHeaderDropshadow();
-		if (ImGui::BeginTable("MarkerTable", 9,
+		if (ImGui::BeginTable("MarkerTable", 10,
 			ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
 			ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 380)))
 		{
@@ -430,7 +438,8 @@ namespace components
 			ImGui::TableSetupColumn("NC", ImGuiTableColumnFlags_NoResize, 24.0f);
 			ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 80.0f);
 			ImGui::TableSetupColumn("NLeafs", ImGuiTableColumnFlags_WidthStretch, 80.0f);
-			ImGui::TableSetupColumn("Pos", ImGuiTableColumnFlags_WidthFixed, 200.0f);
+			ImGui::TableSetupColumn("Comment", ImGuiTableColumnFlags_WidthStretch, 200.0f);
+			ImGui::TableSetupColumn("Pos", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 200.0f);
 			ImGui::TableSetupColumn("Rot", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 180.0f);
 			ImGui::TableSetupColumn("Scale", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_DefaultHide, 130.0f);
 			ImGui::TableSetupColumn("##Delete", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoReorder | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoClip, 16.0f);
@@ -464,10 +473,8 @@ namespace components
 				if (!is_selected) // only selectable if not selected
 				{
 					ImGui::Style_InvisibleSelectorPush(); // never show selection - we use tablebg
-					if (ImGui::Selectable(utils::va("%d", i), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap, ImVec2(0, 22 + ImGui::GetStyle().CellPadding.y * 1.0f)))
-					{
+					if (ImGui::Selectable(utils::va("%d", i), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap, ImVec2(0, 22 + ImGui::GetStyle().CellPadding.y * 1.0f))) {
 						selection = &m;
-						m.imgui_is_selected = true;
 					}
 					ImGui::Style_InvisibleSelectorPop();
 
@@ -479,18 +486,15 @@ namespace components
 					ImGui::Text("%d", i); // if selected
 				}
 
-				if (selection && selection != &m) {
-					m.imgui_is_selected = false;
-				}
-				else {
+				if (selection && selection == &m) {
 					selection_matches_any_entry = true; // check that the selection ptr is up to date
 				}
 
-				// -
+				// - marker num
 				ImGui::TableNextColumn();
 				ImGui::Text("%d", m.index);
 
-				// -
+				// - nocull
 				ImGui::TableNextColumn();
 				ImGui::TextUnformatted(m.no_cull ? "x" : "");
 
@@ -515,17 +519,21 @@ namespace components
 				ImGui::TextWrapped_IntegersFromUnorderedSet(m.when_not_in_leafs);
 				ImGui::Spacing();
 
+				// - comment
+				ImGui::TableNextColumn();
+				ImGui::TextWrapped(m.comment.c_str());
+
 				const auto row_max_y_pos = ImGui::GetItemRectMax().y;
 
-				// -
+				// - pos
 				ImGui::TableNextColumn(); ImGui::Spacing();
 				ImGui::Text("%.2f, %.2f, %.2f", m.origin.x, m.origin.y, m.origin.z);
 
-				// -
+				// - rot
 				ImGui::TableNextColumn(); ImGui::Spacing();
 				ImGui::Text("%.2f, %.2f, %.2f", m.rotation.x, m.rotation.y, m.rotation.z);
 
-				// -
+				// - scale
 				ImGui::TableNextColumn(); ImGui::Spacing();
 				ImGui::Text("%.2f, %.2f, %.2f", m.scale.x, m.scale.y, m.scale.z);
 
@@ -688,6 +696,9 @@ namespace components
 					-FLT_MAX, FLT_MAX, "Sx", "Sy", "Sz");
 				ImGui::PopStyleVar();
 			}
+
+			SET_CHILD_WIDGET_WIDTH;
+			ImGui::InputText("Comment", &selection->comment);
 		} // selection
 
 		ImGui::Spacing();
