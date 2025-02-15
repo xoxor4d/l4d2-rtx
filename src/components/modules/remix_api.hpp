@@ -19,12 +19,17 @@ namespace components
 			RED = 0u,
 			GREEN = 1u,
 			TEAL = 2u,
+			WHITE = 3u,
 		};
 
 		void init_debug_lines();
 		void create_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, float scale);
 		void create_line_quad(remixapi_HardcodedVertex* v_out, uint32_t* i_out, const Vector& p1, const Vector& p2, float width);
 		void add_debug_line(const Vector& p1, const Vector& p2, float width, DEBUG_REMIX_LINE_COLOR color);
+
+		void add_debug_circle_based_on_previous(const Vector& center, const Vector& rot, const Vector& scale);
+		void add_debug_circle(const Vector& center, const Vector& normal, float radius, float thickness, const Vector& color, bool drawcall_alpha = true);
+
 		static bool can_add_debug_lines() { return get()->m_debug_line_amount + 1u < M_MAX_DEBUG_LINES; }
 		void debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, float width, const DEBUG_REMIX_LINE_COLOR& color);
 
@@ -60,9 +65,19 @@ namespace components
 		bool m_initialized = false;
 
 		bool m_debug_lines_initialized = false;
-		remixapi_MaterialHandle m_debug_line_materials[3];
+		remixapi_MaterialHandle m_debug_line_materials[4];
 		remixapi_MeshHandle m_debug_line_list[M_MAX_DEBUG_LINES];
 		std::uint32_t m_debug_line_amount = 0u;
 		std::uint64_t m_debug_last_line_hash = 0u;
+
+		struct dbg_circle
+		{
+			remixapi_MeshHandle handle = nullptr;
+			remixapi_Transform transform = {};
+			bool uses_custom_transform = false;
+		};
+		std::vector<dbg_circle> m_debug_circles;
+		std::uint64_t m_debug_circles_last_hash = 0u;
+		std::vector<remixapi_MaterialHandle> m_debug_circle_materials;
 	};
 }

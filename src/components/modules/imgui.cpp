@@ -1443,6 +1443,226 @@ namespace components
 		return false;
 	}
 
+
+
+
+	void mapsettings_ls_general_light_settings(remix_lights::remix_light_s* edit_active_light)
+	{
+		const auto im = imgui::get();
+		const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
+
+		ImGui::Spacing(0, 12);
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+		ImGui::SeparatorText(" General Light Settings ");
+		ImGui::PopFont();
+		ImGui::Spacing(0, 4);
+
+		static float cont_height = 0.0f;
+		cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [edit_active_light]
+			{
+				ImGui::Checkbox("Run Once", &edit_active_light->def.run_once);
+				TT("Enabled: Destroy light after reaching the last point");
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.33f, 0);
+				ImGui::Checkbox("Loop", &edit_active_light->def.loop);
+				TT("Enabled: Looping light that restarts at the first point after reaching the last point.\n"
+					"Disabled: Light will stop and stay active when reaching the last point.\n"
+					"This does not make a difference when in edit mode.");
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.66f, 0);
+				if (ImGui::Checkbox("Loop Smoothing", &edit_active_light->def.loop_smoothing)) {
+					edit_active_light->mover.init(&edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
+				}
+				TT("Enabled: Automatically connect and smooth the start and end point.\n"
+					"[!] requires 'loop' to be true\n"
+					"[!] only position + timepoint is used from the last point");
+
+				ImGui::Spacing(0, 6);
+
+				//ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 80.0f);
+				//ImGui::TextUnformatted(" Comment ");
+				//ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				ImGui::InputText("Comment", &edit_active_light->def.comment);
+
+
+				ImGui::Spacing(0, 12);
+				ImGui::TextUnformatted(" Trigger Settings ");
+
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				ImGui::InputText("Choreo Name##Trigger", &edit_active_light->def.trigger_choreo_name);
+				TT("Trigger light creation when a specified choreography (vcd) starts playing.\n"
+					"The choreo trigger has HIGHER precedence over sound triggering.\n"
+					"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+				// clear sound trigger if choreo is not empty
+				if (!edit_active_light->def.trigger_choreo_name.empty()) {
+					edit_active_light->def.trigger_sound_hash = 0u;
+				}
+
+				if (!edit_active_light->def.trigger_choreo_name.empty())
+				{
+					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					ImGui::InputText("Choreo Actor##Trigger", &edit_active_light->def.trigger_choreo_actor);
+					TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should trigger light creation.\n"
+						"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					ImGui::InputText("Choreo Event##Trigger", &edit_active_light->def.trigger_choreo_event);
+					TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should trigger light creation.\n"
+						"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					ImGui::InputText("Choreo Param1##Trigger", &edit_active_light->def.trigger_choreo_param1);
+					TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should trigger light creation.\n"
+						"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+				}
+
+				// --- sound
+
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				std::string temp_sound_hash_str = edit_active_light->def.trigger_sound_hash ? std::format("0x{:X}", edit_active_light->def.trigger_sound_hash) : "";
+
+				if (ImGui::InputText("Sound Hash##Trigger", &temp_sound_hash_str, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue,
+					[](ImGuiInputTextCallbackData* data)
+					{
+						const auto c = static_cast<char>(data->EventChar);
+						if (std::isxdigit(c) || c == 'x' || c == 'X') {
+							return 0; // allow input
+						}
+						return 1; // block input
+					}))
+				{
+					edit_active_light->def.trigger_sound_hash = static_cast<uint32_t>(std::strtoul(temp_sound_hash_str.c_str(), nullptr, 16));
+					temp_sound_hash_str = std::format("0x{:X}", edit_active_light->def.trigger_sound_hash);
+				}
+				TT("Trigger light creation when a specified sound starts playing.\n"
+					"The sound trigger has LOWER precedence over choreo triggering.\n"
+					"Use cmd 'xo_debug_toggle_sound_print' to get info about playing sounds.");
+
+				if (ImGui::DragFloat("Delay##Trigger", &edit_active_light->def.trigger_delay, 0.05f, 0.0f)) {
+					edit_active_light->def.trigger_delay = edit_active_light->def.trigger_delay < 0.0f ? 0.0f : edit_active_light->def.trigger_delay;
+				} TT("Delay spawn after trigger in seconds.");
+
+				ImGui::Checkbox("Always", &edit_active_light->def.trigger_always);
+				TT("Retriggering the event again will spawn a new light instance everytime.");
+
+				// clear choreo trigger if sound hash is not empty
+				if (edit_active_light->def.trigger_sound_hash)
+				{
+					edit_active_light->def.trigger_choreo_name.clear();
+					edit_active_light->def.trigger_choreo_actor.clear();
+					edit_active_light->def.trigger_choreo_event.clear();
+					edit_active_light->def.trigger_choreo_param1.clear();
+				}
+
+				// --
+				// kill choreo
+
+
+				ImGui::Spacing(0, 12);
+				ImGui::TextUnformatted(" Kill Settings ");
+
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				ImGui::InputText("Choreo Name##Kill", &edit_active_light->def.kill_choreo_name);
+				TT("Trigger light deletion when a specified choreography (vcd) starts playing.\n"
+					"The choreo trigger has HIGHER precedence over sound triggering.\n"
+					"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+				// clear sound trigger if choreo is not empty
+				if (!edit_active_light->def.kill_choreo_name.empty()) {
+					edit_active_light->def.kill_sound_hash = 0u;
+				}
+
+				// kill sound
+
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				std::string temp_kill_sound_hash_str = edit_active_light->def.kill_sound_hash ? std::format("0x{:X}", edit_active_light->def.kill_sound_hash) : "";
+
+				if (ImGui::InputText("Sound Hash##Kill", &temp_kill_sound_hash_str, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue,
+					[](ImGuiInputTextCallbackData* data)
+					{
+						const auto c = static_cast<char>(data->EventChar);
+						if (std::isxdigit(c) || c == 'x' || c == 'X') {
+							return 0; // allow input
+						}
+						return 1; // block input
+					}))
+				{
+					edit_active_light->def.kill_sound_hash = static_cast<uint32_t>(std::strtoul(temp_kill_sound_hash_str.c_str(), nullptr, 16));
+					temp_kill_sound_hash_str = std::format("0x{:X}", edit_active_light->def.kill_sound_hash);
+				}
+				TT("Trigger light creation when a specified sound starts playing.\n"
+					"The sound trigger has LOWER precedence over choreo triggering.\n"
+					"Use cmd 'xo_debug_toggle_sound_print' to get info about playing sounds.");
+
+				if (ImGui::DragFloat("Delay##Kill", &edit_active_light->def.kill_delay, 0.05f, 0.0f)) {
+					edit_active_light->def.kill_delay = edit_active_light->def.kill_delay < 0.0f ? 0.0f : edit_active_light->def.kill_delay;
+				} TT("Delay kill after kill trigger in seconds.");
+
+				// clear choreo kill trigger if sound hash is not empty
+				if (edit_active_light->def.kill_sound_hash) {
+					edit_active_light->def.kill_choreo_name.clear();
+				}
+
+			}, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
+	}
+
+	void mapsettings_ls_playback_visualization_settings(remix_lights::remix_light_s* edit_active_light, const bool is_static_light_with_single_point)
+	{
+		const auto im = imgui::get();
+		const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
+
+		ImGui::Spacing(0, 12);
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+		ImGui::SeparatorText(" Playback / Visualization Settings ");
+		ImGui::PopFont();
+		ImGui::Spacing(0, 4);
+
+		static float cont_height = 0.0f;
+		cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [edit_active_light, is_static_light_with_single_point]
+			{
+				const auto im = imgui::get();
+				ImGui::Checkbox("Live Vis.", &im->m_debugvis_live);
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.33f, 0);
+				ImGui::Checkbox("Vis. Light Radius", &im->m_debugvis_radius);
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.66f, 0);
+				ImGui::Checkbox("Vis. Light Shaping", &im->m_debugvis_shaping);
+
+				ImGui::SetNextItemWidth(100.0f);
+				if (ImGui::InputInt("##Shaping Cone Steps", &im->m_debugvis_cone_steps, 1, 2, ImGuiInputTextFlags_CharsDecimal)) {
+					im->m_debugvis_cone_steps = std::clamp(im->m_debugvis_cone_steps, 0, 100);
+				} TT("Vis. Shaping Cone Steps");
+
+				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.33f, 0);
+				ImGui::SetNextItemWidth(100.0f);
+				ImGui::DragFloat("Shaping Cone Height", &im->m_debugvis_cone_height);
+
+				ImGui::Spacing(0, 6);
+
+				ImGui::BeginDisabled(is_static_light_with_single_point);
+				if (ImGui::Button("Restart Light Loop", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
+					edit_active_light->mover.restart();
+				}
+				ImGui::EndDisabled();
+
+				ImGui::SameLine();
+				if (ImGui::Button("Evenly distribute all timepoints", ImVec2(ImGui::GetContentRegionAvail().x * 0.98f, 0)))
+				{
+					// clear timepoints for all but the very first & very last points:
+					for (size_t i = 1u; i < edit_active_light->def.points.size() - 1u; i++) {
+						edit_active_light->def.points[i].timepoint = 0.0f;
+					}
+
+					edit_active_light->mover.init(&edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
+				} TT("This will clear and recalculate the timepoints of all but the last point.");
+
+			}, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
+	}
+
+
 	void cont_mapsettings_light_spawning()
 	{
 		const auto im = imgui::get();
@@ -1513,7 +1733,6 @@ namespace components
 
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("RemixLights");
-		ImGui::Spacing(0, 4);
 
 		static map_settings::remix_light_settings_s* ms_light_selection = nullptr;
 		static map_settings::remix_light_settings_s* ms_light_selection_pending = nullptr;
@@ -1541,7 +1760,10 @@ namespace components
 		ImGui::TableHeadersRow();
 		ImGui::EndTable();*/
 
+		ImGui::Spacing(0, 16);
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
 		ImGui::SeparatorText(" Light Selection ");
+		ImGui::PopFont();
 
 		ImGui::TableHeaderDropshadow();
 
@@ -1833,12 +2055,6 @@ namespace components
 		{
 			const auto is_static_light_with_single_point = !edit_active_light->mover.is_initialized();
 			// ---
-
-			ImGui::Spacing(0, 12);
-			
-			static bool debug_vis_live = false;
-			//ImGui::Checkbox("Live Debug Visualizations", &debug_vis_live); // now after per point settings
-
 			// holds mover points OR def point if light is static
 			static map_settings::remix_light_settings_s::point_s* active_point_selection = nullptr;
 
@@ -1865,7 +2081,10 @@ namespace components
 			static float point_table_height = 0.0f;
 			const auto point_table_clamped = point_table_height > 380.0f;
 
+			ImGui::Spacing(0, 16);
+			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
 			ImGui::SeparatorText(" Light Points ");
+			ImGui::PopFont();
 
 			ImGui::TableHeaderDropshadow();
 			
@@ -2054,8 +2273,6 @@ namespace components
 
 			if (active_point_selection)
 			{
-				// debug_vis_live
-
 				std::ptrdiff_t pt_index = 0;
 				if (!is_static_light_with_single_point)
 				{
@@ -2065,15 +2282,14 @@ namespace components
 
 				ImGui::Widget_PrettyDragVec3("Position", &active_point_selection->position.x, true, 120.0f, 0.25f);
 
-				Vector normalized_radiance = debug_vis_live ? &edit_active_light->info.radiance.x : active_point_selection->radiance; 
+				Vector normalized_radiance = im->m_debugvis_live ? &edit_active_light->info.radiance.x : active_point_selection->radiance; 
 				normalized_radiance.Normalize();
 
-				const auto debug_color_bg = ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+				//const auto debug_color_bg = ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
 				const auto debug_color = ImGui::ColorConvertFloat4ToU32(ImVec4(normalized_radiance.x, normalized_radiance.y, normalized_radiance.z, 1.0f));
 
-
 				// draw position as circle
-				Vector screen_pos; common::imgui::world2screen(debug_vis_live ? &edit_active_light->ext.position.x : active_point_selection->position, screen_pos);
+				Vector screen_pos; common::imgui::world2screen(im->m_debugvis_live ? &edit_active_light->ext.position.x : active_point_selection->position, screen_pos);
 				ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(screen_pos.x, screen_pos.y), 8.0f, debug_color);
 
 
@@ -2091,9 +2307,23 @@ namespace components
 					active_point_selection->radius = active_point_selection->radius < 0.0f ? 0.0f : active_point_selection->radius;
 				} TT("Radius of light (defaults to 1.0)");
 
+				//ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), &edit_active_light->ext.position.x, Vector(0.0f, 0.0f, 1.0f), active_point_selection->radius, false, debug_color, 2.0f);
+				//ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), &edit_active_light->ext.position.x, Vector(0.0f, 1.0f, 0.0f), active_point_selection->radius, false, debug_color, 2.0f);
+				//ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), &edit_active_light->ext.position.x, Vector(1.0f, 0.0f, 0.0f), active_point_selection->radius, false, debug_color, 2.0f);
+
+				if (im->m_debugvis_radius)
+				{
+					const Vector circle_pos = im->m_debugvis_live ? &edit_active_light->ext.position.x : active_point_selection->position;
+					const float radius = im->m_debugvis_live ? edit_active_light->ext.radius : active_point_selection->radius;
+
+					const auto remixapi = remix_api::get();
+					remixapi->add_debug_circle(circle_pos, Vector(0.0f, 0.0f, 1.0f), radius - 0.02f, radius * 0.1f, normalized_radiance);
+					remixapi->add_debug_circle_based_on_previous(circle_pos, Vector(0, 90, 0), Vector(1.0f, 1.0f, 1.0f));
+					remixapi->add_debug_circle_based_on_previous(circle_pos, Vector(90, 0, 90), Vector(1.0f, 1.0f, 1.0f));
+				}
 
 				// cant edit time of first point
-				ImGui::BeginDisabled(!pt_index); 
+				ImGui::BeginDisabled(!pt_index);
 				{
 					// get min and max timepoint for current point
 					float min_timepoint = 0.0f, max_timepoint = FLT_MAX;
@@ -2122,6 +2352,9 @@ namespace components
 					active_point_selection->smoothness = active_point_selection->smoothness < 0.0f ? 0.0f : active_point_selection->smoothness;
 				} TT("Curve smoothness (defaults to 0.5 - values above 1 might produce odd results)");
 
+				ImGui::Spacing(0, 8);
+
+				bool light_shaping_state = active_point_selection->use_shaping;
 				if (ImGui::Checkbox("Use Light Shaping", &active_point_selection->use_shaping))
 				{
 					if (!active_point_selection->use_shaping)
@@ -2131,27 +2364,18 @@ namespace components
 						active_point_selection->direction.z = 1.0f;
 						active_point_selection->degrees = 180.0f;
 					}
+
+					// was just toggled on -> set default val
+					if (active_point_selection->use_shaping && light_shaping_state != active_point_selection->use_shaping) {
+						active_point_selection->degrees = 90.0f;
+					}
 				}
 
 				if (active_point_selection->use_shaping)
 				{
-					ImGui::Widget_PrettyDragVec3("Direction", &active_point_selection->direction.x, true, 120.0f, 0.1f);
-
-					const float cone_height = 60.0f;
-					
-
-					// draw direction
-					Vector line_2nd_pt; //pt->position + pt->direction.Scale(cone_height)
-					if (common::imgui::world2screen(
-						debug_vis_live	? Vector(&edit_active_light->ext.position.x) + Vector(&edit_active_light->ext.shaping_value.direction.x).Scale(cone_height)
-										: active_point_selection->position + active_point_selection->direction.Scale(cone_height)
-						, line_2nd_pt)) 
-					{
-						ImGui::GetBackgroundDrawList()->AddLine(ImVec2(screen_pos.x, screen_pos.y), ImVec2(line_2nd_pt.x, line_2nd_pt.y), debug_color_bg, 4.0f);
-						ImGui::GetBackgroundDrawList()->AddLine(ImVec2(screen_pos.x, screen_pos.y), ImVec2(line_2nd_pt.x, line_2nd_pt.y), debug_color);
+					if (ImGui::Widget_PrettyDragVec3("Direction", &active_point_selection->direction.x, true, 120.0f, 0.1f, -1.0f, 1.0f)) {
+						active_point_selection->direction.Normalize();
 					}
-
-					// ---
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 					if (ImGui::DragFloat("Degrees", &active_point_selection->degrees, 0.25f, 0.0f, 180.0f, "%.1f")) {
@@ -2168,72 +2392,50 @@ namespace components
 						active_point_selection->exponent = std::clamp(active_point_selection->exponent, 0.0f, 1.0f);
 					} TT("Cone Focus Exponent");
 
-					// draw cone
-					for (int i = 1; i <= 1; ++i)
+					if (im->m_debugvis_shaping)
 					{
-						const float step_fraction = (float)i / 1.0f;  // 1/3, 2/3, and 3/3
-						const float radius = (step_fraction * cone_height) * DEG2RAD(debug_vis_live ? edit_active_light->ext.shaping_value.coneAngleDegrees : active_point_selection->degrees);
+						const auto remixapi = remix_api::get();
+						const float cone_deg = im->m_debugvis_live ? edit_active_light->ext.shaping_value.coneAngleDegrees : active_point_selection->degrees;
 
-						Vector circle_pos;
-						if (debug_vis_live) {
-							circle_pos = Vector(&edit_active_light->ext.position.x) + Vector(&edit_active_light->ext.shaping_value.direction.x) * (step_fraction * cone_height);
-						} else {
-							circle_pos = active_point_selection->position + active_point_selection->direction * (step_fraction * cone_height);
+						if (cone_deg <= 90.0f)
+						{
+							const float cone_rad_tan = std::tan(DEG2RAD(cone_deg));
+							const float scaled_height = im->m_debugvis_cone_height / (1.0f + cone_rad_tan);
+
+							// draw cone
+							for (auto i = 1; i <= im->m_debugvis_cone_steps; ++i)
+							{
+								const float step_fraction = (float)i / (float)im->m_debugvis_cone_steps;
+
+								float radius = (step_fraction * scaled_height) * cone_rad_tan;
+
+								Vector circle_pos =
+									im->m_debugvis_live ? Vector(&edit_active_light->ext.position.x) + Vector(&edit_active_light->ext.shaping_value.direction.x) * (step_fraction * scaled_height)
+									: active_point_selection->position + active_point_selection->direction * (step_fraction * scaled_height);
+
+								remixapi->add_debug_circle(
+									circle_pos,
+									im->m_debugvis_live ? &edit_active_light->ext.shaping_value.direction.x : active_point_selection->direction,
+									radius, radius * 0.025f, normalized_radiance, false);
+							}
 						}
 
-						Vector circle_dir;
-						if (debug_vis_live) {
-							circle_dir = Vector(&edit_active_light->ext.shaping_value.direction.x);
-						}
-						else {
-							circle_dir = active_point_selection->direction;
-						}
-
-						ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), circle_pos, circle_dir, radius, false, debug_color_bg, 4.0f);
-						ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), circle_pos, circle_dir, radius, false, debug_color, 1.0f);
+						// draw dir line
+						remixapi->add_debug_line(
+							im->m_debugvis_live ?	&edit_active_light->ext.position.x
+														: active_point_selection->position,
+							im->m_debugvis_live	? Vector(&edit_active_light->ext.position.x) + Vector(&edit_active_light->ext.shaping_value.direction.x).Scale(im->m_debugvis_cone_height)
+													: active_point_selection->position + active_point_selection->direction.Scale(im->m_debugvis_cone_height),
+							1.0f, remix_api::WHITE);
 					}
 				} // end use shaping
 
 				ImGui::Spacing(0, 8);
-				ImGui::SeparatorText(" General Light Settings ");
-				ImGui::Spacing(0, 4);
-
-				ImGui::TextUnformatted(" Comment   ");
-
-				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-				ImGui::InputText("##Comment", &edit_active_light->def.comment);
-
-				ImGui::Spacing(0, 4);
-
-				ImGui::Checkbox("Run Once", &edit_active_light->def.run_once);
-				TT("Enabled: Destroy light after reaching the last point");
-
-				ImGui::SameLine(0, 28);
-				ImGui::Checkbox("Loop", &edit_active_light->def.loop);
-				TT("Enabled: Looping light that restarts at the first point after reaching the last point.\n"
-					"Disabled: Light will stop and stay active when reaching the last point.\n"
-					"This does not make a difference when in edit mode.");
-
-				ImGui::SameLine(0, 28);
-				if (ImGui::Checkbox("Loop Smoothing", &edit_active_light->def.loop_smoothing)) {
-					edit_active_light->mover.init(&edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
-				}
-				TT("Enabled: Automatically connect and smooth the start and end point.\n" 
-					"[!] requires 'loop' to be true\n"
-					"[!] only position + timepoint is used from the last point");
+				mapsettings_ls_general_light_settings(edit_active_light);
 
 				ImGui::Spacing(0, 8);
-				ImGui::SeparatorText(" Playback Settings ");
+				mapsettings_ls_playback_visualization_settings(edit_active_light, is_static_light_with_single_point);
 				ImGui::Spacing(0, 4);
-
-				ImGui::BeginDisabled(is_static_light_with_single_point);
-				if (ImGui::Button("Restart Light Loop")) {
-					edit_active_light->mover.restart();
-				}
-				ImGui::EndDisabled();
-
-				ImGui::SameLine();
-				ImGui::Checkbox("Live Debug Visualizations", &debug_vis_live);
 
 				// update light def for static light
 				if (is_static_light_with_single_point) {

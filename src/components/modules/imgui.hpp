@@ -33,6 +33,12 @@ namespace components
 		bool m_enable_area_forcing = true;
 		bool m_light_edit_mode = false;
 
+		bool m_debugvis_live = false;
+		bool m_debugvis_radius = true;
+		bool m_debugvis_shaping = true;
+		float m_debugvis_cone_height = 60.0f;
+		int m_debugvis_cone_steps = 3u;
+
 	private:
 		void tab_general();
 		void tab_map_settings();
