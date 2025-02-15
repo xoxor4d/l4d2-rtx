@@ -2,6 +2,11 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		extern bool model_info_vis;
+	}
+
 	namespace tbl_hk::model_renderer
 	{
 		inline utils::vtable table;
@@ -363,6 +368,7 @@ namespace components
 		static inline model_render* p_this = nullptr;
 		static model_render* get() { return p_this; }
 
+		static void xo_debug_toggle_model_info_fn();
 		static void draw_nocull_markers();
 
 		static void init_texture_addons(bool release = false);

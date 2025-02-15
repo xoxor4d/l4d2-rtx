@@ -3,6 +3,11 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		bool debug_node_vis = false;
+	}
+
 	int g_current_leaf = -1;
 	int g_current_area = -1;
 
@@ -272,6 +277,33 @@ namespace components
 		force_node_vis(parent_node_index, hide);
 	}
 
+	bool is_aabb_within_distance(const VectorAligned& center, const VectorAligned& half_diagonal, const Vector& player_origin, const float radius)
+	{
+		const Vector min_bounds = center - half_diagonal;
+		const Vector max_bounds = center + half_diagonal;
+
+		auto sq_dist = 0.0f;
+		for (auto i = 0; i < 3; ++i)
+		{
+			if (player_origin[i] < min_bounds[i])
+			{
+				const auto d = min_bounds[i] - player_origin[i];
+				sq_dist += d * d;
+			}
+			else if (player_origin[i] > max_bounds[i])
+			{
+				const auto d = player_origin[i] - max_bounds[i];
+				sq_dist += d * d;
+			}
+
+			// return false if distance exceeds radius sqr
+			if (sq_dist > radius * radius) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	// Stub before calling 'R_CullNode' in 'R_RecursiveWorldNode'
 	// Return 0 to NOT cull the node
@@ -282,7 +314,7 @@ namespace components
 		}
 
 		// default culling mode or no culling if cmd was used
-		map_settings::AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_MODE_DEFAULT;
+		map_settings::AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_INFO_DEFAULT;
 		int node_index = 0;
 
 		/*if (imgui::get()->m_disable_cullnode) {
@@ -340,19 +372,60 @@ namespace components
 			return 0;
 		}*/
 
-		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
-		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) { // #OFFS
-			return 0;
+		// "global" nocull distance if area has no overrides
+		float nocull_dist = map_settings::get_map_settings().default_nocull_dist;
+		const bool using_distance_based_mode = cmode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START && cmode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END;
+
+		if (using_distance_based_mode && g_player_current_area_override)
+		{
+			// nocull distance if area has override
+			nocull_dist = g_player_current_area_override->nocull_distance;
+
+			// if any leaf tweak has a nocull override
+			if (g_player_current_area_override->nocull_distance_overrides_in_leaf_twk)
+			{
+				for (const auto& lt : g_player_current_area_override->leaf_tweaks)
+				{
+					// check if node the player is currently in has any overrides
+					if (lt.in_leafs.contains(g_current_leaf))
+					{
+						nocull_dist = lt.nocull_dist;
+						break;
+					}
+				}
+			}
 		}
 
-		// ^ R_CullNode would cull the node if we reach this point
+		// if no area override or if cull mode is distance based
+		if (   !g_player_current_area_override 
+			|| using_distance_based_mode)
+		{
+			if (is_aabb_within_distance(node->m_vecCenter, node->m_vecHalfDiagonal, *game::get_current_view_origin(), nocull_dist)) {
+				return 0;
+			}
+
+			// if forcing current area + distance
+			if (cmode == map_settings::AREA_CULL_MODE_FORCE_AREA_DISTANCE)
+			{
+				if ((int)node->area == g_current_area) {
+					return 0;
+				}
+			}
+		}
+
 		// MODE: force all leafs/nodes in CURRENT area
-		if (!g_player_current_area_override || cmode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		else if (cmode == map_settings::AREA_CULL_MODE_NO_FRUSTUM_IN_CURRENT_AREA
+			  || cmode == map_settings::AREA_CULL_MODE_FORCE_AREA)
 		{
 			// force draw this node/leaf if it's within the forced area
 			if ((int)node->area == g_current_area) {
 				return 0;
 			}
+		}
+
+		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
+		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) { // #OFFS
+			return 0;
 		}
 
 		// check if we have area overrides
@@ -379,6 +452,11 @@ namespace components
 						// if so, check if the current node to be culled is part of a forced area
 						// note: areas are not vis forced - this only disables frustum culling and relies on PVS
 						if (lt.areas.contains((std::uint32_t)node->area)) {
+							return 0;
+						}
+
+						// force individual leafs
+						if (lt.leafs.contains(node_index)) {
 							return 0;
 						}
 					}
@@ -438,7 +516,7 @@ namespace components
 	void main_module::hud_draw_area_info()
 	{
 		// Draw current node/leaf as HUD
-		if (is_node_debug_enabled() && d3d_font)
+		if (cmd::debug_node_vis && d3d_font)
 		{
 			RECT rect;
 			if (g_current_area != -1)
@@ -483,7 +561,7 @@ namespace components
 		// visualize current leaf + forced leafs (map_settings)
 		if (g_current_leaf < world->numleafs)
 		{
-			if (main_module::is_node_debug_enabled())
+			if (cmd::debug_node_vis)
 			{
 				const auto curr_leaf = &world->leafs[g_current_leaf];
 				remix_api::get()->debug_draw_box(curr_leaf->m_vecCenter, curr_leaf->m_vecHalfDiagonal, 2.0f, remix_api::DEBUG_REMIX_LINE_COLOR::GREEN); // current leaf
@@ -605,8 +683,30 @@ namespace components
 			g_player_current_area_override = nullptr;
 		}
 
+		const map_settings::AREA_CULL_MODE cmode = !g_player_current_area_override ? map_settings::AREA_CULL_INFO_DEFAULT : g_player_current_area_override->cull_mode;
+		const float nocull_dist = !g_player_current_area_override ? map_settings.default_nocull_dist : g_player_current_area_override->nocull_distance;
+
+		const bool check_area = cmode == map_settings::AREA_CULL_MODE_FORCE_AREA_DISTANCE;
+
+		// MODE: force all leafs/nodes within a certain dist to the player (+ only in current area modifier)
+		if ((  check_area
+			|| cmode == map_settings::AREA_CULL_MODE_DISTANCE)
+			&& nocull_dist > 0.0f)
+		{
+			for (auto i = 0; i < world->numleafs; i++)
+			{
+				if (auto& l = world->leafs[i];
+					!check_area || (int)l.area == g_current_area) // ignore area check if distance mode
+				{
+					if (is_aabb_within_distance(l.m_vecCenter, l.m_vecHalfDiagonal, *game::get_current_view_origin(), nocull_dist)) {
+						force_leaf_vis(i);
+					}
+				}
+			}
+		}
+
 		// MODE: force all leafs/nodes in current area
-		if (!g_player_current_area_override || g_player_current_area_override->cull_mode == map_settings::AREA_CULL_MODE_FRUSTUM_FORCE_AREA)
+		else if (cmode == map_settings::AREA_CULL_MODE_FORCE_AREA)
 		{
 			for (auto i = 0; i < world->numleafs; i++)
 			{
@@ -618,9 +718,9 @@ namespace components
 			}
 		}
 
-		// leaf tweaks: this forces all leafs of an area that is forced per leaf
 		if (g_player_current_area_override)
 		{
+			// leaf tweaks: this forces all leafs of an area that is forced per leaf
 			if (!g_player_current_area_override->leaf_tweaks.empty())
 			{
 				for (const auto& lt : g_player_current_area_override->leaf_tweaks)
@@ -798,6 +898,7 @@ namespace components
 	 */
 	void on_map_load_hk(const char* map_name)
 	{
+		imgui::on_map_load();
 		remix_vars::on_map_load();
 		remix_lights::on_map_load();
 		map_settings::on_map_load(map_name);
@@ -1055,9 +1156,9 @@ namespace components
 	// #
 
 	ConCommand xo_debug_toggle_node_vis_cmd {};
-	void main_module::toggle_node_vis_info()
+	void main_module::xo_debug_toggle_node_vis_fn()
 	{
-		set_node_vis_info(!get()->m_cmd_debug_node_vis);
+		cmd::debug_node_vis = !cmd::debug_node_vis;
 	}
 
 	main_module::main_module()
@@ -1178,7 +1279,7 @@ namespace components
 		// #
 		// commands
 
-		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", toggle_node_vis_info, "Toggle bsp node/leaf debug visualization using the remix api");
+		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
 	}
 
 	main_module::~main_module()

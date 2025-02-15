@@ -32,6 +32,42 @@ namespace components
 			}
 		}
 
+		// --
+
+		//const auto& im = imgui::get();
+		if (!api->m_debug_circles.empty())
+		{
+			for (const auto circle : api->m_debug_circles)
+			{
+				if (circle.handle)
+				{
+					remixapi_Transform t0 = {};
+
+					if (!circle.uses_custom_transform)
+					{
+						t0.matrix[0][0] = 1.0f;
+						t0.matrix[1][1] = 1.0f;
+						t0.matrix[2][2] = 1.0f;
+					}
+
+					const remixapi_InstanceInfo inst =
+					{
+						.sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO,
+						.pNext = nullptr,
+						.categoryFlags = REMIXAPI_INSTANCE_CATEGORY_BIT_IGNORE_LIGHTS,
+						//.categoryFlags = 0,
+						.mesh = circle.handle,
+						.transform = circle.uses_custom_transform ? circle.transform : t0,
+						.doubleSided = true,
+					};
+
+					api->m_bridge.DrawInstance(&inst);
+				}
+			}
+		}
+
+		// --
+
 		for (const auto& [n, fl] : api->m_flashlights)
 		{
 			if (fl.handle) {
@@ -43,7 +79,7 @@ namespace components
 	// called on device->EndScene
 	void remix_api::end_scene_callback()
 	{
-		imgui::endscene_stub(); 
+		imgui::endscene_stub();
 
 #if 0
 		if (!model_render::get()->m_drew_hud)
@@ -111,7 +147,6 @@ namespace components
 	// called on device->Present
 	void remix_api::on_present_callback()
 	{
-		main_module::iterate_entities();
 		main_module::hud_draw_area_info();
 	}
 
@@ -155,6 +190,10 @@ namespace components
 			info.hash = utils::string_hash64("linemat3");
 			info.emissiveColorConstant = { 0.0f, 1.0f, 1.0f };
 			m_bridge.CreateMaterial(&info, &m_debug_line_materials[2]);
+
+			info.hash = utils::string_hash64("linemat4");
+			info.emissiveColorConstant = { 1.0f, 1.0f, 1.0f };
+			m_bridge.CreateMaterial(&info, &m_debug_line_materials[3]);
 
 			m_debug_lines_initialized = true;
 		}
@@ -266,6 +305,221 @@ namespace components
 		}
 	}
 
+	/// This re-uses the previously added circle and re-draws it using a different transform (instanced drawing)
+	/// @param center	center point of circle
+	/// @param rot		rotation in degrees
+	/// @param scale	scale of circle
+	void remix_api::add_debug_circle_based_on_previous(const Vector& center, const Vector& rot, const Vector& scale)
+	{
+		if (m_debug_circles.empty()) {
+			return;
+		}
+
+		m_debug_circles.push_back({});
+		auto& circle = m_debug_circles.back();
+		circle.handle = m_debug_circles[m_debug_circles.size() - 2u].handle; // previous handle
+
+		D3DXMATRIX scale_matrix, rotation_x, rotation_y, rotation_z, mat_rotation, mat_translation, world, transposed;
+
+		D3DXMatrixScaling(&scale_matrix, scale.x, scale.y, scale.z);
+		D3DXMatrixRotationX(&rotation_x, DEG2RAD(rot.x)); // pitch
+		D3DXMatrixRotationY(&rotation_y, DEG2RAD(rot.y)); // yaw
+		D3DXMatrixRotationZ(&rotation_z, DEG2RAD(rot.z)); // roll
+		mat_rotation = rotation_z * rotation_y * rotation_x; // combine rotations (order: Z * Y * X)
+
+		D3DXMatrixTranslation(&mat_translation, center.x, center.y, center.z);
+		world = scale_matrix * mat_rotation * mat_translation;
+
+		D3DXMatrixTranspose(&transposed, &world);
+
+		circle.transform.matrix[0][0] = transposed.m[0][0];
+		circle.transform.matrix[0][1] = transposed.m[0][1];
+		circle.transform.matrix[0][2] = transposed.m[0][2];
+		circle.transform.matrix[0][3] = transposed.m[0][3];
+
+		circle.transform.matrix[1][0] = transposed.m[1][0];
+		circle.transform.matrix[1][1] = transposed.m[1][1];
+		circle.transform.matrix[1][2] = transposed.m[1][2];
+		circle.transform.matrix[1][3] = transposed.m[1][3];
+
+		circle.transform.matrix[2][0] = transposed.m[2][0];
+		circle.transform.matrix[2][1] = transposed.m[2][1];
+		circle.transform.matrix[2][2] = transposed.m[2][2];
+		circle.transform.matrix[2][3] = transposed.m[2][3];
+
+		circle.uses_custom_transform = true;
+	}
+
+	void remix_api::add_debug_circle(const Vector& center, const Vector& normal, const float radius, const float thickness, const Vector& color, bool drawcall_alpha)
+	{
+		// material
+		{
+			/*	// BlendType 
+				kAlpha = 0,
+				kAlphaEmissive = 1,
+				kReverseAlphaEmissive = 2,
+				kColor = 3,
+				kColorEmissive = 4,
+				kReverseColorEmissive = 5,
+				kEmissive = 6,
+				kMultiplicative = 7,
+				kDoubleMultiplicative = 8,
+				kReverseAlpha = 9,
+				kReverseColor = 10,
+			
+				kMinValue = 0, // kAlpha
+				kMaxValue = 10, // kReverseColor */
+
+			remixapi_MaterialInfoOpaqueEXT ext = {};
+			{
+				//ext.pNext = &blend;
+				ext.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO_OPAQUE_EXT;
+				ext.useDrawCallAlphaState = drawcall_alpha;
+				ext.blendType_hasvalue = true;
+				ext.blendType_value = 4;
+				ext.opacityConstant = 1.0f;
+				ext.albedoConstant = color.ToRemixFloat3D();
+				ext.roughnessConstant = 1.0f;
+				ext.metallicConstant = 1.0f;
+				ext.roughnessTexture = L"";
+				ext.metallicTexture = L"";
+				ext.heightTexture = L"";
+			}
+
+			remixapi_MaterialInfo mat_info
+			{
+				.sType = REMIXAPI_STRUCT_TYPE_MATERIAL_INFO,
+				.pNext = &ext,
+				.hash = utils::string_hash64("circlemat" + std::to_string(m_debug_circle_materials.size())),
+				.albedoTexture = L"",
+				.normalTexture = L"",
+				.tangentTexture = L"",
+				.emissiveTexture = L"",
+				.emissiveIntensity = 1.0f,
+				.emissiveColorConstant = color.ToRemixFloat3D(),
+			};
+
+			m_debug_circle_materials.push_back(nullptr); 
+			m_bridge.CreateMaterial(&mat_info, &m_debug_circle_materials.back());
+		}
+
+		// mesh
+		const uint32_t segments = 48u;
+
+		std::vector<remixapi_HardcodedVertex> vertices;
+		std::vector<uint32_t> indices;
+
+		Vector up = fabs(normal.y) < 0.99f ? Vector(0, 1, 0) : Vector(1, 0, 0);
+		Vector tangent = up.Cross(normal); tangent.Normalize();
+		Vector bitangent = normal.Cross(tangent); bitangent.Normalize();
+
+		// flat circle
+		//for (auto i = 0u; i < segments; ++i)
+		//{
+		//	float angle = (2.0f * M_PI * (float)i) / segments;
+		//	float next_angle = (2.0f * M_PI * (float)(i + 1)) / segments;
+
+		//	Vector offset_outer = tangent * cosf(angle) * radius + bitangent * sinf(angle) * radius;
+		//	Vector offset_inner = tangent * cosf(angle) * (radius - thickness) + bitangent * sinf(angle) * (radius - thickness);
+
+		//	Vector next_offset_outer = tangent * cosf(next_angle) * radius + bitangent * sinf(next_angle) * radius;
+		//	Vector next_offset_inner = tangent * cosf(next_angle) * (radius - thickness) + bitangent * sinf(next_angle) * (radius - thickness);
+
+		//	Vector outer1 = /*center +*/ offset_outer;
+		//	Vector inner1 = /*center +*/ offset_inner;
+		//	Vector outer2 = /*center +*/ next_offset_outer;
+		//	Vector inner2 = /*center +*/ next_offset_inner;
+
+		//	uint32_t idx = vertices.size();
+		//	vertices.push_back({ { outer1.x, outer1.y, outer1.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF });
+		//	vertices.push_back({ { inner1.x, inner1.y, inner1.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF });
+		//	vertices.push_back({ { outer2.x, outer2.y, outer2.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF });
+		//	vertices.push_back({ { inner2.x, inner2.y, inner2.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF });
+		//	indices.insert(indices.end(), { idx, idx + 1, idx + 2, idx + 1, idx + 3, idx + 2 });
+		//}
+
+		// torus
+		Vector normal_offset = normal; normal_offset.Normalize();
+		normal_offset *= 0.05f;  // torus thickness
+
+		for (size_t i = 0u; i < segments; ++i)
+		{
+			float angle = (2.0f * M_PI * i) / segments;
+			float next_angle = (2.0f * M_PI * (i + 1)) / segments;
+
+			// uuter and inner ring calculations
+			Vector offset_outer = tangent * cosf(angle) * radius + bitangent * sinf(angle) * radius;
+			Vector offset_inner = tangent * cosf(angle) * (radius - thickness) + bitangent * sinf(angle) * (radius - thickness);
+			Vector next_offset_outer = tangent * cosf(next_angle) * radius + bitangent * sinf(next_angle) * radius;
+			Vector next_offset_inner = tangent * cosf(next_angle) * (radius - thickness) + bitangent * sinf(next_angle) * (radius - thickness);
+
+			// top and bottom vertices for outer and inner ring
+			Vector outer1_top = offset_outer + normal_offset;
+			Vector outer1_bottom = offset_outer - normal_offset;
+			Vector inner1_top = offset_inner + normal_offset;
+			Vector inner1_bottom = offset_inner - normal_offset;
+
+			Vector outer2_top = next_offset_outer + normal_offset;
+			Vector outer2_bottom = next_offset_outer - normal_offset;
+			Vector inner2_top = next_offset_inner + normal_offset;
+			Vector inner2_bottom =  next_offset_inner - normal_offset;
+
+			uint32_t idx = vertices.size();
+			vertices.push_back({ { outer1_top.x, outer1_top.y, outer1_top.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF });  // 0
+			vertices.push_back({ { outer1_bottom.x, outer1_bottom.y, outer1_bottom.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 1
+			vertices.push_back({ { inner1_top.x, inner1_top.y, inner1_top.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 2
+			vertices.push_back({ { inner1_bottom.x, inner1_bottom.y, inner1_bottom.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 3
+
+			vertices.push_back({ { outer2_top.x, outer2_top.y, outer2_top.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 4
+			vertices.push_back({ { outer2_bottom.x, outer2_bottom.y, outer2_bottom.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 5
+			vertices.push_back({ { inner2_top.x, inner2_top.y, inner2_top.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 6
+			vertices.push_back({ { inner2_bottom.x, inner2_bottom.y, inner2_bottom.z }, { normal.x, normal.y, normal.z }, {}, 0xFFFFFFFF }); // 7
+
+			// side walls (connect top/bottom)
+			indices.insert(indices.end(), { idx, idx + 1, idx + 4, idx + 1, idx + 5, idx + 4 }); // Outer wall
+			indices.insert(indices.end(), { idx + 2, idx + 6, idx + 3, idx + 3, idx + 6, idx + 7 }); // Inner wall
+
+			// top and bottom caps
+			indices.insert(indices.end(), { idx, idx + 2, idx + 4, idx + 2, idx + 6, idx + 4 }); // Top cap
+			indices.insert(indices.end(), { idx + 1, idx + 5, idx + 3, idx + 3, idx + 5, idx + 7 }); // Bottom cap
+		}
+
+		remixapi_MeshInfoSurfaceTriangles triangles =
+		{
+		  .vertices_values = vertices.data(),
+		  .vertices_count = vertices.size(),
+		  .indices_values = indices.data(),
+		  .indices_count = indices.size(),
+		  .skinning_hasvalue = FALSE,
+		  .skinning_value = {},
+		  .material = m_debug_circle_materials.back(),
+		};
+
+		remixapi_MeshInfo info
+		{
+			.sType = REMIXAPI_STRUCT_TYPE_MESH_INFO,
+			.hash = utils::string_hash64(utils::va("circle%d", m_debug_circles_last_hash ? m_debug_circles_last_hash : 1)),
+			.surfaces_values = &triangles,
+			.surfaces_count = 1,
+		};
+
+		m_debug_circles.push_back({}); 
+
+		auto &circle = m_debug_circles.back();
+
+		circle.transform.matrix[0][0] = 1.0f;
+		circle.transform.matrix[1][1] = 1.0f;
+		circle.transform.matrix[2][2] = 1.0f;
+
+		circle.transform.matrix[0][3] = center.x;
+		circle.transform.matrix[1][3] = center.y;
+		circle.transform.matrix[2][3] = center.z;
+		circle.uses_custom_transform = true;
+
+		m_bridge.CreateMesh(&info, &m_debug_circles.back().handle);
+		m_debug_circles_last_hash = reinterpret_cast<std::uint64_t>(m_debug_circles.back().handle);
+	}
+
 	/**
 	 * Draw a wireframe box using the remix api
 	 * @param center		Center of the cube
@@ -337,7 +591,7 @@ namespace components
 		}
 	}
 
-	void flashlight_frame()
+	void remix_api::flashlight_frame()
 	{
 		if (const auto api = remix_api::get();
 			remix_api::is_initialized())
@@ -352,7 +606,7 @@ namespace components
 
 				if (fl.is_enabled)
 				{
-					const auto* im = imgui::get();
+					const auto gs = game_settings::get();
 
 					auto& info = fl.info;
 					auto& ext = fl.ext;
@@ -360,35 +614,28 @@ namespace components
 					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
 					ext.pNext = nullptr;
 
-					const Vector light_org = fl.def.pos
-						+ (fl.def.fwd * (fl.is_player ? im->m_flashlight_fwd_offset : im->m_flashlight_bot_fwd_offset))
-						+ (fl.def.up * (fl.is_player ? im->m_flashlight_vert_offset : im->m_flashlight_bot_vert_offset))
-						+ (fl.def.rt * (fl.is_player ? im->m_flashlight_horz_offset : im->m_flashlight_bot_horz_offset));
+					const Vector light_org = fl.def.pos + 
+						(fl.is_player ? gs->flashlight_offset_player.get_as<float*>() :
+										gs->flashlight_offset_bot.get_as<float*>());
 
 					ext.position = light_org.ToRemixFloat3D();
 
-					ext.radius = im->m_flashlight_radius;
+					ext.radius = gs->flashlight_radius.get_as<float>();
 					ext.shaping_hasvalue = TRUE;
 					ext.shaping_value = {};
 
-					if (im->m_flashlight_use_custom_dir)
-					{
-						auto nrm_dir = im->m_flashlight_direction; nrm_dir.Normalize();
-						ext.shaping_value.direction = nrm_dir.ToRemixFloat3D();
-					}
-					else
-					{
-						ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
-					}
+					ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
 
-					ext.shaping_value.coneAngleDegrees = im->m_flashlight_angle;
-					ext.shaping_value.coneSoftness = im->m_flashlight_softness;
-					ext.shaping_value.focusExponent = im->m_flashlight_exp;
+					ext.shaping_value.coneAngleDegrees = gs->flashlight_angle.get_as<float>();
+					ext.shaping_value.coneSoftness = gs->flashlight_softness.get_as<float>();
+					ext.shaping_value.focusExponent = gs->flashlight_expo.get_as<float>();
 
 					info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
 					info.pNext = &fl.ext;
 					info.hash = utils::string_hash64(utils::va("fl%s", name.c_str()));
-					info.radiance = remixapi_Float3D{ 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity, 20.0f * im->m_flashlight_intensity };
+
+					const float intensity = gs->flashlight_intensity.get_as<float>();
+					info.radiance = remixapi_Float3D{ 20.0f * intensity, 20.0f * intensity, 20.0f * intensity };
 
 					api->m_bridge.CreateLight(&fl.info, &fl.handle);
 				}
@@ -401,7 +648,8 @@ namespace components
 	{
 		if (is_initialized()) 
 		{
-			flashlight_frame();
+			main_module::iterate_entities();
+			remix_api::flashlight_frame();
 
 			init_debug_lines();
 
@@ -417,6 +665,30 @@ namespace components
 					}
 				}
 				m_debug_line_amount = 0;
+			}
+
+			// destroy all circles materials added the prev. frame
+			if (!m_debug_circle_materials.empty())
+			{
+				for (auto& m : m_debug_circle_materials)
+				{
+					if (m) {
+						m_bridge.DestroyMaterial(m);
+					}
+				}
+				m_debug_circle_materials.clear();
+			}
+
+			// destroy all circles added the prev. frame
+			if (!m_debug_circles.empty())
+			{
+				for (auto& circle : m_debug_circles) 
+				{
+					if (circle.handle) {
+						m_bridge.DestroyMesh(circle.handle);
+					}
+				}
+				m_debug_circles.clear();
 			}
 		}
 	}

@@ -1,4 +1,5 @@
 #include "std_include.hpp"
+#include "components/common/toml.hpp"
 
 namespace components
 {
@@ -26,12 +27,18 @@ namespace components
 				// apply other manually defined configs
 				for (const auto& f : m_map_settings.api_var_configs) {
 					open_and_set_var_config(f);
-				}
+				} 
 			}
 
 			main_module::cross_handle_map_and_game_settings();
-			remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
+
+			// lights are spawned manually in edit mode
+			if (!imgui::get()->m_light_edit_mode) {
+				remix_lights::get()->add_all_map_setting_lights_without_creation_trigger();
+			}
 		}
+
+		m_map_settings.default_nocull_dist = game_settings::get()->default_nocull_distance.get_as<float>();
 
 		// are we using any sound hashes or names to trigger configvar transitions?
 		{
@@ -166,9 +173,6 @@ namespace components
 		m_spawned_markers = false;
 	}
 
-#define TOML_ERROR(TITLE, ENTRY, MSG, ...) \
-	game::console(); std::cout << toml::format_error(toml::make_error_info(#TITLE, (ENTRY), utils::va(#MSG, __VA_ARGS__))) << std::endl; \
-
 	bool map_settings::parse_toml()
 	{
 		try 
@@ -237,6 +241,27 @@ namespace components
 					return default_val;
 				};
 
+			// #
+			auto to_bool = [](const toml::value& entry, const bool default_setting = false)
+				{
+					if (entry.is_boolean()) {
+						return static_cast<bool>(entry.as_boolean());
+					}
+
+					if (entry.is_integer()) {
+						return static_cast<bool>(entry.as_integer());
+					}
+
+					try { // this will fail and let the user know whats wrong
+						return static_cast<bool>(entry.as_boolean());
+					}
+					catch (toml::type_error& err) {
+						game::console(); printf("%s\n", err.what());
+					}
+
+					return default_setting;
+				};
+
 			// ####################
 			// parse 'FOG' table
 			if (config.contains("FOG"))
@@ -293,7 +318,7 @@ namespace components
 				auto& cull_table = config["CULL"];
 
 				// #
-				auto process_cull_entry = [to_uint](const toml::value& entry)
+				auto process_cull_entry = [to_uint, to_float](const toml::value& entry)
 					{
 						const auto contains_leafs = entry.contains("leafs");
 						const auto contains_areas = entry.contains("areas");
@@ -302,7 +327,7 @@ namespace components
 						const auto contains_hidden_areas = entry.contains("hide_areas");
 						const auto contains_cull = entry.contains("cull");
 
-						if (entry.contains("in_area") && (contains_leafs || contains_areas || contains_hidden_leafs || contains_hidden_areas || contains_leaf_tweak || contains_cull))
+						if (entry.contains("in_area"))
 						{
 							const auto area = to_uint(entry.at("in_area"));
 
@@ -329,16 +354,22 @@ namespace components
 							}
 
 							// culling mode
-							AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_MODE_DEFAULT;
+							AREA_CULL_MODE cmode = imgui::get()->m_disable_cullnode ? map_settings::AREA_CULL_MODE_NO_FRUSTUM : map_settings::AREA_CULL_INFO_DEFAULT;
 							if (contains_cull)
 							{
 								auto m = to_uint(entry.at("cull"));
-								if (m >= AREA_CULL_COUNT) 
+								if (m >= AREA_CULL_INFO_COUNT) 
 								{
 									game::console(); printf("MapSettings: param 'cull' was out-of-range (%d)\n", m);
 									m = 0u;
 								}
 								cmode = (AREA_CULL_MODE)(std::uint8_t)m;
+							}
+
+							// nocull dist for certain cull modes
+							float temp_nocull_dist = game_settings::get()->default_nocull_distance.get_as<float>();
+							if (entry.contains("nocull_dist")) {
+								temp_nocull_dist = to_float(entry.at("nocull_dist"));
 							}
 
 							// hidden leafs
@@ -384,6 +415,8 @@ namespace components
 
 							// leaf tweaks
 							std::vector<leaf_tweak_s> temp_leaf_tweak_set;
+							bool any_nocull_dist_overrides_in_leaf_tweaks = false;
+
 							if (contains_leaf_tweak)
 							{
 								auto& leaf_tweak = entry.at("leaf_tweak").as_array();
@@ -407,7 +440,28 @@ namespace components
 											}
 										}
 
-										temp_leaf_tweak_set.emplace_back(std::move(temp_in_leafs_set), std::move(temp_areas));
+										std::unordered_set<std::uint32_t> temp_leafs;
+										if (elem.contains("leafs"))
+										{
+											const auto& leafs = elem.at("leafs").as_array();
+											for (const auto& l : leafs) {
+												temp_leafs.insert(to_uint(l));
+											}
+										}
+
+										// nocull dist for certain cull modes
+										float temp_leaf_tweak_nocull_dist = 0.0f; // 0 = no override
+										if (elem.contains("nocull_dist")) 
+										{
+											temp_leaf_tweak_nocull_dist = to_float(elem.at("nocull_dist"));
+											any_nocull_dist_overrides_in_leaf_tweaks = true;
+										}
+
+										temp_leaf_tweak_set.emplace_back(
+											std::move(temp_in_leafs_set), 
+											std::move(temp_areas), 
+											std::move(temp_leafs),
+											temp_leaf_tweak_nocull_dist);
 									}
 								}
 							}
@@ -421,6 +475,8 @@ namespace components
 									std::move(temp_hidden_areas_set),
 									std::move(temp_leaf_tweak_set),
 									cmode,
+									temp_nocull_dist,
+									any_nocull_dist_overrides_in_leaf_tweaks,
 									area
 								});
 						}
@@ -807,7 +863,7 @@ namespace components
 				auto& light_table = config["LIGHTS"];
 
 				// #
-				auto process_light_entry = [to_int, to_uint, to_float](const toml::value& entry)
+				auto process_light_entry = [to_bool, to_int, to_uint, to_float](const toml::value& entry)
 					{
 						if (entry.contains("points") && !entry.at("points").as_array().empty())
 						{
@@ -821,6 +877,13 @@ namespace components
 							std::uint32_t temp_trigger_sound = 0u;
 							float temp_trigger_delay = 0.0f;
 							bool temp_trigger_always = false;
+
+							std::string temp_comment;
+							if (!entry.comments().empty()) 
+							{
+								temp_comment = entry.comments().at(0);
+								temp_comment.erase(0, 2); // rem '# '
+							}
 
 							if (entry.contains("trigger"))
 							{
@@ -867,7 +930,7 @@ namespace components
 									}
 
 									if (trigger.contains("always")) {
-										temp_trigger_always = to_int(trigger.at("always"), 0);
+										temp_trigger_always = to_bool(trigger.at("always"), false);
 									}
 								} else { TOML_ERROR("[LIGHTS] #trigger", trigger, "defined trigger with no choreo / sound hash"); }
 							}
@@ -910,11 +973,6 @@ namespace components
 
 							const auto& parray = entry.at("points").as_array();
 							std::vector<remix_light_settings_s::point_s> temp_points;
-
-							bool temp_loop_smoothing = false;
-							if (entry.contains("loop_smoothing")) {
-								temp_loop_smoothing = to_int(entry.at("loop_smoothing"), 0);
-							}
 
 							// for each point
 							for (auto i = 0u; i < parray.size(); i++)
@@ -1036,12 +1094,17 @@ namespace components
 							{
 								bool temp_run_once = false;
 								if (entry.contains("run_once")) {
-									temp_run_once = to_uint(entry.at("run_once"), 0);
+									temp_run_once = to_bool(entry.at("run_once"), false);
 								}
 
 								bool temp_loop = false;
 								if (entry.contains("loop")) {
-									temp_loop = to_int(entry.at("loop"), 0);
+									temp_loop = to_bool(entry.at("loop"), false);
+								}
+
+								bool temp_loop_smoothing = false;
+								if (entry.contains("loop_smoothing")) {
+									temp_loop_smoothing = to_bool(entry.at("loop_smoothing"), false);
 								}
 
 								m_map_settings.remix_lights.push_back(
@@ -1059,7 +1122,8 @@ namespace components
 										temp_trigger_delay,
 										std::move(temp_kill_choreo_name),
 										temp_kill_sound,
-										temp_kill_delay)
+										temp_kill_delay,
+										std::move(temp_comment))
 								);
 							}
 						}
@@ -1163,8 +1227,11 @@ namespace components
 
 	void map_settings::clear_map_settings()
 	{
-		remix_lights::get()->destroy_and_clear_all_map_lights();
+		remix_lights::get()->destroy_and_clear_all_active_lights();
 		m_map_settings.remix_lights.clear();
+		m_map_settings.using_any_light_sound_hash = false;
+		m_map_settings.using_any_transition_sound_hash = false;
+		m_map_settings.using_any_transition_sound_name = false;
 
 		m_map_settings.area_settings.clear();
 		m_map_settings.remix_transitions.clear();

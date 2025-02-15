@@ -44,6 +44,10 @@
 // DirectX
 #include <d3d9.h>
 
+// < xoxor4d :: sRGB
+#include "ctgmath"
+// end >
+
 // DirectX data
 struct ImGui_ImplDX9_Data
 {
@@ -224,6 +228,15 @@ void ImGui_ImplDX9_RenderDrawData(ImDrawData* draw_data)
             vtx_dst->pos[1] = vtx_src->pos.y;
             vtx_dst->pos[2] = 0.0f;
             vtx_dst->col = IMGUI_COL_TO_DX9_ARGB(vtx_src->col);
+
+            // < xoxor4d :: sRGB
+            vtx_dst->col = D3DCOLOR_COLORVALUE(
+                powf(static_cast<float>((vtx_dst->col >> 16) & 0xFF) / 255.0f, 2.2f),
+                powf(static_cast<float>((vtx_dst->col >> 8) & 0xFF) / 255.0f, 2.2f),
+                powf(static_cast<float>((vtx_dst->col >> 0) & 0xFF) / 255.0f, 2.2f),
+                static_cast<float>((vtx_dst->col >> 24) & 0xFF) / 255.0f);
+            // end >
+
             vtx_dst->uv[0] = vtx_src->uv.x;
             vtx_dst->uv[1] = vtx_src->uv.y;
             vtx_dst++;

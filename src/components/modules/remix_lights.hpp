@@ -14,6 +14,8 @@ namespace components
 		bool is_initialized() const { return m_initialized; }
 
 		bool advance_time(float frametime);
+		void restart() { m_elapsed_time = 0.0f; }
+
 		void interpolate(
 			remixapi_Float3D* position = nullptr, 
 			remixapi_Float3D* radiance = nullptr, 
@@ -23,6 +25,18 @@ namespace components
 			float* softness = nullptr, 
 			float* exponent = nullptr
 		);
+
+		map_settings::remix_light_settings_s::point_s* get_points() {
+			return m_points.data();
+		}
+
+		std::vector<map_settings::remix_light_settings_s::point_s>& get_points_vec() {
+			return m_points;
+		}
+
+		size_t get_points_count() const {
+			return m_points.size();
+		}
 	
 	private:
 		bool m_initialized = false;
@@ -33,22 +47,26 @@ namespace components
 		float m_elapsed_time = 0.0f;
 		float m_total_duration = 0.0f;
 
+	public:
 		void calculate_segment_durations()
 		{
+			// total duration defined by the last point
+			m_total_duration = m_points.back().timepoint;
+
 			m_segment_durations.clear();
 			float total_original_duration = 0.0f;
 
 			// calculate the sum of all segment durations as defined by the points
 			for (size_t i = 0; i < m_points.size() - 1; ++i)
 			{
-				float segment_duration = m_points[i + 1].timepoint - m_points[i].timepoint;
+				float segment_duration = (m_points)[i + 1].timepoint - (m_points)[i].timepoint;
 				total_original_duration += segment_duration;
 				m_segment_durations.push_back(segment_duration);
 			}
 
 			if (m_looping && m_loop_smoothing && m_points.size() > 1)
 			{
-				float last_to_first_duration = m_points.back().timepoint - m_points[m_points.size() - 2].timepoint;
+				float last_to_first_duration = m_points.back().timepoint - (m_points)[m_points.size() - 2].timepoint;
 				total_original_duration += last_to_first_duration;
 				m_segment_durations.push_back(last_to_first_duration);
 			}
@@ -62,20 +80,21 @@ namespace components
 			}
 		}
 
+	private:
 		void interpolate_timepoints(const size_t start, const size_t end)
 		{
-			float prev_time = (start > 0) ? m_points[start - 1].timepoint : 0.0f;
-			const float next_time = m_points[end].timepoint;
+			float prev_time = (start > 0) ? (m_points)[start - 1].timepoint : 0.0f;
+			const float next_time = (m_points)[end].timepoint;
 
 			const size_t segment_count = end - start;
 			const float segment_duration = (next_time - prev_time) / static_cast<float>(segment_count + 1);
 
 			for (size_t i = start; i < end; ++i)
 			{
-				if (m_points[i].timepoint == 0.0f) {
-					m_points[i].timepoint = prev_time + segment_duration;
+				if ((m_points)[i].timepoint == 0.0f) {
+					(m_points)[i].timepoint = prev_time + segment_duration;
 				}
-				prev_time = m_points[i].timepoint; // update for next iteration
+				prev_time = (m_points)[i].timepoint; // update for next iteration
 			}
 		}
 
@@ -113,19 +132,26 @@ namespace components
 			remixapi_LightInfo info = {};
 		};
 
+		bool update_static_remix_light(remix_light_s* light, const map_settings::remix_light_settings_s::point_s* pt);
 		bool update_remix_light(remix_light_s* light);
 		bool spawn_remix_light(remix_light_s* light);
 
 		void add_all_map_setting_lights_without_creation_trigger();
+
+		void add_single_map_setting_light_for_editing(map_settings::remix_light_settings_s* def);
 		void add_single_map_setting_light(map_settings::remix_light_settings_s* def);
+
 		void destroy_map_light(remix_light_s* light);
 		void destroy_all_map_lights();
-		void destroy_and_clear_all_map_lights();
-		void update_all_map_lights();
-		void draw_all_map_lights();
+		void destroy_and_clear_all_active_lights();
+		void update_all_active_lights();
+		void draw_all_active_lights();
+
+		size_t get_active_light_count() { return m_active_lights.size(); }
+		remix_light_s* get_first_active_light() { return !m_active_lights.empty() ? &m_active_lights.front() : nullptr; }
 
 	private:
-		static inline std::uint32_t m_map_light_spawn_tracker = 0u;
-		static inline std::vector<remix_light_s> m_map_lights = {};
+		static inline std::uint32_t m_active_light_spawn_tracker = 0u;
+		static inline std::vector<remix_light_s> m_active_lights = {};
 	};
 }

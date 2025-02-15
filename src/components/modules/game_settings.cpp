@@ -1,4 +1,5 @@
 #include "std_include.hpp"
+#include "components/common/toml.hpp"
 
 namespace components
 {
@@ -35,14 +36,60 @@ namespace components
 				auto config = toml::parse("l4d2-rtx\\game_settings.toml");
 
 				// #
-				auto to_float = [](const toml::value& entry, float default_setting = 0.0f)
+				auto to_bool = [](const toml::value& entry, const bool default_setting = false)
 					{
-						if (entry.is_floating()) {
-							return static_cast<float>(entry.as_floating());
+						if (entry.is_boolean()) {
+							return static_cast<bool>(entry.as_boolean());
 						}
 
 						if (entry.is_integer()) {
+							return static_cast<bool>(entry.as_integer());
+						}
+
+						try { // this will fail and let the user know whats wrong
+							return static_cast<bool>(entry.as_boolean());
+						}
+						catch (toml::type_error& err) {
+							game::console(); printf("%s\n", err.what());
+						}
+
+						return default_setting;
+					};
+
+				// #
+				auto to_int = [](const toml::value& entry, const int default_setting = 0)
+					{
+						if (entry.is_boolean()) {
+							return static_cast<int>(entry.as_boolean());
+						}
+
+						if (entry.is_integer()) {
+							return static_cast<int>(entry.as_integer());
+						}
+
+						if (entry.is_floating()) {
+							return static_cast<int>(entry.as_floating());
+						}
+
+						try { // this will fail and let the user know whats wrong
+							return static_cast<int>(entry.as_integer());
+						}
+						catch (toml::type_error& err) {
+							game::console(); printf("%s\n", err.what());
+						}
+
+						return default_setting;
+					};
+
+				// #
+				auto to_float = [](const toml::value& entry, const float default_setting = 0.0f)
+					{
+						if (entry.is_integer()) {
 							return static_cast<float>(entry.as_integer());
+						}
+
+						if (entry.is_floating()) {
+							return static_cast<float>(entry.as_floating());
 						}
 
 						try { // this will fail and let the user know whats wrong
@@ -56,40 +103,88 @@ namespace components
 					};
 
 				// #
-				auto to_int = [](const toml::value& entry, int default_setting = 0)
+				auto to_vec = [](const toml::value& entry, const var_type type, float* default_vec = nullptr)
 					{
-						if (entry.is_floating()) {
-							return static_cast<int>(entry.as_floating());
+						std::vector<float> result;
+
+						const size_t size_for_vec =
+							type == var_type_vec2 ? 2u :
+							type == var_type_vec3 ? 3u :
+							type == var_type_vec4 ? 4u : 0u;
+
+						if (entry.is_array())
+						{
+							if (entry.as_array().size() == size_for_vec)
+							{
+								for (const auto& val : entry.as_array())
+								{
+									if (val.is_floating())
+									{
+										result.push_back((float)val.as_floating());
+										continue;
+									}
+
+									TOML_ERROR("[GameSettings] #to_vec", val, "expected float but got value_t of => %d ", val.type());
+								}
+
+								return result;
+							}
+
+							TOML_ERROR("[GameSettings] #to_vec", entry, "unexpected array size of => %d ", entry.as_array().size());
 						}
 
-						if (entry.is_integer()) {
-							return static_cast<int>(entry.as_integer());
-						}
+						TOML_ERROR("[GameSettings] #to_vec", entry, "expected a vector but got value_t => %d ", entry.type());
 
-						try { // this will fail and let the user know whats wrong
-							return static_cast<int>(entry.as_integer());
-						}
-						catch (toml::type_error& err) {
-							game::console(); printf("%s\n", err.what());
-						}
+						switch (type)
+						{
+						default:
+							result = { 0, 0, 0, 0 };
+							break;
+						case var_type_vec2:
+							result = { default_vec[0], default_vec[1] };
+							break;
+						case var_type_vec3:
+							result = { default_vec[0], default_vec[1], default_vec[2] };
+							break;
+						case var_type_vec4:
+							result = { default_vec[0], default_vec[1], default_vec[2], default_vec[3] };
+							break;
+						} 
 
-						return default_setting;
+						return result;
 					};
+
 
 				// ---------------------------------------
 
-			#define ASSIGN(name) \
-				if (config.contains((#name))) { \
-					switch (vars.##name.get_type()) { \
-						case (var_type_integer): \
-							vars.##name.set_var(to_int(config.at(#name), vars.##name.get_as<int>()), true); break; \
-						case (var_type_value): \
-							vars.##name.set_var(to_float(config.at(#name), vars.##name.get_as<float>()), true); break; \
-					} \
+			#define ASSIGN(name)																								\
+				if (config.contains((#name))) {																					\
+					switch (vars.##name.get_type()) {																			\
+						case (var_type_boolean):																				\
+							vars.##name.set_var(to_bool(config.at(#name), vars.##name.get_as<bool>()), true); break;			\
+						case (var_type_integer):																				\
+							vars.##name.set_var(to_int(config.at(#name), vars.##name.get_as<int>()), true); break;				\
+						case (var_type_value):																					\
+							vars.##name.set_var(to_float(config.at(#name), vars.##name.get_as<float>()), true); break;			\
+						case (var_type_vec2):																					\
+						case (var_type_vec3):																					\
+						case (var_type_vec4):																					\
+							const auto vec = to_vec(config.at(#name), vars.##name.get_type(), vars.##name.get_as<float*>());	\
+							vars.##name.set_vec(vec.data(), true); break;														\
+					}																											\
 				} 
 
 				ASSIGN(lod_forcing);
 				ASSIGN(enable_3d_sky);
+				ASSIGN(default_nocull_distance);
+
+				ASSIGN(flashlight_offset_player);
+				ASSIGN(flashlight_offset_bot);
+				ASSIGN(flashlight_intensity);
+				ASSIGN(flashlight_radius);
+				ASSIGN(flashlight_angle);
+				ASSIGN(flashlight_softness);
+				ASSIGN(flashlight_expo);
 
 			#undef ASSIGN
 			}
@@ -109,7 +204,7 @@ namespace components
 	}
 
 	ConCommand xo_gamesettings_update {};
-	void xo_gamesettings_update_fn()
+	void game_settings::xo_gamesettings_update_fn()
 	{
 		game_settings::parse_toml();
 		main_module::cross_handle_map_and_game_settings();

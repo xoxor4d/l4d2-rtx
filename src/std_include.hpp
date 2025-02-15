@@ -7,14 +7,6 @@
 // enable/disable benchmark logic
 //#define BENCHMARK
 
-//#ifdef DEBUG
-//	#define USE_IMGUI 1
-//#else
-//	#define USE_IMGUI 0
-//#endif
-
-#define USE_IMGUI 1
-
 // Version number
 #include <version.hpp>
 
@@ -30,6 +22,7 @@
 #include <filesystem>
 #include <cassert>
 #include <map>
+#include <set>
 #include <unordered_set>
 #include <fstream>
 #include <iostream>
@@ -55,17 +48,15 @@
 #include "MinHook.h"
 #include "toml.hpp"
 
-#if USE_IMGUI
-	#pragma warning(push)
-	#pragma warning(disable: 6011)
-	#pragma warning(disable: 28182)
+#pragma warning(push)
+#pragma warning(disable: 6011)
+#pragma warning(disable: 28182)
 #define IMGUI_DEFINE_MATH_OPERATORS
-	#include "imgui.h"
-	#include <backends/imgui_impl_dx9.h>
-	#include <backends/imgui_impl_win32.h>
-	#include <misc/cpp/imgui_stdlib.h>
-	#pragma warning(pop)
-#endif
+#include "imgui.h"
+#include <backends/imgui_impl_dx9.h>
+#include <backends/imgui_impl_win32.h>
+#include <misc/cpp/imgui_stdlib.h>
+#pragma warning(pop)
 
 #include "bridge_remix_api.h"
 

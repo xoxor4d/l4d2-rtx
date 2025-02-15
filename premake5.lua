@@ -257,8 +257,7 @@ workspace "l4d2-rtx"
 	
     configurations { 
         "Debug", 
-        "Release",
-		"Dev" 
+        "Release"
     }
 
 	platforms "Win32"
