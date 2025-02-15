@@ -47,53 +47,16 @@
 #                   |>    in_leafs:     the leaf/s the player has to be in                      [int array]
 #                   |>       areas:     area/s with forced visibility                           [int array]
 #                   |>       leafs:     leaf/s with forced visibility                           [int array]
-#                   |> nocull_dist:     uses per leaf value instead of area value if defined    [float]                     << defaults to 0.0 (off)
+#                   |> nocull_dist:     uses per leaf value instead of area value if defined    [float]     << defaults to 0.0 (off)
 # 
 # -----------       :: This can be used to forcefully cull parts of the map
-# hide_areas:                                                                       [array of structure below]
-#                   |>    areas:   area/s to hide                                   [int array]
-#                   |>  N_leafs:   only hide area/s when NOT in leaf/s              [int array]
+# hide_areas:                                                                                   [array of structure below]
+#                   |>    areas:   area/s to hide                                               [int array]
+#                   |>  N_leafs:   only hide area/s when NOT in leaf/s                          [int array]
 #
-# hide_leafs:       force hide leaf/s                                               [int array]
+# hide_leafs:       force hide leaf/s                                                           [int array]
 
 [CULL]
-    #c1m1_hotel = [
-    #    { in_area =   2, areas = [6], leafs = [
-    #            1, 4, 6, 10, 11, 12
-    #        ], leaf_tweak = [
-    #            { in_leafs = [1], areas = [3] },
-    #        ], hide_areas = [
-    #            { areas = [3], N_leafs = [55] },
-    #            { areas = [5], N_leafs = [56] },
-    #        ], hide_leafs = [5, 15] },
-    #
-    #    { in_area =   3, areas = [6] },
-    #    { in_area =   4, areas = [7] },
-    #    { in_area =   5, areas = [4, 6, 7], leafs = [
-    #            615, 616, 620, 622, 624, 632, 633, 1501, 
-    #            1504, 1508, 1511
-    #        ], cull = 0 },
-    #
-    #    { in_area =   6, leaf_tweak = [
-    #            { in_leafs = [2203, 2332, 2333], areas = [13] },
-    #            { in_leafs = [2, 3, 4], areas = [14] },
-    #        ] },
-    #
-    #    { in_area =   7, areas = [4, 5, 10], leafs = [
-    #            1298, 1327, 1364, 1367, 1370, 1669, 1974
-    #        ] },
-    #    { in_area =   9, areas = [6] },
-    #    { in_area =  10, areas = [7] },
-    #    { in_area =  11, areas = [13] },
-    #    { in_area =  13, areas = [11, 21, 23], leafs = [
-    #            2203, 2332, 2333
-    #        ], leaf_tweak = [
-    #            { in_leafs = [2328, 2331, 2334, 2366], areas = [6] },
-    #        ] },
-    #
-    #    { in_area =  21, areas = [13] },
-    #    { in_area =  23, areas = [13, 21] },
-    #]
 
     c1m1_hotel = [
         { in_area =   7, nocull_dist = 600.000000, leaf_tweak = [
@@ -118,6 +81,10 @@
                 { in_leafs = [415], leafs = [559, 858] },
                 { in_leafs = [548], leafs = [559, 858] },
             ] },
+        { in_area =   2, leafs = [] },
+        { in_area =   3, leafs = [] },
+        { in_area =   4, leafs = [] },
+        { in_area =   5, leafs = [] },
     ]
 
 
@@ -132,8 +99,6 @@
     c6m1_riverbank = [
         { in_area =   1, cull = 1 },
     ]
-
-
 
 
 
@@ -237,7 +202,7 @@
 
 
 # Spawn lights using the remix api ---------------------------------------------------------------------------------------------------------------------------------
-# :: Useful console command: 'scene_print' && 'xo_debug_toggle_sound_print'
+# :: Useful console command: 'xo_debug_scene_print' && 'xo_debug_toggle_sound_print'
 # ~~ Parameters:
 #
 # trigger:          trigger light creation via choreography (.vcd) or sound
@@ -249,8 +214,9 @@
 #                             ]             |> param1:  (opt.) name of the event within the .vcd (can be a substr)                                  [string]
 #                             ] 
 #                   |> sound  ] OR THAT:    hash made up of name, index and position (cmd: see desc.)                                               [integer] (hex format)
-#                   |> delay:               delay spawn after trigger (in seconds)                                                                  [float]
-#                   |> always:              re-triggering the event again will spawn a new light instance everytime (defaults to 0)                 [int 0-1]
+#
+#                             |> delay:     delay spawn after trigger (in seconds)                                                                  [float]
+#                             |> always:    re-triggering the event again will spawn a new light instance everytime (defaults to false)             [bool]
 #
 # -----------
 # kill:             kill light via choreography (.vcd) or sound
@@ -258,7 +224,8 @@
 #
 #                   |> choreo ]    THIS:    name of choreography (.vcd) (can be a substring)                                                        [string]
 #                   |> sound  ] OR THAT:    hash made up of name, index and position (cmd: see desc.)                                               [integer] (hex format)
-#                   |> delay:               delay kill after vcd was triggered (in seconds)                                                         [float]
+#
+#                             |> delay:     delay kill after vcd was triggered (in seconds)                                                         [float]
 #
 # -----------
 # points:           list of points that will make up a spline the light will move along                                                             [array of structure below]
@@ -282,53 +249,66 @@
 #                   |> exponent:            focus expo (defaults to 0)                                                                              [float]
 #
 # -----------
-# run_once:         ]    THIS:              destroy light after reaching the last point (defaults to 0)                                             [int 0-1]
-# loop:             ] OR THAT:              create a looping light that restarts at the first point after reaching the last point (defaults to 0)   [int 0-1]
-# loop_smoothing:   ] OR THAT:              automatically connect and smooth the start and end point (defaults to 0)                                [int 0-1]
+# run_once:         ]    THIS:              destroy light after reaching the last point (default: false)                                            [bool]
+# loop:             ] OR THAT:              create a looping light that restarts at the first point after reaching the last point (default: false)  [bool]
+# loop_smoothing:   ] OR THAT:              automatically connect and smooth the start and end point (default: false)                               [bool]
 #                                           [!] requires 'loop' to be true
 #                                           [!] only position + timepoint is used from the last point 
 
 [LIGHTS]
     c1m1_hotel = [
-            # 1st light - infinite loop
-            #{ trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = 1 }, points = [
-            #    { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
-            #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
-            #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
-            #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
-            #], run_once = 1, loop = 0 },
+        # 1st light - infinite loop
+        #{ trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = true }, points = [
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
+        #], run_once = true, loop = false },
 
-            # red flashing light when opening the first door
-            # :: doors/door1_stop.wav -- delay: 0.00 -- vol: 0.69 -- origin: [408.00000 5600.00000 2704.00000]
-            { trigger = { sound = 0xe826cc9a, delay = 0.0, always = 0 }, points = [
-                { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 0.0, radius = 3.0, smoothness = 1.0 },
-                { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
-            ], run_once = 0, loop = 1, loop_smoothing = 1 },
+        # red flashing light when opening the first door :: doors/door1_stop.wav -- delay: 0.00 -- vol: 0.69 -- origin: [408.00000 5600.00000 2704.00000]
+        { trigger = { sound = 0xe826cc9a, delay = 0.0, always = false }, points = [
+            { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 0.0, radius = 3.0, smoothness = 1.0 },
+            { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
+        ], run_once = true, loop = true, loop_smoothing = true },
 
-            # 2nd light - triggered and killed by choreo event - looping until killed (scene_playvcd "npc/announcer/prehub28.vcd")
-            #{ trigger = { choreo = "prehub27.vcd", delay = 0.0 }, kill = { choreo = "prehub28.vcd", delay = 0.0 }, points = [
-            #    { position = [-1057.9, -336.7, -15.7], radiance = [50.0, 0.0, 20.0], radius = 10.0, smoothness = 1.0 },
-            #    { position = [-941.9, -379.1, 46.8],   radiance = [20.0, 0.0, 50.0], radius =  5.0, smoothness = 1.0 },
-            #    { position = [-1156.7, -638.2, 97.9],  radiance = [0.0, 50.0, 20.0], radius = 15.0, smoothness = 1.0 },
-            #    { position = [-1262.3, -489.4, -10.6], radiance = [20.0, 0.0, 50.0], radius =  3.0, smoothness = 1.0 },
-            #    { position = [-1232.0, -399.4, -8.2],  radiance = [50.0, 0.0, 20.0], radius = 10.0, smoothness = 1.0 },
-            #    { position = [-1189.4, -373.6, 0.1],   radiance = [20.0, 0.0, 50.0], radius =  3.0, smoothness = 1.0 },
-            #    { position = [-1057.9, -336.7, -15.7], radiance = [50.0, 0.0, 20.0], radius = 10.0, timepoint = 2.0, smoothness = 1.0 },
-            #], run_once = 0, loop = 1, loop_smoothing = 1 },
+        # green flashing light when opening the first door :: doors/door1_stop.wav -- delay: 0.00 -- vol: 0.69 -- origin: [408.00000 5600.00000 2704.00000]
+        { trigger = { sound = 0xe826cc9a, delay = 2.0, always = false }, points = [
+            { position = [378.5, 5675, 2740], radiance = [20.0, 0.0, 0.0], scalar = 0.0, radius = 3.0, smoothness = 1.0 },
+            { position = [378.5, 5675, 2740], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
+        ], run_once = false, loop = true, loop_smoothing = true },
 
-            # 3rd light
-            #{ points = [
-            #    { position = [-922.0, -500.0, -60.0], radiance = [0.0, 0.0, 0.0], radius = 10.0 },
-            #    { radiance = [50.0, 0.0, 0.0],  radius = 5.0, timepoint = 3 }, # prev position will be used until new pos is defined
-            #    { radiance = [50.0, 0.0, 50.0], radius = 5.0, timepoint = 6 },
-            #    { radiance = [0.0, 50.0, 25.0], radius = 5.0, timepoint = 9 }, # last point NEEDS to define a timepoint
-            #], run_once = 0, loop = 1, loop_smoothing = 1 },                    # loop_smoothing to smoothly trans. back to first point
+        # 2nd light - triggered and killed by choreo event - looping until killed (scene_playvcd "npc/announcer/prehub28.vcd")
+        #{ trigger = { choreo = "prehub27.vcd", delay = 0.0 }, kill = { choreo = "prehub28.vcd", delay = 0.0 }, points = [
+        #    { position = [-1057.9, -336.7, -15.7], radiance = [50.0, 0.0, 20.0], radius = 10.0, smoothness = 1.0 },
+        #    { position = [-941.9, -379.1, 46.8],   radiance = [20.0, 0.0, 50.0], radius =  5.0, smoothness = 1.0 },
+        #    { position = [-1156.7, -638.2, 97.9],  radiance = [0.0, 50.0, 20.0], radius = 15.0, smoothness = 1.0 },
+        #    { position = [-1262.3, -489.4, -10.6], radiance = [20.0, 0.0, 50.0], radius =  3.0, smoothness = 1.0 },
+        #    { position = [-1232.0, -399.4, -8.2],  radiance = [50.0, 0.0, 20.0], radius = 10.0, smoothness = 1.0 },
+        #    { position = [-1189.4, -373.6, 0.1],   radiance = [20.0, 0.0, 50.0], radius =  3.0, smoothness = 1.0 },
+        #    { position = [-1057.9, -336.7, -15.7], radiance = [50.0, 0.0, 20.0], radius = 10.0, timepoint = 2.0, smoothness = 1.0 },
+        #], run_once = false, loop = true, loop_smoothing = true },
 
-            # 4th light - spotlight
-            #{ points = [
-            #    { position = [-922.0, -500.0, -60.0], radiance = [0.0, 0.0, 50.0],  radius = 10.0, smoothness = 0.5, degrees = 180.0, direction = [0, 0, 1]  },
-            #    { radiance = [50.0, 0.0, 0.0],  radius = 10.0, smoothness = 0.5, degrees = 90.0, direction = [0, 1, 0]  },
-            #    { radiance = [0.0, 50.0, 0.0],  radius = 10.0, smoothness = 0.5, degrees = 45.0, direction = [1, 0, 0]  },
-            #    { radiance = [25.0, 0.0, 25.0], radius = 10.0, smoothness = 0.5, degrees = 90.0, direction = [0.5, 0.5, 0], timepoint = 6 },
-            #], run_once = 0, loop = 1, loop_smoothing = 1 },
-        ]
+        # 3rd light
+        #{ points = [
+        #    { position = [-922.0, -500.0, -60.0], radiance = [0.0, 0.0, 0.0], radius = 10.0 },
+        #    { radiance = [50.0, 0.0, 0.0],  radius = 5.0, timepoint = 3 }, # prev position will be used until new pos is defined
+        #    { radiance = [50.0, 0.0, 50.0], radius = 5.0, timepoint = 6 },
+        #    { radiance = [0.0, 50.0, 25.0], radius = 5.0, timepoint = 9 }, # last point NEEDS to define a timepoint
+        #], run_once = false, loop = true, loop_smoothing = true },                    # loop_smoothing to smoothly trans. back to first point
+
+        # 4th light - spotlight
+        { points = [
+            { position = [-922.0, -500.0, -60.0], radiance = [0.0, 0.0, 50.0],  radius = 10.0, smoothness = 0.5, degrees = 180.0, direction = [0, 0, 1]  },
+            { radiance = [50.0, 0.0, 0.0],  radius = 10.0, smoothness = 0.5, degrees = 90.0, direction = [0, 1, 0]  },
+            { radiance = [0.0, 50.0, 0.0],  radius = 10.0, smoothness = 0.5, degrees = 45.0, direction = [1, 0, 0]  },
+            { radiance = [25.0, 0.0, 25.0], radius = 10.0, smoothness = 0.5, degrees = 90.0, direction = [0.5, 0.5, 0], timepoint = 6 },
+        ], run_once = false, loop = true, loop_smoothing = true },
+
+        # lmao funny light
+        { points = [
+            { position = [311.029999, 5573.859863, 2910.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 7.500000, radius = 1.700000, smoothness = 0.500000, direction = [-0.720037, 0.000000, 0.693935], degrees = 25.700001, softness = 0.000000, exponent = 0.000000 },
+            { position = [311.029999, 5573.859863, 2910.031250], radiance = [10.000000, 0.000000, 10.000000], scalar = 42.799999, radius = 1.700000, smoothness = 0.500000, direction = [-0.040191, 0.979143, -0.199156], degrees = 16.200001, softness = 0.000000, exponent = 0.000000 },
+            { position = [311.029999, 5573.859863, 2910.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 7.500000, radius = 1.700000, smoothness = 0.100000, direction = [0.660795, 0.000000, 0.750566], degrees = 25.700001, softness = 0.000000, exponent = 0.000000, timepoint = 3.400000 },
+        ], loop = true, loop_smoothing = true },
+
+    ]

@@ -9,9 +9,9 @@ namespace components
 	 * @param loop_smoothing	Add additional segment between last and first point
 	 * @return 
 	 */
-	bool light_interpolator::init(std::vector<map_settings::remix_light_settings_s::point_s>* points, const bool looping, const bool loop_smoothing)
+	bool light_interpolator::init(const std::vector<map_settings::remix_light_settings_s::point_s>& points, const bool looping, const bool loop_smoothing)
 	{
-		if (points->size() == 1) {
+		if (points.size() == 1) {
 			return false;
 		}
 
@@ -21,31 +21,31 @@ namespace components
 		m_loop_smoothing = loop_smoothing;
 
 		// ensure first point has timepoint 0
-		(*m_points)[0].timepoint = 0.0f;
+		(m_points)[0].timepoint = 0.0f;
 
 		// total duration defined by the last point
-		m_total_duration = m_points->back().timepoint;
+		m_total_duration = m_points.back().timepoint;
 
-		if (points->size() > 1 && m_total_duration == 0.0f)
+		if (points.size() > 1 && m_total_duration == 0.0f)
 		{
 			game::console();
 			std::cout << "[RemixLights][light_interpolator::init] Encountered a light were the last point has no defined timepoint! Placeholder in-use, please fix!" << std::endl;
 
 			// use timepoint of prev. point + 1.0
-			m_total_duration = (*m_points)[m_points->size() - 2].timepoint + 1.0f;
+			m_total_duration = (m_points)[m_points.size() - 2].timepoint + 1.0f;
 
 			// write the placeholder value into the last point
-			m_points->back().timepoint = m_total_duration; 
+			m_points.back().timepoint = m_total_duration; 
 		}
 
 		// calculate time for points with no defined timepoint
 		bool needs_timepoint_calc = false;
 		size_t calc_index_start = 0;
 
-		for (size_t i = 1; i < m_points->size(); ++i)
+		for (size_t i = 1; i < m_points.size(); ++i)
 		{
 			// point has no defined timepoint
-			if ((*m_points)[i].timepoint == 0.0f)
+			if ((m_points)[i].timepoint == 0.0f)
 			{
 				needs_timepoint_calc = true;
 				if (calc_index_start == 0) {
@@ -108,9 +108,9 @@ namespace components
 		{
 			map_settings::remix_light_settings_s::point_s* temp_pt = nullptr;
 			if (m_elapsed_time <= 0.0f) {
-				temp_pt = &m_points->front();
+				temp_pt = &m_points.front();
 			} else if (m_elapsed_time >= m_total_duration) {
-				temp_pt = &m_points->back();
+				temp_pt = &m_points.back();
 			}
 
 			if (temp_pt)
@@ -131,10 +131,10 @@ namespace components
 			if (time <= m_segment_durations[i]) 
 			{
 				const auto t = time / m_segment_durations[i];
-				const auto& p0 = (*m_points)[((i - 1) + m_points->size()) % m_points->size()];
-				const auto& p1 = (*m_points)[i % m_points->size()];
-				const auto& p2 = (*m_points)[(m_loop_smoothing && i == m_points->size() - 1) ? 0 : (i + 1) % m_points->size()];
-				const auto& p3 = (*m_points)[(i + 2) % m_points->size()];
+				const auto& p0 = (m_points)[((i - 1) + m_points.size()) % m_points.size()];
+				const auto& p1 = (m_points)[i % m_points.size()];
+				const auto& p2 = (m_points)[(m_loop_smoothing && i == m_points.size() - 1) ? 0 : (i + 1) % m_points.size()];
+				const auto& p3 = (m_points)[(i + 2) % m_points.size()];
 
 				const float t2 = t * t;
 				const float t3 = t2 * t;
@@ -192,13 +192,13 @@ namespace components
 		}
 
 		// should not happen if durations are correct
-		if (position) { *position = m_points->back().position.ToRemixFloat3D(); }
-		if (radiance) { *radiance = (m_points->back().radiance * m_points->back().radiance_scalar).ToRemixFloat3D(); }
-		if (radius) { *radius = m_points->back().radius; }
-		if (direction) { *direction = m_points->back().direction.ToRemixFloat3D(); }
-		if (degrees) { *degrees = m_points->back().degrees; }
-		if (softness) { *softness = m_points->back().softness; }
-		if (exponent) { *exponent = m_points->back().exponent; }
+		if (position) { *position = m_points.back().position.ToRemixFloat3D(); }
+		if (radiance) { *radiance = (m_points.back().radiance * m_points.back().radiance_scalar).ToRemixFloat3D(); }
+		if (radius) { *radius = m_points.back().radius; }
+		if (direction) { *direction = m_points.back().direction.ToRemixFloat3D(); }
+		if (degrees) { *degrees = m_points.back().degrees; }
+		if (softness) { *softness = m_points.back().softness; }
+		if (exponent) { *exponent = m_points.back().exponent; }
 	}
 
 	// ----
@@ -350,7 +350,7 @@ namespace components
 				auto* light = &m_active_lights.back();
 
 				if (light->def.points.size() > 1) {
-					light->mover.init(&light->def.points, light->def.loop, light->def.loop_smoothing);
+					light->mover.init(light->def.points, light->def.loop, light->def.loop_smoothing);
 				}
 
 				// spawn it
@@ -372,7 +372,7 @@ namespace components
 		auto* light = &m_active_lights.back();
 
 		if (light->def.points.size() > 1) {
-			light->mover.init(&light->def.points, true /* always loop*/, light->def.loop_smoothing);
+			light->mover.init(light->def.points, true /* always loop*/, light->def.loop_smoothing);
 		}
 
 		// spawn it
@@ -397,7 +397,7 @@ namespace components
 		if (light->def.trigger_choreo_name.empty() && !light->def.trigger_sound_hash)
 		{
 			if (light->def.points.size() > 1) {
-				light->mover.init(&light->def.points, light->def.loop, light->def.loop_smoothing);
+				light->mover.init(light->def.points, light->def.loop, light->def.loop_smoothing);
 			}
 
 			// spawn it
@@ -491,7 +491,7 @@ namespace components
 				else
 				{
 					if (l.def.points.size() > 1) {
-						l.mover.init(&l.def.points, l.def.loop, l.def.loop_smoothing);
+						l.mover.init(l.def.points, l.def.loop, l.def.loop_smoothing);
 					}
 
 					// spawn it

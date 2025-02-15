@@ -1389,8 +1389,10 @@ namespace components
 		}
 	}
 
-	bool check_light_for_modifications(const map_settings::remix_light_settings_s& edit_def, const map_settings::remix_light_settings_s& map_def)
+	bool check_light_for_modifications(const map_settings::remix_light_settings_s& edit_def, const map_settings::remix_light_settings_s& map_def, std::vector<map_settings::remix_light_settings_s::point_s>* mover_pts)
 	{
+		const auto& pt = mover_pts ? *mover_pts : edit_def.points;
+
 		if (edit_def.run_once != map_def.run_once) { return true; }
 		if (edit_def.loop != map_def.loop) { return true; }
 		if (edit_def.loop_smoothing != map_def.loop_smoothing) { return true; }
@@ -1409,11 +1411,11 @@ namespace components
 
 		if (edit_def.comment != map_def.comment) { return true; }
 
-		if (edit_def.points.size() != map_def.points.size()) { return true; }
+		if (pt.size() != map_def.points.size()) { return true; }
 
-		for (size_t i = 0u; i < edit_def.points.size(); i++)
+		for (size_t i = 0u; i < pt.size(); i++)
 		{
-			const auto& edit_p = edit_def.points[i];
+			const auto& edit_p = pt[i];
 			const auto& map_p = map_def.points[i];
 
 			if (edit_p.position != map_p.position) { return true; }
@@ -1471,7 +1473,7 @@ namespace components
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.66f, 0);
 				if (ImGui::Checkbox("Loop Smoothing", &edit_active_light->def.loop_smoothing)) {
-					edit_active_light->mover.init(&edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
+					edit_active_light->mover.init(edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
 				}
 				TT("Enabled: Automatically connect and smooth the start and end point.\n"
 					"[!] requires 'loop' to be true\n"
@@ -1540,6 +1542,7 @@ namespace components
 					"The sound trigger has LOWER precedence over choreo triggering.\n"
 					"Use cmd 'xo_debug_toggle_sound_print' to get info about playing sounds.");
 
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 				if (ImGui::DragFloat("Delay##Trigger", &edit_active_light->def.trigger_delay, 0.05f, 0.0f)) {
 					edit_active_light->def.trigger_delay = edit_active_light->def.trigger_delay < 0.0f ? 0.0f : edit_active_light->def.trigger_delay;
 				} TT("Delay spawn after trigger in seconds.");
@@ -1596,6 +1599,7 @@ namespace components
 					"The sound trigger has LOWER precedence over choreo triggering.\n"
 					"Use cmd 'xo_debug_toggle_sound_print' to get info about playing sounds.");
 
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 				if (ImGui::DragFloat("Delay##Kill", &edit_active_light->def.kill_delay, 0.05f, 0.0f)) {
 					edit_active_light->def.kill_delay = edit_active_light->def.kill_delay < 0.0f ? 0.0f : edit_active_light->def.kill_delay;
 				} TT("Delay kill after kill trigger in seconds.");
@@ -1656,7 +1660,7 @@ namespace components
 						edit_active_light->def.points[i].timepoint = 0.0f;
 					}
 
-					edit_active_light->mover.init(&edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
+					edit_active_light->mover.init(edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
 				} TT("This will clear and recalculate the timepoints of all but the last point.");
 
 			}, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
@@ -1750,9 +1754,6 @@ namespace components
 		//
 		// LIGHT TABLE
 
-		static float light_table_height = 0.0f;
-		const auto light_table_clamped = light_table_height > 380.0f;
-
 		//ImGui::SeparatorText(" Light Selection ");
 
 		/*ImGui::BeginTable("LightTableHeader", 1, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
@@ -1769,7 +1770,7 @@ namespace components
 
 		if (ImGui::BeginTable("LightTable", 12,
 			ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
-			ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | (light_table_clamped ? ImGuiTableFlags_ScrollY : 0), ImVec2(0, light_table_clamped ? 380.0f : 0.0f)))
+			ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoHostExtendY | ImGuiTableFlags_ScrollY, ImVec2(0, 220.0f)))
 		{
 			ImGui::TableSetupScrollFreeze(0, 1); // make top row always visible
 			ImGui::TableSetupColumn("##num", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide, 10.0f);
@@ -1810,7 +1811,7 @@ namespace components
 					{
 						if (const auto edit_light = lights->get_first_active_light(); edit_light)
 						{
-							if (check_light_for_modifications(edit_light->def, *ms_light_selection))
+							if (check_light_for_modifications(edit_light->def, *ms_light_selection, &edit_light->mover.get_points_vec()))
 							{
 								if (!ImGui::IsPopupOpen("Ignore Changes?", ImGuiPopupFlags_AnyPopup)) {
 									ImGui::OpenPopup("Ignore Changes?", ImGuiPopupFlags_AnyPopup);
@@ -1926,7 +1927,6 @@ namespace components
 			}
 
 			ImGui::EndTable();
-			light_table_height = ImGui::GetItemRectSize().y;
 		} // table end
 
 
@@ -2078,9 +2078,6 @@ namespace components
 				active_point_selection = &active_points[0]; // default selection
 			}
 
-			static float point_table_height = 0.0f;
-			const auto point_table_clamped = point_table_height > 380.0f;
-
 			ImGui::Spacing(0, 16);
 			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
 			ImGui::SeparatorText(" Light Points ");
@@ -2090,7 +2087,7 @@ namespace components
 			
 			if (ImGui::BeginTable("PointTable", 12,
 				ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
-				ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | (point_table_clamped ? ImGuiTableFlags_ScrollY : 0), ImVec2(0, point_table_clamped ? 380.0f : 0)))
+				ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 220.0f)))
 			{
 				ImGui::TableSetupScrollFreeze(0, 1); // make top row always visible
 				ImGui::TableSetupScrollFreeze(0, 1); // make top row always visible
@@ -2197,7 +2194,6 @@ namespace components
 				}
 
 				ImGui::EndTable();
-				point_table_height = ImGui::GetItemRectSize().y;
 			} // ----------------------------------------
 
 			ImGui::Spacing(0, 0);
@@ -2453,16 +2449,33 @@ namespace components
 
 				const auto half_width = ImGui::GetContentRegionMax().x * 0.5f;
 				auto line1_str = "You'll loose all unsaved changes if you continue!";
-				auto line2_str = "Export to clipboard and override the settings manually!   ";
+				auto line2_str = "Copy to clipboard and manually change map_settings.toml!   ";
 				auto line3_str = "Do not forget to save the file ;)";
 
 				ImGui::Spacing();
 				ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line1_str).x * 0.5f));
 				ImGui::TextUnformatted(line1_str);
 
+				
+
+				ImGui::Spacing(0, 2);
+				ImGui::PushFont(common::imgui::font::BOLD);
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (ImGui::GetContentRegionAvail().x * 0.5f - 120.0f));
+				if (ImGui::Button("Copy Selected Light to Clipboard   " ICON_FA_SAVE, ImVec2(240.0f, 0)))
+				{
+					if (const auto edit_light = lights->get_first_active_light(); edit_light)
+					{
+						ImGui::LogToClipboard();
+						ImGui::LogText("%s", common::toml::build_light_string_for_single_light(lights->get_first_active_light()->def).c_str());
+						ImGui::LogFinish();
+					}
+				} ImGui::PopFont();
+				ImGui::Spacing(0, 2);
+
 				ImGui::Spacing();
 				ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line2_str).x * 0.5f));
 				ImGui::TextUnformatted(line2_str);
+				ImGui::Spacing(0, 2);
 
 				ImGui::PushFont(common::imgui::font::BOLD);
 				ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line3_str).x * 0.5f));

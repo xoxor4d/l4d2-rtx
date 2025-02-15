@@ -7,7 +7,7 @@ namespace common::toml
 	/// @return		the final string in toml format
 	std::string build_light_string_for_single_light(const map_settings::remix_light_settings_s& def)
 	{
-		std::string toml_str = "        # " + def.comment + "\n";
+		std::string toml_str = "# " + def.comment + "\n";
 
 		toml_str += "        {";
 
