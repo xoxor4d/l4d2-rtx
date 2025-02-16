@@ -59,19 +59,36 @@
 [CULL]
 
     c1m1_hotel = [
-        { in_area =   7, nocull_dist = 600.000000, leaf_tweak = [
+        { in_area =   7, nocull_dist = 630.000000, leaf_tweak = [
                 { in_leafs = [2498], areas = [14] },
             ] },
 
+        { in_area =   8, nocull_dist = 600.000000, leaf_tweak = [
+                { in_leafs = [3616, 3617], leafs = [3580] },
+            ] },
+        { in_area =  12, areas = [8], leafs = [
+                2516
+            ], nocull_dist = 600.000000 },
         { in_area =  13, areas = [23], leafs = [
                 2339
             ], nocull_dist = 600.000000 },
-        { in_area =  14, cull = 4, nocull_dist = 600.000000, leaf_tweak = [
+        { in_area =  14, leafs = [
+                2599
+            ], cull = 4, nocull_dist = 600.000000, leaf_tweak = [
                 { in_leafs = [2508, 2511], areas = [7] },
             ] },
 
         { in_area =  23, areas = [13], nocull_dist = 600.000000 },
+        { in_area =  24, cull = 4, nocull_dist = 600.000000, leaf_tweak = [
+                { in_leafs = [4364, 4367, 4373, 4400], areas = [26] },
+            ] },
+
+        { in_area =  26, leafs = [
+                2856, 2881, 3938, 3969, 4373
+            ], cull = 4, nocull_dist = 600.000000 },
     ]
+
+
 
     c2m1_highway = [
         { in_area =   1, leafs = [
@@ -132,24 +149,42 @@
 
 [MARKER]
     c1m1_hotel = [
-        { marker = 25, position = [620.000000, 5680.000000, 2920.000000], rotation = [0.000000, 0.000000, 0.000000] },
-        { nocull = 0, areas = [13], N_leafs = [2366, 2334, 2359, 2371, 2331, 2421], position = [1728.517944, 5713.995117, 2721.531006], rotation = [90.000000, 0.000000, 0.000000], scale = [2.080000, 2.120000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1621.017944, 5627.995117, 2721.531006], rotation = [90.000000, 90.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
+
+        # blocker on connecting hallway
+        { nocull = 0, areas = [13], N_leafs = [2366, 2334, 2359, 2371, 2331, 2421, 2328, 2324, 1939, 1930], position = [1728.517944, 5713.995117, 2721.531006], rotation = [90.000000, 0.000000, 0.000000], scale = [2.080000, 2.120000, 1.000000] },
+        { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1621.017944, 5627.995117, 2721.531006], rotation = [90.000000, 90.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
         { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1854.759033, 5599.157227, 2717.031250], rotation = [90.000000, 73.698997, 0.000000], scale = [3.240000, 2.940000, 1.000000] },
+
+        # sun
+        { nocull = 1, areas = [], N_leafs = [], position = [278.090027, 5762.697266, 2992.070068], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+
+        # for flashling lights in first hallway
+        { nocull = 2, areas = [21, 13, 23], N_leafs = [], position = [636.868408, 5553.342285, 2790.463135], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+
+        # sunlight blocker for hallway lower floor
+        { nocull = 0, areas = [], N_leafs = [], position = [388.700012, 5970.549805, 2540.469971], rotation = [0.000000, 90.000000, 0.000000], scale = [10.340000, 6.880000, 1.000000] },
+
+        # blocker on connecting hallway lower floor
+        { nocull = 0, areas = [7], N_leafs = [2505, 2512, 2498], position = [1574.949951, 5626.939941, 2526.510010], rotation = [0.000000, 90.000000, 0.000000], scale = [2.250000, 2.070000, 1.000000] },
+
+        # sunlight blocker lowest floor kitchen
+        { nocull = 0, areas = [8], N_leafs = [], position = [70.529999, 6013.899902, 1262.530029], rotation = [0.000000, 90.000000, 0.000000], scale = [2.600000, 9.660000, 1.000000] },
     ]
+
+
+
+
+
 
     c2m1_highway = [
         { nocull = 101, areas = [], N_leafs = [], position = [10457.524414, 7875.057617, -551.203003], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
         { nocull = 0, areas = [], N_leafs = [], position = [1792.145996, 3136.987061, -815.197998], rotation = [90.000000, 0.000000, 90.000000], scale = [5.260000, 30.660000, 1.000000] },
     ]
 
-
-
     c3m1_plankcountry = [
         { nocull = 300, areas = [], N_leafs = [], position = [-12668.542969, 10249.047852, 288.393005], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
         { nocull = 300, areas = [], N_leafs = [], position = [-7192.530762, 7555.255859, 129.031006], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
     ]
-
 
     c3m2_swamp = [
         { nocull = 300, areas = [], N_leafs = [], position = [-8232.350586, 7516.061035, 56.499001], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
@@ -271,11 +306,41 @@
             { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
         ], run_once = true, loop = true, loop_smoothing = true },
 
-        # green flashing light when opening the first door :: doors/door1_stop.wav -- delay: 0.00 -- vol: 0.69 -- origin: [408.00000 5600.00000 2704.00000]
-        { trigger = { sound = 0xe826cc9a, delay = 2.0, always = false }, points = [
-            { position = [378.5, 5675, 2740], radiance = [20.0, 0.0, 0.0], scalar = 0.0, radius = 3.0, smoothness = 1.0 },
-            { position = [378.5, 5675, 2740], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
-        ], run_once = false, loop = true, loop_smoothing = true },
+        # flashing firelight 1
+        { points = [
+            { position = [632.049988, 5542.350098, 2754.979980], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000 },
+            { position = [632.049988, 5542.350098, 2754.979980], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.100000 },
+            { position = [632.049988, 5542.350098, 2754.979980], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.300000 },
+            { position = [632.049988, 5542.350098, 2754.979980], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.400000 },
+            { position = [632.049988, 5542.350098, 2754.979980], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 2.27 },
+        ], loop = true },
+
+        # flashing firelight 2
+        { points = [
+            { position = [1025.023804, 5674.918945, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000 },
+            { position = [1025.023804, 5674.918945, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.100000 },
+            { position = [1025.023804, 5674.918945, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.300000 },
+            { position = [1025.023804, 5674.918945, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.400000 },
+            { position = [1025.023804, 5674.918945, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 2.270000 },
+        ], loop = true },
+
+        # flashing firelight 3
+        { points = [
+            { position = [1728.048706, 5574.531250, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000 },
+            { position = [1728.048706, 5574.531250, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.100000 },
+            { position = [1728.048706, 5574.531250, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.300000 },
+            { position = [1728.048706, 5574.531250, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.400000 },
+            { position = [1728.048706, 5574.531250, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 2.270000 },
+        ], loop = true },
+
+        # flashing firelight 4
+        { points = [
+            { position = [1670.531372, 6243.121094, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000 },
+            { position = [1670.531372, 6243.121094, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.100000 },
+            { position = [1670.531372, 6243.121094, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 4.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.300000 },
+            { position = [1670.531372, 6243.121094, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 0.400000 },
+            { position = [1670.531372, 6243.121094, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 2.270000 },
+        ], loop = true },
 
         # 2nd light - triggered and killed by choreo event - looping until killed (scene_playvcd "npc/announcer/prehub28.vcd")
         #{ trigger = { choreo = "prehub27.vcd", delay = 0.0 }, kill = { choreo = "prehub28.vcd", delay = 0.0 }, points = [
@@ -295,20 +360,4 @@
         #    { radiance = [50.0, 0.0, 50.0], radius = 5.0, timepoint = 6 },
         #    { radiance = [0.0, 50.0, 25.0], radius = 5.0, timepoint = 9 }, # last point NEEDS to define a timepoint
         #], run_once = false, loop = true, loop_smoothing = true },                    # loop_smoothing to smoothly trans. back to first point
-
-        # 4th light - spotlight
-        { points = [
-            { position = [-922.0, -500.0, -60.0], radiance = [0.0, 0.0, 50.0],  radius = 10.0, smoothness = 0.5, degrees = 180.0, direction = [0, 0, 1]  },
-            { radiance = [50.0, 0.0, 0.0],  radius = 10.0, smoothness = 0.5, degrees = 90.0, direction = [0, 1, 0]  },
-            { radiance = [0.0, 50.0, 0.0],  radius = 10.0, smoothness = 0.5, degrees = 45.0, direction = [1, 0, 0]  },
-            { radiance = [25.0, 0.0, 25.0], radius = 10.0, smoothness = 0.5, degrees = 90.0, direction = [0.5, 0.5, 0], timepoint = 6 },
-        ], run_once = false, loop = true, loop_smoothing = true },
-
-        # lmao funny light
-        { points = [
-            { position = [311.029999, 5573.859863, 2910.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 7.500000, radius = 1.700000, smoothness = 0.500000, direction = [-0.720037, 0.000000, 0.693935], degrees = 25.700001, softness = 0.000000, exponent = 0.000000 },
-            { position = [311.029999, 5573.859863, 2910.031250], radiance = [10.000000, 0.000000, 10.000000], scalar = 42.799999, radius = 1.700000, smoothness = 0.500000, direction = [-0.040191, 0.979143, -0.199156], degrees = 16.200001, softness = 0.000000, exponent = 0.000000 },
-            { position = [311.029999, 5573.859863, 2910.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 7.500000, radius = 1.700000, smoothness = 0.100000, direction = [0.660795, 0.000000, 0.750566], degrees = 25.700001, softness = 0.000000, exponent = 0.000000, timepoint = 3.400000 },
-        ], loop = true, loop_smoothing = true },
-
     ]
