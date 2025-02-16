@@ -303,7 +303,7 @@ namespace components
 			{
 				"flashlight_offset_player",
 				"Offset (along forward vector) that will be applied to the remixApi flashlight of the player. ~~ F: Forward || H: Horizontal || V: Vertical",
-				-8.0f, -5.0f, -2.0f
+				-15.5f, -3.5f, -5.0f
 			};
 
 			variable flashlight_offset_bot =

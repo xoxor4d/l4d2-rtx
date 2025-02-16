@@ -614,11 +614,15 @@ namespace components
 					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
 					ext.pNext = nullptr;
 
-					const Vector light_org = fl.def.pos + 
+					/*const Vector light_org = fl.def.pos + 
 						(fl.is_player ? gs->flashlight_offset_player.get_as<float*>() :
-										gs->flashlight_offset_bot.get_as<float*>());
+										gs->flashlight_offset_bot.get_as<float*>());*/
 
-					ext.position = light_org.ToRemixFloat3D();
+					Vector lpos = fl.def.pos;
+					const Vector offs = fl.is_player ? gs->flashlight_offset_player.get_as<float*>() : gs->flashlight_offset_bot.get_as<float*>();
+					lpos += (fl.def.fwd * offs.x) + (fl.def.rt * offs.z) + (fl.def.up * offs.y);
+
+					ext.position = lpos.ToRemixFloat3D(); 
 
 					ext.radius = gs->flashlight_radius.get_as<float>();
 					ext.shaping_hasvalue = TRUE;
