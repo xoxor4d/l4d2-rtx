@@ -628,6 +628,137 @@ namespace ImGui
 		return dirty;
 	}
 
+	bool Widget_PrettyStepVec3(const char* ID, float* vec_in, bool show_labels, const float label_size, const float step_amount,
+		const char* x_str, const char* y_str, const char* z_str)
+	{
+		auto left_label_button = [](const char* label, const ImVec2& button_size, const ImVec4& text_color, const ImVec4& bg_color)
+			{
+				bool clicked = false;
+
+				//PushFont(common::imgui::font::REGULAR);
+				PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 5.0f));
+				PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+				PushStyleColor(ImGuiCol_Text, text_color);
+				PushStyleColor(ImGuiCol_Border, GetColorU32(ImGuiCol_Border));
+				PushStyleColor(ImGuiCol_Button, bg_color); // GetColorU32(ImGuiCol_FrameBg)
+				PushStyleColor(ImGuiCol_ButtonHovered, bg_color);
+
+				if (ButtonEx(label, button_size, ImGuiButtonFlags_MouseButtonMiddle)) {
+					clicked = true;
+				}
+
+				PopStyleColor(4);
+				PopStyleVar(2);
+				//PopFont();
+
+				SameLine();
+				SetCursorPosX(GetCursorPosX() - 1.0f);
+
+				return clicked;
+			};
+
+		auto& style = GetStyle();
+
+		// ---------------
+		bool dirty = false;
+
+		PushID(ID);
+		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
+
+		const float line_height = GetFrameHeight();
+		const auto  button_size = ImVec2(line_height - 2.0f, line_height);
+		const float widget_spacing = 4.0f;
+
+		//ImVec2 label_size = CalcTextSize(ID, nullptr, true);
+		//label_size.x = ImMax(label_size.x, 80.0f);
+
+		const float widget_width_horz = (GetContentRegionAvail().x - 3.0f * button_size.x - 2.0f * widget_spacing -
+			(show_labels ? label_size + style.ItemInnerSpacing.x + style.FramePadding.y : style.ItemInnerSpacing.x + style.FramePadding.y)) * 0.333333f;
+
+		const ImVec2 step_button_size = ImVec2(widget_width_horz * 0.5f - widget_spacing - 4.0f, line_height);
+
+		// -------
+		// -- X --
+
+		if (left_label_button(x_str, button_size, ImVec4(0.84f, 0.55f, 0.53f, 1.0f), ImVec4(0.21f, 0.16f, 0.16f, 1.0f))) {
+			vec_in[0] = 0.0f; dirty = true;
+		}
+
+		PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+		if (ButtonEx("-##X", step_button_size))
+		{
+			DataTypeApplyOp(ImGuiDataType_Float, '-', &vec_in[0], &vec_in[0], &step_amount);
+			dirty = true;
+		}
+		SameLine();
+		SetCursorPosX(GetCursorPosX() - 1.0f);
+		if (ButtonEx("+##X", step_button_size))
+		{
+			DataTypeApplyOp(ImGuiDataType_Float, '+', &vec_in[0], &vec_in[0], &step_amount);
+			dirty = true;
+		}
+		PopItemFlag();
+
+		// -------
+		// -- Y --
+
+		SameLine(0, widget_spacing);
+		if (left_label_button(y_str, button_size, ImVec4(0.73f, 0.78f, 0.5f, 1.0f), ImVec4(0.17f, 0.18f, 0.15f, 1.0f))) {
+			vec_in[1] = 0.0f; dirty = true;
+		}
+
+		PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+		if (ButtonEx("-##Y", step_button_size))
+		{
+			DataTypeApplyOp(ImGuiDataType_Float, '-', &vec_in[1], &vec_in[1], &step_amount);
+			dirty = true;
+		}
+		SameLine();
+		SetCursorPosX(GetCursorPosX() - 1.0f);
+		if (ButtonEx("+##Y", step_button_size))
+		{
+			DataTypeApplyOp(ImGuiDataType_Float, '+', &vec_in[1], &vec_in[1], &step_amount);
+			dirty = true;
+		}
+		PopItemFlag();
+
+		// -------
+		// -- Z --
+
+		
+		SameLine(0, widget_spacing);
+		if (left_label_button(z_str, button_size, ImVec4(0.67f, 0.71f, 0.79f, 1.0f), ImVec4(0.18f, 0.21f, 0.23f, 1.0f))) {
+			vec_in[2] = 0.0f; dirty = true;
+		}
+
+		PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+		if (ButtonEx("-##Z", step_button_size))
+		{
+			DataTypeApplyOp(ImGuiDataType_Float, '-', &vec_in[2], &vec_in[2], &step_amount);
+			dirty = true;
+		}
+		SameLine();
+		SetCursorPosX(GetCursorPosX() - 1.0f);
+		if (ButtonEx("+##Z", step_button_size))
+		{
+			DataTypeApplyOp(ImGuiDataType_Float, '+', &vec_in[2], &vec_in[2], &step_amount);
+			dirty = true;
+		}
+		PopItemFlag();
+
+		PopStyleVar();
+		PopID();
+
+		if (show_labels)
+		{
+			SameLine(0, GetStyle().ItemInnerSpacing.x);
+			TextUnformatted(ID);
+		}
+
+		return dirty;
+	}
+
 	/// Custom Collapsing Header with changeable height - Background color: ImGuiCol_HeaderActive 
 	/// @param title_text	Label
 	/// @param height		Header Height

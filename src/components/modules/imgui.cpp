@@ -1745,8 +1745,13 @@ namespace components
 		{
 			if (const auto edit_light = lights->get_first_active_light(); edit_light)
 			{
+				auto temp_def = edit_light->def;
+				if (edit_light->mover.is_initialized()) {
+					temp_def.points = edit_light->mover.get_points_vec();
+				}
+
 				ImGui::LogToClipboard();
-				ImGui::LogText("%s", common::toml::build_light_string_for_single_light(lights->get_first_active_light()->def).c_str());
+				ImGui::LogText("%s", common::toml::build_light_string_for_single_light(temp_def).c_str());
 				ImGui::LogFinish();
 			}
 		} ImGui::PopFont();
@@ -1970,6 +1975,16 @@ namespace components
 		ImGui::Style_ColorButtonPush(im->ImGuiCol_ButtonGreen, true);
 		if (ImGui::Button("Add Light", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 		{
+			// write modified params into the current mapsetting light so changes dont get lost
+			if (auto edit_light = lights->get_first_active_light(); edit_light)
+			{
+				auto temp_def = edit_light->def;
+				if (edit_light->mover.is_initialized()) {
+					temp_def.points = edit_light->mover.get_points_vec();
+				}
+				*ms_light_selection = temp_def;
+			}
+
 			lights->destroy_and_clear_all_active_lights();
 
 			map_settings::remix_light_settings_s::point_s pt =
@@ -2045,16 +2060,26 @@ namespace components
 			//ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonYellow, true);
 			if (ImGui::Button("Duplicate Selected Light", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 			{
-				lights->destroy_and_clear_all_active_lights();
+				// write modified params into the current mapsetting light so changes dont get lost
+				if (auto edit_light = lights->get_first_active_light(); edit_light)
+				{
+					auto temp_def = edit_light->def;
+					if (edit_light->mover.is_initialized()) {
+						temp_def.points = edit_light->mover.get_points_vec();
+					}
+					*ms_light_selection = temp_def;
+				}
 
 				ms_lights.push_back(*ms_light_selection);
+				lights->destroy_and_clear_all_active_lights();
+
 				ms_light_selection = &ms_lights.back();
 				reset_point_selection = true;
 
 				if (!lights->get_active_light_count()) {
 					lights->add_single_map_setting_light_for_editing(ms_light_selection);
 				}
-			}
+			} TT("Duplicates the currently selected light.")
 			//ImGui::Style_ColorButtonPop();
 
 			ImGui::SameLine();
@@ -2289,6 +2314,53 @@ namespace components
 				ImGui::EndDisabled();
 			}
 
+			ImGui::Spacing(0, 4);
+
+			if (ImGui::CollapsingHeader("Light Transform (all points)", ImGuiTreeNodeFlags_SpanFullWidth))
+			{
+				const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
+
+				static float cont_height = 0.0f;
+				cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [active_points, edit_active_light, is_static_light_with_single_point]
+					{
+						if (ImGui::Button("Teleport Light To Player", ImVec2(ImGui::GetContentRegionAvail().x * 0.99f, 0)))
+						{
+							if (is_static_light_with_single_point) {
+								active_points->position = *game::get_current_view_origin();
+							}
+							else
+							{
+								auto& pts = edit_active_light->mover.get_points_vec();
+								Vector current_center = {};
+
+								for (const auto& point : pts) {
+									current_center += point.position;
+								} current_center /= (float)pts.size();
+
+								Vector teleport_offset = *game::get_current_view_origin() - current_center;
+
+								for (auto& point : pts) {
+									point.position += teleport_offset;
+								}
+							}
+						}
+
+						float offs[3] = {};
+						if (ImGui::Widget_PrettyStepVec3("Offset Light", offs, true, 76.0f, 0.5f))
+						{
+							if (is_static_light_with_single_point) {
+								active_points->position += offs;
+							}
+							else
+							{
+								for (auto& point : edit_active_light->mover.get_points_vec()) {
+									point.position += offs;
+								}
+							}
+						}
+					}, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
+			}
+
 			ImGui::Spacing(0, 8);
 
 			// -------
@@ -2491,8 +2563,13 @@ namespace components
 				{
 					if (const auto edit_light = lights->get_first_active_light(); edit_light)
 					{
+						auto temp_def = edit_light->def;
+						if (edit_light->mover.is_initialized()) {
+							temp_def.points = edit_light->mover.get_points_vec();
+						}
+
 						ImGui::LogToClipboard();
-						ImGui::LogText("%s", common::toml::build_light_string_for_single_light(lights->get_first_active_light()->def).c_str());
+						ImGui::LogText("%s", common::toml::build_light_string_for_single_light(temp_def).c_str());
 						ImGui::LogFinish();
 					}
 				} ImGui::PopFont();
@@ -2715,10 +2792,19 @@ namespace components
 	{
 		ImGui::SetNextWindowSize(ImVec2(900, 800), ImGuiCond_FirstUseEver);
 
-		if (!ImGui::Begin("Devgui", &m_menu_active, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse, &common::imgui::draw_window_blur_callback))
+		bool old_active_state = m_menu_active;
+		if (!ImGui::Begin("Devgui", &m_menu_active, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse, &common::imgui::draw_window_blur_callback))
 		{
 			ImGui::End();
 			return;
+		}
+
+		// HACK when using the menu close button instead of the hotkey to close the devgui
+		// :: use logic in 'imgui::input_message' to toggle the menu by sending a msg
+		if (old_active_state != m_menu_active && !m_menu_active) 
+		{ 
+			m_menu_active = true; // we have to re-set this back to true. We would instantly reopen the gui otherwise
+			SendMessage(glob::main_window, WM_KEYUP, VK_F5, 0);
 		}
 
 		m_im_window_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
