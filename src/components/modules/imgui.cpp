@@ -1473,6 +1473,7 @@ namespace components
 		static float cont_height = 0.0f;
 		cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [edit_active_light]
 			{
+				ImGui::BeginDisabled(!edit_active_light->mover.is_initialized());
 				ImGui::Checkbox("Run Once", &edit_active_light->def.run_once);
 				TT("Enabled: Destroy light after reaching the last point");
 
@@ -1484,12 +1485,13 @@ namespace components
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.66f, 0);
 				if (ImGui::Checkbox("Loop Smoothing", &edit_active_light->def.loop_smoothing)) {
-					edit_active_light->mover.init(edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
+					edit_active_light->mover.init(edit_active_light->mover.get_points_vec(), true, edit_active_light->def.loop_smoothing);
 				}
 				TT("Enabled: Automatically connect and smooth the start and end point.\n"
 					"[!] requires 'loop' to be true\n"
 					"[!] only position + timepoint is used from the last point");
 
+				ImGui::EndDisabled();
 				ImGui::Spacing(0, 6);
 
 				//ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - 80.0f);
@@ -1657,6 +1659,7 @@ namespace components
 
 				ImGui::Spacing(0, 6);
 
+				ImGui::BeginDisabled(!edit_active_light->mover.is_initialized());
 				ImGui::BeginDisabled(is_static_light_with_single_point);
 				if (ImGui::Button("Restart Light Loop", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
 					edit_active_light->mover.restart();
@@ -1666,13 +1669,15 @@ namespace components
 				ImGui::SameLine();
 				if (ImGui::Button("Evenly distribute all timepoints", ImVec2(ImGui::GetContentRegionAvail().x * 0.98f, 0)))
 				{
+					auto& pts = edit_active_light->mover.get_points_vec();
 					// clear timepoints for all but the very first & very last points:
-					for (size_t i = 1u; i < edit_active_light->def.points.size() - 1u; i++) {
-						edit_active_light->def.points[i].timepoint = 0.0f;
+					for (size_t i = 1u; i < pts.size() - 1u; i++) {
+						pts[i].timepoint = 0.0f;
 					}
 
-					edit_active_light->mover.init(edit_active_light->def.points, true, edit_active_light->def.loop_smoothing);
+					edit_active_light->mover.init(pts, true, edit_active_light->def.loop_smoothing);
 				} TT("This will clear and recalculate the timepoints of all but the last point.");
+				ImGui::EndDisabled();
 
 			}, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
 	}
@@ -2215,7 +2220,12 @@ namespace components
 				//if (active_points_count <= 1)
 				{
 					// copy light def because we dont want to directly edit the mapsettings def
-					auto new_def = edit_active_light->def; 
+					auto new_def = edit_active_light->def;
+
+					// use mover points if light has more then 1 pt
+					new_def.points = edit_active_light->mover.is_initialized()
+						? edit_active_light->mover.get_points_vec()
+						: new_def.points;
 
 					lights->destroy_and_clear_all_active_lights(); 
 
@@ -2247,15 +2257,20 @@ namespace components
 				ImGui::Style_ColorButtonPush(im->ImGuiCol_ButtonRed, true);
 				if (ImGui::Button("Delete Selected Point", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 				{
+					// copy light def because we dont want to directly edit the mapsettings def
+					auto new_def = edit_active_light->def;
+					 
+					// use mover points if light has more then 1 pt
+					new_def.points = edit_active_light->mover.is_initialized()
+						? edit_active_light->mover.get_points_vec()
+						: new_def.points;
+
 					// disabled handles single points ..
 					std::ptrdiff_t pt_index = active_point_selection - active_points;
 
-					if ((size_t) pt_index < edit_active_light->def.points.size()) {
-						edit_active_light->def.points.erase(edit_active_light->def.points.begin() + pt_index);
+					if ((size_t) pt_index < new_def.points.size()) {
+						new_def.points.erase(new_def.points.begin() + pt_index);
 					}
-
-					// copy light def because we dont want to directly edit the mapsettings def
-					auto new_def = edit_active_light->def;
 
 					lights->destroy_and_clear_all_active_lights();
 
