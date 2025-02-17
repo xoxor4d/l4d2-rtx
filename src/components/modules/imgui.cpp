@@ -826,6 +826,7 @@ namespace components
 				// width of first col
 				first_col_width = ImGui::GetCursorScreenPos().x - first_col_width;
 
+				// dropdown
 				ImGui::PushID((int)area_num);
 				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 				if (ImGui::BeginCombo("##ModeSelector", map_settings::AREA_CULL_MODE_STR[a.cull_mode], ImGuiComboFlags_None))
@@ -1456,9 +1457,6 @@ namespace components
 		return false;
 	}
 
-
-
-
 	void mapsettings_ls_general_light_settings(remix_lights::remix_light_s* edit_active_light)
 	{
 		const auto im = imgui::get();
@@ -1681,7 +1679,6 @@ namespace components
 
 			}, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
 	}
-
 
 	void cont_mapsettings_light_spawning()
 	{
@@ -2610,6 +2607,191 @@ namespace components
 		} // end if edit_active_light && ms_light_selection
 	}
 
+	void cont_mapsettings_confvar()
+	{
+		const auto& var = remix_vars::get();
+
+		ImGui::PushFont(common::imgui::font::BOLD);
+		if (ImGui::Button("Reset Vars to Level State   " ICON_FA_REPLY_ALL "##ConfvarReset", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
+			var->reset_all_modified(true);
+		} ImGui::PopFont(); TT("This resets all remix vars back to level state (same as when map loads)");
+
+		ImGui::SameLine();
+		reload_mapsettings_button_with_popup("Confvar");
+		ImGui::Spacing(0, 2);
+
+		static std::string conf_str1, conf_str2;
+		static float conf1_transition_time = 0.0f, conf2_transition_time = 0.0f;
+		static remix_vars::EASE_TYPE conf1_mode = remix_vars::EASE_TYPE_SIN_IN, conf2_mode = remix_vars::EASE_TYPE_SIN_IN;
+		static std::vector<std::string> configs;
+		static bool loaded_configs = false;
+
+		ImGui::PushFont(common::imgui::font::BOLD);
+		if (ImGui::Button("Refresh Configs   " ICON_FA_REDO, ImVec2(ImGui::GetContentRegionAvail().x, 0)) || !loaded_configs)
+		{
+			configs.clear();
+			if (!game::root_path.empty())
+			{
+				std::string conf_path = game::root_path + "l4d2-rtx\\map_configs\\";
+				if (std::filesystem::exists(conf_path))
+				{
+					for (const auto& d : std::filesystem::directory_iterator(conf_path))
+					{
+						if (d.path().extension() == ".conf")
+						{
+							auto file = std::filesystem::path(d.path());
+							configs.push_back(file.filename().string());
+						}
+					}
+				}
+				loaded_configs = true;
+			}
+		}
+		ImGui::PopFont();
+		ImGui::Spacing(0, 6);
+
+		{
+
+			ImGui::TableHeaderDropshadow();
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y);
+			ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_FrameBgActive));
+			if (ImGui::BeginListBox("##listbox1", ImVec2(ImGui::GetContentRegionAvail().x, 100.0f)))
+			{
+				for (const auto& str : configs)
+				{
+					const bool is_selected = conf_str1 == str;
+					if (ImGui::Selectable(str.c_str(), is_selected)) {
+						conf_str1 = str;
+					}
+
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndListBox();
+			}
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
+			ImGui::Spacing(0, 4);
+
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			if (ImGui::DragFloat("Transition Time##1", &conf1_transition_time, 0.005f, 0.0f)) {
+				conf1_transition_time = std::clamp(conf1_transition_time, 0.0f, FLT_MAX);
+			}
+
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.4f);
+			if (ImGui::BeginCombo("##ModeSelector1", remix_vars::EASE_TYPE_STR[conf1_mode], ImGuiComboFlags_None))
+			{
+				for (std::uint32_t n = 0u; n < (std::uint32_t)IM_ARRAYSIZE(remix_vars::EASE_TYPE_STR); n++)
+				{
+					const bool is_selected = conf1_mode == n;
+					if (ImGui::Selectable(remix_vars::EASE_TYPE_STR[n], is_selected)) {
+						conf1_mode = (remix_vars::EASE_TYPE)n;
+					}
+
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::SameLine();
+			ImGui::BeginDisabled(conf_str1.empty());
+
+			const auto btn_to_label_size = ImGui::CalcWidgetWidthForChild(120.0f);
+			if (ImGui::Button("Trigger##1", ImVec2(btn_to_label_size, 0)))
+			{
+				std::string conf_name = conf_str1;
+				if (!conf_name.ends_with(".conf")) {
+					conf_name += ".conf";
+				}
+
+				var->parse_and_apply_conf_with_lerp(
+					conf_name,
+					utils::string_hash64(conf_name),
+					conf1_mode,
+					conf1_transition_time);
+			}
+			ImGui::EndDisabled();
+		}
+
+		ImGui::Spacing(0, 4);
+		ImGui::Separator();
+		ImGui::Spacing(0, 4);
+
+		{
+			ImGui::TableHeaderDropshadow();
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() - ImGui::GetStyle().ItemSpacing.y);
+			ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetColorU32(ImGuiCol_FrameBgActive));
+			if (ImGui::BeginListBox("##listbox2", ImVec2(ImGui::GetContentRegionAvail().x, 100.0f)))
+			{
+				for (const auto& str : configs)
+				{
+					const bool is_selected = conf_str2 == str;
+					if (ImGui::Selectable(str.c_str(), is_selected)) {
+						conf_str2 = str;
+					}
+
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndListBox();
+			}
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
+			ImGui::Spacing(0, 4);
+
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			if (ImGui::DragFloat("Transition Time##2", &conf2_transition_time, 0.005f, 0.0f)) {
+				conf2_transition_time = std::clamp(conf2_transition_time, 0.0f, FLT_MAX);
+			}
+
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.4f);
+			if (ImGui::BeginCombo("##ModeSelector2", remix_vars::EASE_TYPE_STR[conf2_mode], ImGuiComboFlags_None))
+			{
+				for (std::uint32_t n = 0u; n < (std::uint32_t)IM_ARRAYSIZE(remix_vars::EASE_TYPE_STR); n++)
+				{
+					const bool is_selected = conf2_mode == n;
+					if (ImGui::Selectable(remix_vars::EASE_TYPE_STR[n], is_selected)) {
+						conf2_mode = (remix_vars::EASE_TYPE)n;
+					}
+
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+
+				}
+				ImGui::EndCombo();
+			}
+
+			ImGui::SameLine();
+			ImGui::BeginDisabled(conf_str2.empty());
+
+			const auto btn_to_label_size = ImGui::CalcWidgetWidthForChild(120.0f);
+			if (ImGui::Button("Trigger##2", ImVec2(btn_to_label_size, 0)))
+			{
+				std::string conf_name = conf_str2;
+				if (!conf_name.ends_with(".conf")) {
+					conf_name += ".conf";
+				}
+
+				var->parse_and_apply_conf_with_lerp(
+					conf_name,
+					utils::string_hash64(conf_name),
+					conf2_mode,
+					conf2_transition_time);
+			}
+			ImGui::EndDisabled();
+		}
+
+		ImGui::Spacing(0, 4);
+	}
+
 	void imgui::tab_map_settings()
 	{
 		// general settings
@@ -2650,6 +2832,13 @@ namespace components
 			static float cont_lights_height = 0.0f;
 			cont_lights_height = ImGui::Widget_ContainerWithCollapsingTitle("Lights", cont_lights_height, cont_mapsettings_light_spawning,
 				false, ICON_FA_LIGHTBULB, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		// config vars
+		{
+			static float cont_vars_height = 0.0f;
+			cont_vars_height = ImGui::Widget_ContainerWithCollapsingTitle("Configvars / Transitions", cont_vars_height, cont_mapsettings_confvar,
+				false, ICON_FA_PAINT_BRUSH, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 
 		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "\nLeaf: " + std::to_string(g_current_leaf);

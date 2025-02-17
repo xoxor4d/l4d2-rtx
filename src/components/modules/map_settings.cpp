@@ -788,7 +788,7 @@ namespace components
 								}
 
 								// leaf trigger
-								else if (trigger.contains("leafs"))
+								else if (trigger.contains("leafs") && trigger.at("leafs").is_array())
 								{
 									std::unordered_set<std::uint32_t> leaf_set;
 									const auto& leafs = trigger.at("leafs").as_array();

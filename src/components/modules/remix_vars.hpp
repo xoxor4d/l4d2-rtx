@@ -13,7 +13,21 @@ namespace components
 
 		static void xo_vars_parse_options_fn();
 
-		enum EASE_TYPE
+		static constexpr const char* EASE_TYPE_STR[] =
+		{
+			"Linear",
+			"SinIn",
+			"SinOut",
+			"SinInOut",
+			"CubicIn",
+			"CubicOut",
+			"CubicInOut",
+			"ExpoIn",
+			"ExpoOut",
+			"ExpoInOut",
+		};
+
+		enum EASE_TYPE : std::uint8_t
 		{
 			EASE_TYPE_LINEAR,
 			EASE_TYPE_SIN_IN,
