@@ -66,6 +66,7 @@
         { in_area =   8, nocull_dist = 600.000000, leaf_tweak = [
                 { in_leafs = [3616, 3617], leafs = [3580] },
             ] },
+
         { in_area =  12, areas = [8], leafs = [
                 2516
             ], nocull_dist = 600.000000 },
@@ -79,15 +80,17 @@
             ] },
 
         { in_area =  23, areas = [13], nocull_dist = 600.000000 },
-        { in_area =  24, cull = 4, nocull_dist = 600.000000, leaf_tweak = [
-                { in_leafs = [4364, 4367, 4373, 4400], areas = [26] },
+        { in_area =  24, leafs = [
+                2856, 2881, 3938, 3969, 4373
+            ], cull = 4, nocull_dist = 600.000000, leaf_tweak = [
+                { in_leafs = [4361, 4364, 4367, 4373, 4400], areas = [26] },
             ] },
 
+        { in_area =  25, areas = [26], nocull_dist = 600.000000 },
         { in_area =  26, leafs = [
                 2856, 2881, 3938, 3969, 4373
             ], cull = 4, nocull_dist = 600.000000 },
     ]
-
 
 
     c2m1_highway = [
@@ -232,6 +235,10 @@
         #{ conf = "chromatic_explosion.conf", trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = 0x87a91fef }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = "weapons/pistol/gunfire/pistol_fire.wav" }, mode = 2, ease = 8, duration = 0.25, delay_in = 0.0, delay_out = 0.15 },
+        { conf = "fire_smokey_screen.conf", trigger = { sound = 0xda6f9ddf }, mode = 0, ease = 6, duration = 13.0, delay_in = 0.0 },
+        { conf = "fire_smokey_screen.conf", trigger = { leafs = [4364] }, mode = 2, ease = 0, duration = 5.0, delay_in = 0.0 },
+        { conf = "fire_smokey_screen_half.conf", trigger = { leafs = [4367, 4373] }, mode = 2, ease = 0, duration = 5.0, delay_in = 0.0 },
+        { conf = "fire_smokey_screen_half_quarter.conf", trigger = { leafs = [4371] }, mode = 2, ease = 0, duration = 5.0, delay_in = 0.0 },
     ]}
 
 
