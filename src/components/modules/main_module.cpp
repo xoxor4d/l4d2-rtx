@@ -277,6 +277,7 @@ namespace components
 		force_node_vis(parent_node_index, hide);
 	}
 
+	// check if a boundingbox is within a specified radius around the player
 	bool is_aabb_within_distance(const VectorAligned& center, const VectorAligned& half_diagonal, const Vector& player_origin, const float radius)
 	{
 		const Vector min_bounds = center - half_diagonal;

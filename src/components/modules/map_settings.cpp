@@ -1096,6 +1096,47 @@ namespace components
 								);
 							}
 
+							// attach settings
+
+							float temp_attach_prop_radius = 0.0f;
+							std::string temp_attach_prop_str;
+							Vector temp_attach_prop_bounds_min;
+							Vector temp_attach_prop_bounds_max;
+
+							if (entry.contains("attach"))
+							{
+								bool has_valid_attach = false;
+								const auto& attach = entry.at("attach");
+
+								if (attach.contains("radius")) 
+								{
+									temp_attach_prop_radius = to_float(attach.at("radius"), 0.0f);
+									has_valid_attach = true;
+								}
+								else if (attach.contains("name"))
+								{
+									try { temp_attach_prop_str = attach.at("name").as_string(); }
+									CATCH_ERR;
+
+									has_valid_attach = true;
+								}
+
+								if (has_valid_attach)
+								{
+									m_map_settings.using_any_light_attached_to_prop = true;
+
+									if (attach.contains("bounds"))
+									{
+										if (const auto& bounds = attach.at("bounds").as_array(); 
+											bounds.size() == 6u)
+										{
+											temp_attach_prop_bounds_min = Vector(to_float(bounds[0]), to_float(bounds[1]), to_float(bounds[2]));
+											temp_attach_prop_bounds_max = Vector(to_float(bounds[3]), to_float(bounds[4]), to_float(bounds[5]));
+										}
+									}
+								}
+							}
+
 							// - parse general settings
 
 							if (!temp_points.empty())
@@ -1131,6 +1172,10 @@ namespace components
 										std::move(temp_kill_choreo_name),
 										temp_kill_sound,
 										temp_kill_delay,
+										temp_attach_prop_radius,
+										std::move(temp_attach_prop_str),
+										temp_attach_prop_bounds_min,
+										temp_attach_prop_bounds_max,
 										std::move(temp_comment))
 								);
 							}

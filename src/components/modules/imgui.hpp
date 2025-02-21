@@ -36,6 +36,7 @@ namespace components
 		bool m_debugvis_live = false;
 		bool m_debugvis_radius = true;
 		bool m_debugvis_shaping = true;
+		bool m_debugvis_attach_bounds = true;
 		float m_debugvis_cone_height = 60.0f;
 		int m_debugvis_cone_steps = 3u;
 

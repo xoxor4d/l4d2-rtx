@@ -2,6 +2,12 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		bool debug_pos_time = false;
+		bool show_api_lights = false;
+	}
+
 	/**
 	 * Initializes the light interpolator
 	 * @param points			Reference to point-list
@@ -94,13 +100,13 @@ namespace components
 	/**
 	 * Calculate light properties for the current tick \n
 	 * All arguments are optional - use nullptr to not update a specific property
-	 * @param position		(LightInfoEXT)
-	 * @param radiance		(LightInfo)
-	 * @param radius		(LightInfo)
-	 * @param direction		(LightInfoEXT)
-	 * @param degrees		(LightInfoEXT)
-	 * @param softness		(LightInfoEXT)
-	 * @param exponent		(LightInfoEXT)
+	 * @param position			(LightInfoEXT)
+	 * @param radiance			(LightInfo)
+	 * @param radius			(LightInfo)
+	 * @param direction			(LightInfoEXT)
+	 * @param degrees			(LightInfoEXT)
+	 * @param softness			(LightInfoEXT)
+	 * @param exponent			(LightInfoEXT)
 	 */
 	void light_interpolator::interpolate(remixapi_Float3D* position, remixapi_Float3D* radiance, float* radius, 
 										 remixapi_Float3D* direction, float* degrees, float* softness, float* exponent)
@@ -115,13 +121,15 @@ namespace components
 
 			if (temp_pt)
 			{
-				if (position) { *position = temp_pt->position.ToRemixFloat3D(); }
+				if (position) { *position = (temp_pt->position + m_position_offset).ToRemixFloat3D(); }
 				if (radiance) { *radiance = (temp_pt->radiance * temp_pt->radiance_scalar).ToRemixFloat3D(); }
 				if (radius) { *radius = temp_pt->radius; }
 				if (direction) { *direction = temp_pt->direction.ToRemixFloat3D(); }
 				if (degrees) { *degrees = temp_pt->degrees; }
 				if (softness) { *softness = temp_pt->softness; }
 				if (exponent) { *exponent = temp_pt->exponent; }
+
+				return;
 			}
 		}
 
@@ -147,7 +155,7 @@ namespace components
 						+ p2.position * (-2.0f * t3 + 3.0f * t2) 
 						+ (p2.position - p0.position) * p1.smoothness * (t3 - 2.0f * t2 + t) 
 						+ (p3.position - p1.position) * p2.smoothness * (t3 - t2)
-						).ToRemixFloat3D();
+						+ m_position_offset).ToRemixFloat3D();
 				}
 
 				if (direction)
@@ -192,7 +200,7 @@ namespace components
 		}
 
 		// should not happen if durations are correct
-		if (position) { *position = m_points.back().position.ToRemixFloat3D(); }
+		if (position) { *position = (m_points.back().position + m_position_offset).ToRemixFloat3D(); }
 		if (radiance) { *radiance = (m_points.back().radiance * m_points.back().radiance_scalar).ToRemixFloat3D(); }
 		if (radius) { *radius = m_points.back().radius; }
 		if (direction) { *direction = m_points.back().direction.ToRemixFloat3D(); }
@@ -221,7 +229,7 @@ namespace components
 
 		if (light)
 		{
-			light->ext.position = pt->position.ToRemixFloat3D();
+			light->ext.position = (pt->position + light->attached_offset).ToRemixFloat3D();
 			light->info.radiance = (pt->radiance * pt->radiance_scalar).ToRemixFloat3D();
 			light->ext.radius = pt->radius;
 			light->ext.shaping_hasvalue = pt->use_shaping;
@@ -259,6 +267,8 @@ namespace components
 
 		if (light)
 		{
+			light->mover.set_position_offset(light->attached_offset);
+
 			light->mover.interpolate(
 				&light->ext.position, 
 				&light->info.radiance, 
@@ -303,7 +313,7 @@ namespace components
 			light->ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
 			light->ext.pNext = nullptr;
 			light->ext.position = pt.position.ToRemixFloat3D();
-			light->ext.radius = pt.radius;
+			light->ext.radius = light->has_attach_parms() && light->is_attached() ? pt.radius : 0.0f;
 			light->ext.shaping_hasvalue = pt.use_shaping;
 			light->ext.shaping_value = {};
 			light->ext.shaping_value.direction = pt.direction.ToRemixFloat3D();
@@ -453,7 +463,7 @@ namespace components
 				// kill delay timer
 				if (it->timer > 0.0f) 
 				{
-					it->timer -= interfaces::get()->m_globals->frametime;
+					it->timer -= interfaces::get()->m_globals->absoluteframetime;
 					++it;
 				}
 				else
@@ -470,7 +480,7 @@ namespace components
 		{
 			if (l.mover.is_initialized())
 			{
-				const auto finished = l.mover.advance_time(interfaces::get()->m_globals->frametime);
+				const auto finished = l.mover.advance_time(interfaces::get()->m_globals->absoluteframetime);
 				update_remix_light(&l);
 
 				if (!edit_mode)
@@ -480,13 +490,28 @@ namespace components
 					}
 				}
 			}
+			else // single point lights
+			{
+				if (l.has_attach_parms())
+				{
+					if (l.is_attached()) { // update every frame when attached
+						update_static_remix_light(&l, &l.def.points.front());
+					}
+					else if (l.ext.radius > 0.0f) // "disable" light when it gets unattached
+					{
+						auto temp_pt = l.def.points.front();
+						temp_pt.radius = 0.0f;
+						update_static_remix_light(&l, &temp_pt);
+					}
+				}
+			}
 
 			// if light is not yet spawned
 			if (!l.handle)
 			{
 				// handle delayed triggering
 				if (l.timer < l.def.trigger_delay) {
-					l.timer += interfaces::get()->m_globals->frametime;
+					l.timer += interfaces::get()->m_globals->absoluteframetime;
 				}
 				else
 				{
@@ -504,9 +529,7 @@ namespace components
 		}
 	}
 
-	/**
-	 * Draws all lights in 'm_map_lights'
-	 */
+	// Draw all active map lights
 	void remix_lights::draw_all_active_lights()
 	{
 		for (auto& l : m_active_lights)
@@ -519,6 +542,56 @@ namespace components
 
 	// #
 	// #
+
+	bool light_attachment_is_matching_model(const remix_lights::remix_light_s& light, const ModelRenderInfo_t& info)
+	{
+		const bool has_radius = light.def.attach_prop_radius != 0.0f;
+		const bool has_name = !light.def.attach_prop_name.empty();
+
+		if (!has_radius && !has_name) {
+			return false;
+		}
+
+		// bounds check
+		if (!light.def.attach_prop_mins.IsZero() || !light.def.attach_prop_maxs.IsZero())
+		{
+			if (!utils::vector::is_point_in_aabb(info.origin, light.def.attach_prop_mins, light.def.attach_prop_maxs)) {
+				return false;
+			}
+		}
+
+		// radius check if specified
+		if (has_radius && !utils::float_equal(info.pModel->radius, light.def.attach_prop_radius)) {
+			return false;
+		}
+
+		// name substring check if specified
+		if (has_name && !std::string_view(info.pModel->szPathName).contains(light.def.attach_prop_name)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	// called from model_renderer::DrawModelExecute::Detour
+	void remix_lights::on_draw_model_exec(const ModelRenderInfo_t& info)
+	{
+		if (map_settings::get_map_settings().using_any_light_attached_to_prop)
+		{
+			for (auto& light : m_active_lights)
+			{
+				if (light.attachframe != m_attachframe_counter)
+				{
+					if (light_attachment_is_matching_model(light, info))
+					{
+						light.attachframe = m_attachframe_counter; // mark as processed this frame
+						light.attached_offset = info.origin;
+						//break; // we might have other lights attached to this model
+					}
+				}
+			}
+		}
+	}
 
 	// called from: choreo_events::scene_ent_on_start_event_hk
 	void remix_lights::on_event_start(const std::string_view& name, const std::string_view& actor, const std::string_view& event, const std::string_view& param1)
@@ -619,8 +692,48 @@ namespace components
 
 	void remix_lights::on_client_frame()
 	{
-		get()->update_all_active_lights();
-		get()->draw_all_active_lights();
+		const auto rml = remix_lights::get();
+		const auto& glob = interfaces::get()->m_globals;
+
+		// check if paused
+		rml->m_is_paused = utils::float_equal(glob->frametime, 0.0f);
+
+		if (!rml->m_is_paused) 
+		{
+			rml->update_all_active_lights();
+			rml->debug_print_player_pos_time();
+
+			++m_attachframe_counter;
+		}
+
+		rml->draw_all_active_lights();
+
+		if (cmd::show_api_lights)
+		{
+			bool first_done = false;
+			for (const auto& l : m_active_lights)
+			{
+				const Vector circle_pos = &l.ext.position.x;
+				const float radius = l.ext.radius;
+				const Vector color = { 1.0f, 1.0f, 1.0f };
+
+				const auto remixapi = remix_api::get();
+
+				// we only need to craft one circle instance - everything else is instanced
+				if (!first_done)
+				{
+					first_done = true;
+					remixapi->add_debug_circle(circle_pos, Vector(0.0f, 0.0f, 1.0f), radius - 0.02f, radius * 0.1f, color);
+				}
+				else {
+					remixapi->add_debug_circle_based_on_previous(circle_pos, Vector(0, 0, 90), Vector(1.0f, 1.0f, 1.0f));
+				}
+
+				remixapi->add_debug_circle_based_on_previous(circle_pos, Vector(0, 90, 0), Vector(1.0f, 1.0f, 1.0f));
+				remixapi->add_debug_circle_based_on_previous(circle_pos, Vector(90, 0, 90), Vector(1.0f, 1.0f, 1.0f));
+			}
+		}
+		
 	}
 
 	// called before map_settings
@@ -628,10 +741,81 @@ namespace components
 	{
 		// reset spawn tracker
 		m_active_light_spawn_tracker = 0u;
+		m_attachframe_counter = 0u;
+	}
+
+	void remix_lights::debug_print_player_pos_time()
+	{
+		if (cmd::debug_pos_time)
+		{
+			const auto& glob = interfaces::get()->m_globals;
+
+			m_dbgpos_last_curtime = glob->curtime;
+
+			// update print timer
+			m_dbgpos_print_timer += glob->absoluteframetime;
+
+			const auto* curpos = game::get_current_view_origin();
+
+			// check if player moves
+			if (m_dbgpos_last_pos == *curpos)
+			{
+				m_dbgpos_timer_since_movement = 0.0f;
+
+				if (m_dbgpos_on_steady_once) {
+					game::print_ingame("[POS] Movement End\n");
+				}
+
+				m_dbgpos_on_steady_once = false;
+			}
+			else 
+			{
+				if (!m_dbgpos_on_steady_once)
+				{
+					m_dbgpos_on_steady_once = true;
+					m_dbgpos_timepoint_on_movement = glob->curtime;
+					game::print_ingame("[POS] Movement Start\n");
+				}
+
+				m_dbgpos_timer_since_movement += glob->absoluteframetime;
+
+				game::print_ingame("> POS [%.2f, %.2f, %.2f] @ timer [%.3f] -- @ delta [%.3f] -- @ curtime [%.3f]\n",
+					curpos->x, curpos->y, curpos->z, 
+					m_dbgpos_timer_since_movement, 
+					glob->curtime - m_dbgpos_timepoint_on_movement,
+					glob->curtime);
+			}
+
+			// print every 0.2s
+			/*if (m_dbgpos_print_timer >= 0.2f)
+			{
+				m_dbgpos_print_timer = 0.0f;
+			}*/
+
+			m_dbgpos_last_pos = *game::get_current_view_origin();
+		}
+	}
+
+	ConCommand xo_debug_toggle_pos_time_cmd {};
+	void xo_debug_toggle_pos_time_fn()
+	{
+		cmd::debug_pos_time = !cmd::debug_pos_time;
+	}
+
+	ConCommand xo_debug_toggle_show_api_lights_cmd {};
+	void xo_debug_toggle_show_api_lights_fn()
+	{
+		cmd::show_api_lights = !cmd::show_api_lights;
 	}
 
 	remix_lights::remix_lights()
 	{
 		p_this = this;
+
+		// #
+		// commands
+
+		game::con_add_command(&xo_debug_toggle_pos_time_cmd, "xo_debug_toggle_pos_time", xo_debug_toggle_pos_time_fn, "Toggle debug prints about player position and time (useful for animated lights)");
+		game::con_add_command(&xo_debug_toggle_show_api_lights_cmd, "xo_debug_toggle_show_api_lights", xo_debug_toggle_show_api_lights_fn, "Toggle debug vis for lights added via the remixapi");
 	}
 }

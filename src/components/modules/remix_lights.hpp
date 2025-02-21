@@ -3,6 +3,12 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		extern bool debug_pos_time;
+		extern bool show_api_lights;
+	}
+
 	class light_interpolator
 	{
 	public:
@@ -15,6 +21,8 @@ namespace components
 
 		bool advance_time(float frametime);
 		void restart() { m_elapsed_time = 0.0f; }
+
+		void set_position_offset(const Vector& offs) { m_position_offset = offs; }
 
 		void interpolate(
 			remixapi_Float3D* position = nullptr, 
@@ -42,6 +50,7 @@ namespace components
 		bool m_initialized = false;
 		bool m_looping = false;
 		bool m_loop_smoothing = false;
+		Vector m_position_offset;
 		std::vector<map_settings::remix_light_settings_s::point_s> m_points;
 		std::vector<float> m_segment_durations;
 		float m_elapsed_time = 0.0f;
@@ -112,6 +121,7 @@ namespace components
 		static inline remix_lights* p_this = nullptr;
 		static remix_lights* get() { return p_this; }
 
+		static void on_draw_model_exec(const ModelRenderInfo_t& info);
 		static void on_event_start(const std::string_view& name, const std::string_view& actor, const std::string_view& event, const std::string_view& param1);
 		static void on_event_finish(const std::string_view& name);
 		static void on_sound_start(std::uint32_t hash);
@@ -122,6 +132,11 @@ namespace components
 
 		struct remix_light_s
 		{
+			bool has_spawn_trigger() const { return def.trigger_sound_hash || !def.trigger_choreo_actor.empty(); }
+			bool has_kill_trigger() const { return def.kill_sound_hash || !def.kill_choreo_name.empty(); }
+			bool has_attach_parms() const { return def.attach_prop_radius != 0.0f || !def.attach_prop_name.empty(); }
+			bool is_attached() const { return attachframe && attachframe == m_attachframe_counter; }
+
 			map_settings::remix_light_settings_s def;
 			std::uint32_t light_num = 0u;
 			float timer = 0.0f;
@@ -130,6 +145,8 @@ namespace components
 			remixapi_LightHandle handle = nullptr;
 			remixapi_LightInfoSphereEXT ext = {};
 			remixapi_LightInfo info = {};
+			Vector attached_offset;
+			std::uint32_t attachframe = 0u;
 		};
 
 		bool update_static_remix_light(remix_light_s* light, const map_settings::remix_light_settings_s::point_s* pt);
@@ -150,8 +167,21 @@ namespace components
 		size_t get_active_light_count() { return m_active_lights.size(); }
 		remix_light_s* get_first_active_light() { return !m_active_lights.empty() ? &m_active_lights.front() : nullptr; }
 
+		void debug_print_player_pos_time();
+
 	private:
 		static inline std::uint32_t m_active_light_spawn_tracker = 0u;
 		static inline std::vector<remix_light_s> m_active_lights = {};
+		static inline std::uint32_t m_attachframe_counter = 0u;
+		bool m_is_paused = false;
+
+		// -
+		float m_dbgpos_print_timer = 0.0f;
+		float m_dbgpos_timer_since_movement = 0.0f;
+		float m_dbgpos_timepoint_on_movement = 0.0f;
+		Vector m_dbgpos_last_pos = {};
+		bool m_dbgpos_on_steady_once = false;
+		float m_dbgpos_last_curtime = 0.0f;
+
 	};
 }

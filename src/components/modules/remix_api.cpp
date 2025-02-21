@@ -64,6 +64,15 @@ namespace components
 					api->m_bridge.DrawInstance(&inst);
 				}
 			}
+
+			// remove all instances
+			for (auto& circle : api->m_debug_circles)
+			{
+				if (circle.handle) {
+					api->m_bridge.DestroyMesh(circle.handle);
+				}
+			}
+			api->m_debug_circles.clear();
 		}
 
 		// --
@@ -522,29 +531,24 @@ namespace components
 
 	/**
 	 * Draw a wireframe box using the remix api
-	 * @param center		Center of the cube
-	 * @param half_diagonal Half diagonal distance of the box
-	 * @param width			Line width
+	 * @param mins			Bound mins
+	 * @param maxs			Bound maxs
+	 * @param line_width	Line width
 	 * @param color			Line color
 	 */
-	void remix_api::debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, const float width, const DEBUG_REMIX_LINE_COLOR& color)
+	void remix_api::debug_draw_box(const Vector& mins, const Vector& maxs, const float line_width, const DEBUG_REMIX_LINE_COLOR& color)
 	{
-		Vector min, max;
 		Vector corners[8];
 
-		// calculate min and max positions based on the center and half diagonal
-		min = center - half_diagonal;
-		max = center + half_diagonal;
-
 		// get the corners of the cube
-		corners[0] = Vector(min.x, min.y, min.z);
-		corners[1] = Vector(min.x, min.y, max.z);
-		corners[2] = Vector(min.x, max.y, min.z);
-		corners[3] = Vector(min.x, max.y, max.z);
-		corners[4] = Vector(max.x, min.y, min.z);
-		corners[5] = Vector(max.x, min.y, max.z);
-		corners[6] = Vector(max.x, max.y, min.z);
-		corners[7] = Vector(max.x, max.y, max.z);
+		corners[0] = Vector(mins.x, mins.y, mins.z);
+		corners[1] = Vector(mins.x, mins.y, maxs.z);
+		corners[2] = Vector(mins.x, maxs.y, mins.z);
+		corners[3] = Vector(mins.x, maxs.y, maxs.z);
+		corners[4] = Vector(maxs.x, mins.y, mins.z);
+		corners[5] = Vector(maxs.x, mins.y, maxs.z);
+		corners[6] = Vector(maxs.x, maxs.y, mins.z);
+		corners[7] = Vector(maxs.x, maxs.y, maxs.z);
 
 		// define the edges
 		Vector lines[12][2];
@@ -562,8 +566,20 @@ namespace components
 		lines[11][0] = corners[6];	lines[11][1] = corners[7]; // Edge 12
 
 		for (auto e = 0u; e < 12; e++) {
-			add_debug_line(lines[e][0], lines[e][1], width, color);
+			add_debug_line(lines[e][0], lines[e][1], line_width, color);
 		}
+	}
+
+	/**
+	 * Draw a wireframe box using the remix api
+	 * @param center		Center of the cube
+	 * @param half_diagonal Half diagonal distance of the box
+	 * @param line_width	Line width
+	 * @param color			Line color
+	 */
+	void remix_api::debug_draw_box(const VectorAligned& center, const VectorAligned& half_diagonal, const float line_width, const DEBUG_REMIX_LINE_COLOR& color)
+	{
+		debug_draw_box(center - half_diagonal, center + half_diagonal, line_width, color);
 	}
 
 	void remix_api::flashlight_create_or_update(const char* player_name, const Vector& pos, const Vector& fwd, const Vector& rt, const Vector& up, bool is_enabled, bool is_player)
@@ -684,7 +700,7 @@ namespace components
 			}
 
 			// destroy all circles added the prev. frame
-			if (!m_debug_circles.empty())
+			/*if (!m_debug_circles.empty())
 			{
 				for (auto& circle : m_debug_circles) 
 				{
@@ -693,7 +709,7 @@ namespace components
 					}
 				}
 				m_debug_circles.clear();
-			}
+			}*/
 		}
 	}
 

@@ -502,11 +502,11 @@ namespace ImGui
 		}
 	}
 
-	void TableHeaderDropshadow(const float height, const float max_alpha, const float neg_y_offset)
+	void TableHeaderDropshadow(const float height, const float max_alpha, const float neg_y_offset, const float custom_width)
 	{
 		const float dshadow_height = height;
 		const auto dshadow_pmin = GetCursorScreenPos() - ImVec2(0, neg_y_offset);
-		const auto dshadow_pmax = dshadow_pmin + ImVec2(GetContentRegionAvail().x, dshadow_height);
+		const auto dshadow_pmax = dshadow_pmin + ImVec2((custom_width > 0.0f ? custom_width : GetContentRegionAvail().x), dshadow_height);
 		const auto col_top = ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0.0f));
 		const auto col_bottom = ColorConvertFloat4ToU32(ImVec4(0, 0, 0, max_alpha));
 		GetWindowDrawList()->AddRectFilledMultiColor(dshadow_pmin, dshadow_pmax, col_top, col_top, col_bottom, col_bottom);
@@ -674,9 +674,9 @@ namespace ImGui
 		//label_size.x = ImMax(label_size.x, 80.0f);
 
 		const float widget_width_horz = (GetContentRegionAvail().x - 3.0f * button_size.x - 2.0f * widget_spacing -
-			(show_labels ? label_size + style.ItemInnerSpacing.x + style.FramePadding.y : style.ItemInnerSpacing.x + style.FramePadding.y)) * 0.333333f;
+			(show_labels ? label_size + /*style.ItemInnerSpacing.x +*/ style.FramePadding.y : style.ItemInnerSpacing.x + style.FramePadding.y)) * 0.333333f;
 
-		const ImVec2 step_button_size = ImVec2(widget_width_horz * 0.5f - widget_spacing - 4.0f, line_height);
+		const ImVec2 step_button_size = ImVec2(widget_width_horz * 0.5f - widget_spacing - 3.0f, line_height);
 
 		// -------
 		// -- X --
@@ -691,8 +691,7 @@ namespace ImGui
 			DataTypeApplyOp(ImGuiDataType_Float, '-', &vec_in[0], &vec_in[0], &step_amount);
 			dirty = true;
 		}
-		SameLine();
-		SetCursorPosX(GetCursorPosX() - 1.0f);
+		SameLine(); SetCursorPosX(GetCursorPosX() - 1.0f);
 		if (ButtonEx("+##X", step_button_size))
 		{
 			DataTypeApplyOp(ImGuiDataType_Float, '+', &vec_in[0], &vec_in[0], &step_amount);
@@ -703,7 +702,7 @@ namespace ImGui
 		// -------
 		// -- Y --
 
-		SameLine(0, widget_spacing);
+		SameLine(0, widget_spacing - 1);
 		if (left_label_button(y_str, button_size, ImVec4(0.73f, 0.78f, 0.5f, 1.0f), ImVec4(0.17f, 0.18f, 0.15f, 1.0f))) {
 			vec_in[1] = 0.0f; dirty = true;
 		}
@@ -714,8 +713,7 @@ namespace ImGui
 			DataTypeApplyOp(ImGuiDataType_Float, '-', &vec_in[1], &vec_in[1], &step_amount);
 			dirty = true;
 		}
-		SameLine();
-		SetCursorPosX(GetCursorPosX() - 1.0f);
+		SameLine(); SetCursorPosX(GetCursorPosX() - 1.0f);
 		if (ButtonEx("+##Y", step_button_size))
 		{
 			DataTypeApplyOp(ImGuiDataType_Float, '+', &vec_in[1], &vec_in[1], &step_amount);
@@ -727,7 +725,7 @@ namespace ImGui
 		// -- Z --
 
 		
-		SameLine(0, widget_spacing);
+		SameLine(0, widget_spacing - 1);
 		if (left_label_button(z_str, button_size, ImVec4(0.67f, 0.71f, 0.79f, 1.0f), ImVec4(0.18f, 0.21f, 0.23f, 1.0f))) {
 			vec_in[2] = 0.0f; dirty = true;
 		}
@@ -738,8 +736,7 @@ namespace ImGui
 			DataTypeApplyOp(ImGuiDataType_Float, '-', &vec_in[2], &vec_in[2], &step_amount);
 			dirty = true;
 		}
-		SameLine();
-		SetCursorPosX(GetCursorPosX() - 1.0f);
+		SameLine(); SetCursorPosX(GetCursorPosX() - 1.0f);
 		if (ButtonEx("+##Z", step_button_size))
 		{
 			DataTypeApplyOp(ImGuiDataType_Float, '+', &vec_in[2], &vec_in[2], &step_amount);

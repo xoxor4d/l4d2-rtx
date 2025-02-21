@@ -500,11 +500,12 @@ public:
 		return Vector(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
 	}
 
-	bool IsZero(const float flScale = 0.0f) const
+	bool IsZero(float epsilon = 1.e-6f) const
 	{
-		return (x > -flScale && x < flScale&&
-				y > -flScale && y < flScale&&
-				z > -flScale && z < flScale);
+		return (
+			x >= -epsilon && x <= epsilon &&
+			y >= -epsilon && y <= epsilon &&
+			z >= -epsilon && z <= epsilon);
 	}
 
 	Vector Scale(float fl) {
@@ -521,6 +522,13 @@ public:
 		x = (a.x + b.x);
 		y = (a.y + b.y);
 		z = (a.z + b.z);
+	}
+
+	bool is_position_within_aabb(const Vector& min_bounds, const Vector& max_bounds, const Vector& position)
+	{
+		return	position.x >= min_bounds.x && position.x <= max_bounds.x &&
+			position.y >= min_bounds.y && position.y <= max_bounds.y &&
+			position.z >= min_bounds.z && position.z <= max_bounds.z;
 	}
 
 	remixapi_Float3D ToRemixFloat3D() const
@@ -644,7 +652,7 @@ namespace utils::vector
 		vector_ma_inline(start, scale, direction, dest);
 	}
 
-	inline bool is_point_in_aabb(const Vector& point, const Vector& mins, const Vector& maxs, const float scale = 1.0f)
+	inline bool is_point_in_scaled_aabb(const Vector& point, const Vector& mins, const Vector& maxs, const float scale = 1.0f)
 	{
 		const Vector center = (mins + maxs) * 0.5f;
 		const Vector half_size = (maxs - mins) * 0.5f * scale;
@@ -656,6 +664,13 @@ namespace utils::vector
 		return (point.x >= scaled_mins.x && point.x <= scaled_maxs.x 
 			 && point.y >= scaled_mins.y && point.y <= scaled_maxs.y 
 			 && point.z >= scaled_mins.z && point.z <= scaled_maxs.z);
+	}
+
+	inline bool is_point_in_aabb(const Vector& point, const Vector& min_bounds, const Vector& max_bounds)
+	{
+		return	point.x >= min_bounds.x && point.x <= max_bounds.x &&
+				point.y >= min_bounds.y && point.y <= max_bounds.y &&
+				point.z >= min_bounds.z && point.z <= max_bounds.z;
 	}
 
 	struct matrix3x3

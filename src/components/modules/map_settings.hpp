@@ -111,6 +111,11 @@ namespace components
 			std::uint32_t kill_sound_hash;
 			float kill_delay = 0.0f;
 
+			float attach_prop_radius = 0.0f;
+			std::string attach_prop_name;
+			Vector attach_prop_mins; // min bounds
+			Vector attach_prop_maxs; // max bounds
+
 			std::string comment;
 		};
 
@@ -190,6 +195,7 @@ namespace components
 			std::vector<std::string> api_var_configs;
 			std::vector<remix_light_settings_s> remix_lights;
 			bool using_any_light_sound_hash = false;
+			bool using_any_light_attached_to_prop = false;
 			bool using_any_transition_sound_hash = false;
 			bool using_any_transition_sound_name = false;
 		};

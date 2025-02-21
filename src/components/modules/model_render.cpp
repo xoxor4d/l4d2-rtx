@@ -271,7 +271,8 @@ namespace components
 		}
 
 		bool ignore = false;
-		const auto& hmsettings = map_settings::get_map_settings().hide_models;
+		const auto& ms = map_settings::get_map_settings();
+		const auto& hmsettings = ms.hide_models;
 
 		for (const auto& hide_mdl_with_radius : hmsettings.radii)
 		{
@@ -294,6 +295,9 @@ namespace components
 				}
 			}
 		}
+
+		// check for attached lights
+		remix_lights::on_draw_model_exec(pInfo);
 
 		if (!ignore)
 		{

@@ -2,6 +2,12 @@
 
 namespace common::toml
 {
+	// format 2 decimals
+	inline std::string format_float(float value)
+	{
+		return std::format("{:.2f}", value);
+	}
+
 	/// Builds a toml string for the provided light definition
 	/// @param def	ref to the light def
 	/// @return		the final string in toml format
@@ -29,7 +35,7 @@ namespace common::toml
 			}
 
 			if (!utils::float_equal(def.trigger_delay, 0.0f)) {
-				toml_str += ", delay = " + std::to_string(def.trigger_delay);
+				toml_str += ", delay = " + format_float(def.trigger_delay);
 			}
 
 			if (def.trigger_always) {
@@ -44,7 +50,7 @@ namespace common::toml
 			toml_str += " trigger = { sound = " + std::format("0x{:X}", def.trigger_sound_hash);
 
 			if (!utils::float_equal(def.trigger_delay, 0.0f)) {
-				toml_str += ", delay = " + std::to_string(def.trigger_delay);
+				toml_str += ", delay = " + format_float(def.trigger_delay);
 			}
 
 			if (def.trigger_always) {
@@ -55,18 +61,39 @@ namespace common::toml
 		}
 
 		// kill
-		if (const auto has_kill_choreo = !def.kill_choreo_name.empty(); 
+		if (const auto has_kill_choreo = !def.kill_choreo_name.empty();
 			has_kill_choreo || def.kill_sound_hash != 0u)
 		{
 			if (has_kill_choreo) {
 				toml_str += " kill = { choreo = \"" + def.kill_choreo_name + "\"";
-			} 
+			}
 			else { // sound
 				toml_str += " kill = { sound = " + std::format("0x{:X}", def.kill_sound_hash);
 			}
 
 			if (!utils::float_equal(def.kill_delay, 0.0f)) {
-				toml_str += ", delay = " + std::to_string(def.kill_delay);
+				toml_str += ", delay = " + format_float(def.kill_delay);
+			}
+
+			toml_str += " },"; // end table
+		}
+
+		// attach
+		if (const auto has_attach_radius = def.attach_prop_radius != 0.0f;
+			has_attach_radius || !def.attach_prop_name.empty())
+		{
+			if (has_attach_radius) {
+				toml_str += " attach = { radius = " + format_float(def.attach_prop_radius);
+			}
+			else { // name str
+				toml_str += " attach = { name = \"" + def.attach_prop_name + "\"";
+			}
+
+			if (!(def.attach_prop_mins.IsZero() && def.attach_prop_maxs.IsZero())) 
+			{
+				toml_str += ", bounds = ["
+					+ format_float(def.attach_prop_mins.x) + ", " + format_float(def.attach_prop_mins.y) + ", " + format_float(def.attach_prop_mins.z) + ", "
+					+ format_float(def.attach_prop_maxs.x) + ", " + format_float(def.attach_prop_maxs.y) + ", " + format_float(def.attach_prop_maxs.z) + "]";
 			}
 
 			toml_str += " },"; // end table
@@ -79,24 +106,24 @@ namespace common::toml
 		{
 			toml_str += "            { ";
 
-			toml_str += "position = [" + std::to_string(p.position.x) + ", " + std::to_string(p.position.y) + ", " + std::to_string(p.position.z) + "]";
-			toml_str += ", radiance = [" + std::to_string(p.radiance.x) + ", " + std::to_string(p.radiance.y) + ", " + std::to_string(p.radiance.z) + "]";
-			toml_str += ", scalar = " + std::to_string(p.radiance_scalar);
-			toml_str += ", radius = " + std::to_string(p.radius);
-			toml_str += ", smoothness = " + std::to_string(p.smoothness);
+			toml_str += "position = [" + format_float(p.position.x) + ", " + format_float(p.position.y) + ", " + format_float(p.position.z) + "]";
+			toml_str += ", radiance = [" + format_float(p.radiance.x) + ", " + format_float(p.radiance.y) + ", " + format_float(p.radiance.z) + "]";
+			toml_str += ", scalar = " + format_float(p.radiance_scalar);
+			toml_str += ", radius = " + format_float(p.radius);
+			toml_str += ", smoothness = " + format_float(p.smoothness);
 
 			// only write shaping if deg != 180
 			if (!utils::float_equal(p.degrees, 180.0f))
 			{
-				toml_str += ", direction = [" + std::to_string(p.direction.x) + ", " + std::to_string(p.direction.y) + ", " + std::to_string(p.direction.z) + "]";
-				toml_str += ", degrees = " + std::to_string(p.degrees);
-				toml_str += ", softness = " + std::to_string(p.softness);
-				toml_str += ", exponent = " + std::to_string(p.exponent);
+				toml_str += ", direction = [" + format_float(p.direction.x) + ", " + format_float(p.direction.y) + ", " + format_float(p.direction.z) + "]";
+				toml_str += ", degrees = " + format_float(p.degrees);
+				toml_str += ", softness = " + format_float(p.softness);
+				toml_str += ", exponent = " + format_float(p.exponent);
 			}
 
 			// ignore t0
 			if (!utils::float_equal(p.timepoint, 0.0f)) {
-				toml_str += ", timepoint = " + std::to_string(p.timepoint);
+				toml_str += ", timepoint = " + format_float(p.timepoint);
 			}
 
 			toml_str += " },\n";
@@ -158,11 +185,11 @@ namespace common::toml
 				toml_str += "]";
 			}
 
-			toml_str += ", position = [" + std::to_string(m.origin.x) + ", " + std::to_string(m.origin.y) + ", " + std::to_string(m.origin.z) + "]";
-			toml_str += ", rotation = [" + std::to_string(RAD2DEG(m.rotation.x)) + ", " + std::to_string(RAD2DEG(m.rotation.y)) + ", " + std::to_string(RAD2DEG(m.rotation.z)) + "]";
+			toml_str += ", position = [" + format_float(m.origin.x) + ", " + format_float(m.origin.y) + ", " + format_float(m.origin.z) + "]";
+			toml_str += ", rotation = [" + format_float(RAD2DEG(m.rotation.x)) + ", " + format_float(RAD2DEG(m.rotation.y)) + ", " + format_float(RAD2DEG(m.rotation.z)) + "]";
 
 			if (m.no_cull) {
-				toml_str += ", scale = [" + std::to_string(m.scale.x) + ", " + std::to_string(m.scale.y) + ", " + std::to_string(m.scale.z) + "]";
+				toml_str += ", scale = [" + format_float(m.scale.x) + ", " + format_float(m.scale.y) + ", " + format_float(m.scale.z) + "]";
 			}
 
 			toml_str += " },\n";
@@ -248,7 +275,7 @@ namespace common::toml
 			if (a.cull_mode >= map_settings::AREA_CULL_INFO_NOCULLDIST_START
 				&& a.cull_mode <= map_settings::AREA_CULL_INFO_NOCULLDIST_END)
 			{
-				toml_str += ", nocull_dist = " + std::to_string(a.nocull_distance);
+				toml_str += ", nocull_dist = " + format_float(a.nocull_distance);
 			}
 
 			if (!a.leaf_tweaks.empty())
@@ -305,7 +332,7 @@ namespace common::toml
 						toml_str += "]";
 
 						if (lf.nocull_dist > 0.0f) {
-							toml_str += ", nocull_dist = " + std::to_string(lf.nocull_dist);
+							toml_str += ", nocull_dist = " + format_float(lf.nocull_dist);
 						}
 
 						// }
