@@ -313,7 +313,8 @@ namespace components
 			light->ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
 			light->ext.pNext = nullptr;
 			light->ext.position = pt.position.ToRemixFloat3D();
-			light->ext.radius = light->has_attach_parms() && light->is_attached() ? pt.radius : 0.0f;
+			// disable single point lights with attach params until they get attached later down the line
+			light->ext.radius = light->def.points.size() == 1u && light->has_attach_parms() ? 0.0f : pt.radius;
 			light->ext.shaping_hasvalue = pt.use_shaping;
 			light->ext.shaping_value = {};
 			light->ext.shaping_value.direction = pt.direction.ToRemixFloat3D();
