@@ -44,53 +44,57 @@
 # -----------       :: This can be used to disable frustum culling for specified areas when the player is in specified leafs 
 #                   :: Useful at area crossings when used in conjunction with nocull - area-specific markers that block visibility
 # leaf_tweak:                                                                                   [array of structure below]
-#                   |>    in_leafs:     the leaf/s the player has to be in                      [int array]
+# [{                |>    in_leafs:     the leaf/s the player has to be in                      [int array]
 #                   |>       areas:     area/s with forced visibility                           [int array]
 #                   |>       leafs:     leaf/s with forced visibility                           [int array]
 #                   |> nocull_dist:     uses per leaf value instead of area value if defined    [float]     << defaults to 0.0 (off)
-# 
+# }]
 # -----------       :: This can be used to forcefully cull parts of the map
 # hide_areas:                                                                                   [array of structure below]
-#                   |>    areas:   area/s to hide                                               [int array]
+# [{                |>    areas:   area/s to hide                                               [int array]
 #                   |>  N_leafs:   only hide area/s when NOT in leaf/s                          [int array]
-#
+# }]
 # hide_leafs:       force hide leaf/s                                                           [int array]
 
 [CULL]
 
     c1m1_hotel = [
-        { in_area =   7, nocull_dist = 630.000000, leaf_tweak = [
+        { in_area =   7, nocull_dist = 630.00, leaf_tweak = [
                 { in_leafs = [2498], areas = [14] },
             ] },
 
-        { in_area =   8, nocull_dist = 600.000000, leaf_tweak = [
+        { in_area =   8, nocull_dist = 600.00, leaf_tweak = [
                 { in_leafs = [3616, 3617], leafs = [3580] },
             ] },
 
         { in_area =  12, areas = [8], leafs = [
                 2516
-            ], nocull_dist = 600.000000 },
+            ], nocull_dist = 600.00 },
         { in_area =  13, areas = [23], leafs = [
                 2339
-            ], nocull_dist = 600.000000 },
+            ], nocull_dist = 950.00, leaf_tweak = [
+                { in_leafs = [1939, 2324, 2328, 2331], areas = [13] },
+            ] },
+
         { in_area =  14, leafs = [
-                2599
-            ], cull = 4, nocull_dist = 600.000000, leaf_tweak = [
+                2549, 2599
+            ], cull = 4, nocull_dist = 600.00, leaf_tweak = [
                 { in_leafs = [2508, 2511], areas = [7] },
             ] },
 
-        { in_area =  23, areas = [13], nocull_dist = 600.000000 },
+        { in_area =  23, areas = [13], nocull_dist = 600.00 },
         { in_area =  24, leafs = [
                 2856, 2881, 3938, 3969, 4373
-            ], cull = 4, nocull_dist = 600.000000, leaf_tweak = [
-                { in_leafs = [4361, 4364, 4367, 4373, 4400], areas = [26] },
+            ], cull = 4, nocull_dist = 600.00, leaf_tweak = [
+                { in_leafs = [3664, 4361, 4364, 4367, 4373, 4400], areas = [26] },
             ] },
 
-        { in_area =  25, areas = [26], nocull_dist = 600.000000 },
-        { in_area =  26, leafs = [
-                2856, 2881, 3938, 3969, 4373
-            ], cull = 4, nocull_dist = 600.000000 },
+        { in_area =  25, areas = [26], nocull_dist = 600.00 },
+        { in_area =  26, areas = [25], leafs = [
+                2856, 2881, 3938, 3969, 4340, 4373
+            ], cull = 4, nocull_dist = 600.00 },
     ]
+
 
 
     c2m1_highway = [
@@ -106,7 +110,6 @@
         { in_area =   4, leafs = [] },
         { in_area =   5, leafs = [] },
     ]
-
 
     c4m1_milltown_a = [
         { in_area =   2, cull = 5, nocull_dist = 600.0 },
@@ -154,30 +157,25 @@
     c1m1_hotel = [
 
         # blocker on connecting hallway
-        { nocull = 0, areas = [13], N_leafs = [2366, 2334, 2359, 2371, 2331, 2421, 2328, 2324, 1939, 1930], position = [1728.517944, 5713.995117, 2721.531006], rotation = [90.000000, 0.000000, 0.000000], scale = [2.080000, 2.120000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1621.017944, 5627.995117, 2721.531006], rotation = [90.000000, 90.000000, 0.000000], scale = [2.040000, 2.120000, 1.000000] },
-        { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1854.759033, 5599.157227, 2717.031250], rotation = [90.000000, 73.698997, 0.000000], scale = [3.240000, 2.940000, 1.000000] },
+        { nocull = 0, areas = [13], N_leafs = [2334, 2366, 2359, 2331, 2371, 2421, 2328, 2324, 1939, 1930], position = [1728.52, 5714.00, 2721.53], rotation = [90.00, 0.00, 0.00], scale = [2.08, 2.12, 1.00] },
+        { nocull = 0, areas = [6], N_leafs = [2203, 2332, 2333], position = [1621.02, 5628.00, 2721.53], rotation = [90.00, 90.00, 0.00], scale = [2.04, 2.12, 1.00] },
+        { nocull = 0, areas = [6], N_leafs = [2332, 2203, 2333], position = [1854.76, 5599.16, 2717.03], rotation = [90.00, 73.70, 0.00], scale = [3.24, 2.94, 1.00] },
 
         # sun
-        { nocull = 1, areas = [], N_leafs = [], position = [278.090027, 5762.697266, 2992.070068], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+        { nocull = 1, areas = [], N_leafs = [], position = [278.09, 5762.70, 2992.07], rotation = [0.00, 0.00, 0.00], scale = [1.00, 1.00, 1.00] },
 
         # for flashling lights in first hallway
-        { nocull = 2, areas = [21, 13, 23], N_leafs = [], position = [636.868408, 5553.342285, 2790.463135], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
+        { nocull = 2, areas = [21, 13, 23], N_leafs = [], position = [636.87, 5553.34, 2790.46], rotation = [0.00, 0.00, 0.00], scale = [1.00, 1.00, 1.00] },
 
         # sunlight blocker for hallway lower floor
-        { nocull = 0, areas = [], N_leafs = [], position = [388.700012, 5970.549805, 2540.469971], rotation = [0.000000, 90.000000, 0.000000], scale = [10.340000, 6.880000, 1.000000] },
+        { nocull = 0, areas = [], N_leafs = [], position = [388.70, 5970.55, 2540.47], rotation = [0.00, 90.00, 0.00], scale = [10.34, 6.88, 1.00] },
 
         # blocker on connecting hallway lower floor
-        { nocull = 0, areas = [7], N_leafs = [2505, 2512, 2498], position = [1574.949951, 5626.939941, 2526.510010], rotation = [0.000000, 90.000000, 0.000000], scale = [2.250000, 2.070000, 1.000000] },
+        { nocull = 0, areas = [7], N_leafs = [2505, 2512, 2506, 2498], position = [1574.95, 5626.94, 2526.51], rotation = [0.00, 90.00, 0.00], scale = [2.25, 2.07, 1.00] },
 
         # sunlight blocker lowest floor kitchen
-        { nocull = 0, areas = [8], N_leafs = [], position = [70.529999, 6013.899902, 1262.530029], rotation = [0.000000, 90.000000, 0.000000], scale = [2.600000, 9.660000, 1.000000] },
+        { nocull = 0, areas = [8], N_leafs = [], position = [70.53, 6013.90, 1262.53], rotation = [0.00, 90.00, 0.00], scale = [2.60, 9.66, 1.00] },
     ]
-
-
-
-
-
 
     c2m1_highway = [
         { nocull = 101, areas = [], N_leafs = [], position = [10457.524414, 7875.057617, -551.203003], rotation = [0.000000, 0.000000, 0.000000], scale = [1.000000, 1.000000, 1.000000] },
@@ -202,11 +200,11 @@
 # :: Useful console command: 'xo_scene_print' && 'xo_debug_toggle_node_vis' && 'xo_debug_toggle_sound_print'
 # ~~ Parameters:
 #
-# startup:      configs that will be loaded on map-load, conf matching the map name will be loaded automatically and does not need to be specified              [array of strings]
+#     startup:  configs that will be loaded on map-load, conf matching the map name will be loaded automatically and does not need to be specified              [array of strings]
 #
 # -----------
 # transitions:  load / transition to config values on specified events                                                                                          [array of structure below]
-#               |> conf:         name of config containing remix (goal) variables                                                                               [string]
+# [{            |> conf:         name of config containing remix (goal) variables                                                                               [string]
 #               |> trigger:      trigger config loading / transition via choreography (.vcd), sound or leaf
 #                                |> choreo ]    THIS:                       name of choreography (.vcd) that will trigger the transition (can be a substring)   [string]
 #                                          ]             |> actor:   (opt.) name of actor the event is played on                                                [string]
@@ -228,10 +226,14 @@
 #               |> duration:     transition time (in seconds)                                                                                                   [float]
 #               |> delay_in:     delay start of transition (in seconds)                                                                                         [float]
 #               |> delay_out:    delay between end of transition and transition back to the initial starting value (in seconds) - only active if value > 0      [float]
+# }]
 
 [CONFIGVARS]
-    # Migraine
+    # Migraine # startup = ["c1m1_hotel_intro.conf"]
     c1m1_hotel = { transitions = [
+
+        { conf = "c1m1_hotel_intro.conf", trigger = { sound = 0x635e5c94 }, mode = 0, duration = 0.0 },
+        { conf = "c1m1_hotel.conf", trigger = { sound = 0x31c790a5 }, mode = 0, duration = 16.0, delay_in = 18.0 },
         #{ conf = "chromatic_explosion.conf", trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = 0x87a91fef }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = "weapons/pistol/gunfire/pistol_fire.wav" }, mode = 2, ease = 8, duration = 0.25, delay_in = 0.0, delay_out = 0.15 },
@@ -244,11 +246,11 @@
 
 
 # Spawn lights using the remix api ---------------------------------------------------------------------------------------------------------------------------------
-# :: Useful console command: 'xo_debug_scene_print' && 'xo_debug_toggle_sound_print'
+# :: Useful console command: 'xo_debug_scene_print' (choreo trigger/kill) && 'xo_debug_toggle_sound_print' (sound trigger/kill) && 'xo_debug_toggle_model_info' (attach)
 # ~~ Parameters:
 #
-# trigger:          trigger light creation via choreography (.vcd) or sound
-#                   [!] not defining this will create the light on map load 
+# trigger:          (optional) trigger light creation via choreography (.vcd) or sound
+# {                 [!] not defining this will create the light on map load 
 #
 #                   |> choreo ]    THIS:    |> choreo:         name of choreography (.vcd) that will trigger the transition (can be a substring)    [string]
 #                             ]             |> actor:   (opt.) name of actor the event is played on                                                 [string]
@@ -259,19 +261,26 @@
 #
 #                             |> delay:     delay spawn after trigger (in seconds)                                                                  [float]
 #                             |> always:    re-triggering the event again will spawn a new light instance everytime (defaults to false)             [bool]
-#
+# }
 # -----------
-# kill:             kill light via choreography (.vcd) or sound
-#                   [!] not defining this || empty string/hash -> light will loop until the map gets unloaded or once loop is complete when run_once is true
+# kill:             (optional) kill light via choreography (.vcd) or sound
+# {                 [!] not defining this || empty string/hash -> light will loop until the map gets unloaded or once loop is complete when run_once is true
 #
 #                   |> choreo ]    THIS:    name of choreography (.vcd) (can be a substring)                                                        [string]
 #                   |> sound  ] OR THAT:    hash made up of name, index and position (cmd: see desc.)                                               [integer] (hex format)
 #
 #                             |> delay:     delay kill after vcd was triggered (in seconds)                                                         [float]
-#
+# }
 # -----------
-# points:           list of points that will make up a spline the light will move along                                                             [array of structure below]
-#
+# attach:           (optional) attach light to a prop so it moves with the prop - points are relative to the prop the light gets attached to
+# {                 |> radius   ]    THIS:  radius of prop (recommended) (cmd: see desc.)                                                           [float]
+#                   |> name     ] OR THAT:  model name that contains this substring (cmd: see desc.)                                                [string]
+#                   
+#                               |> bounds:  (opt.) define bounds (min/max) where the light can spawn and attach to the prop (world coordinates)     [2x 3D Vector :: [minX, minY, minZ, maxX, maxY, maxZ]
+# }
+# -----------
+# points:           (required) list of points that will make up a spline the light will move along                                                  [array of structure below]
+# [{
 #                   |> position:            X Y Z coordinates of light                                                                              [3D Vector]
 #                                           [!] first point needs to define a position
 #                                           [!] following ones will use the last defined position if position is not defined
@@ -289,7 +298,7 @@
 #                   |> degrees:             cone angle - anything besides 180 turns ON light shaping (defaults to 180)                              [float 0-180]
 #                   |> softness:            cone softness (defaults to 0)                                                                           [float 0-PI]
 #                   |> exponent:            focus expo (defaults to 0)                                                                              [float]
-#
+# }]
 # -----------
 # run_once:         ]    THIS:              destroy light after reaching the last point (default: false)                                            [bool]
 # loop:             ] OR THAT:              create a looping light that restarts at the first point after reaching the last point (default: false)  [bool]
@@ -299,19 +308,11 @@
 
 [LIGHTS]
     c1m1_hotel = [
-        # 1st light - infinite loop
-        #{ trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = true }, points = [
-        #    { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
-        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
-        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
-        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
-        #], run_once = true, loop = false },
-
         # red flashing light when opening the first door :: doors/door1_stop.wav -- delay: 0.00 -- vol: 0.69 -- origin: [408.00000 5600.00000 2704.00000]
-        { trigger = { sound = 0xe826cc9a, delay = 0.0, always = false }, points = [
+        { trigger = { sound = 0xe826cc9a, delay = 0.0 }, points = [
             { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 0.0, radius = 3.0, smoothness = 1.0 },
             { position = [378.5, 5675, 2755], radiance = [20.0, 0.0, 0.0], scalar = 3.0, radius = 4.0, smoothness = 1.0, timepoint = 2 },
-        ], run_once = true, loop = true, loop_smoothing = true },
+        ], loop = true, loop_smoothing = true },
 
         # flashing firelight 1
         { points = [
@@ -349,18 +350,60 @@
             { position = [1670.531372, 6243.121094, 2754.031250], radiance = [10.000000, 10.000000, 10.000000], scalar = 0.000000, radius = 3.000000, smoothness = 0.500000, timepoint = 2.270000 },
         ], loop = true },
 
-        # 2nd light - triggered and killed by choreo event - looping until killed (scene_playvcd "npc/announcer/prehub28.vcd")
-        #{ trigger = { choreo = "prehub27.vcd", delay = 0.0 }, kill = { choreo = "prehub28.vcd", delay = 0.0 }, points = [
-        #    { position = [-1057.9, -336.7, -15.7], radiance = [50.0, 0.0, 20.0], radius = 10.0, smoothness = 1.0 },
-        #    { position = [-941.9, -379.1, 46.8],   radiance = [20.0, 0.0, 50.0], radius =  5.0, smoothness = 1.0 },
-        #    { position = [-1156.7, -638.2, 97.9],  radiance = [0.0, 50.0, 20.0], radius = 15.0, smoothness = 1.0 },
-        #    { position = [-1262.3, -489.4, -10.6], radiance = [20.0, 0.0, 50.0], radius =  3.0, smoothness = 1.0 },
-        #    { position = [-1232.0, -399.4, -8.2],  radiance = [50.0, 0.0, 20.0], radius = 10.0, smoothness = 1.0 },
-        #    { position = [-1189.4, -373.6, 0.1],   radiance = [20.0, 0.0, 50.0], radius =  3.0, smoothness = 1.0 },
-        #    { position = [-1057.9, -336.7, -15.7], radiance = [50.0, 0.0, 20.0], radius = 10.0, timepoint = 2.0, smoothness = 1.0 },
-        #], run_once = false, loop = true, loop_smoothing = true },
+        # fire dummy on lower floor
+        { points = [
+            { position = [1584.96, 5624.39, 2526.03], radiance = [11.80, 4.60, 1.10], scalar = 4.20, radius = 2.60, smoothness = 0.50 },
+        ], loop = true },
 
-        # 3rd light
+
+        # elevator light static until move
+        { kill = { sound = 0x53C5D0E2, delay = 0.01 }, points = [
+            { position = [2167.00, 5809.00, 2606.00], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 1.60, smoothness = 0.00 },
+        ] },
+
+        # elevator light ceiling dynamic
+        { trigger = { sound = 0x53C5D0E2 }, attach = { radius = 20.00, bounds = [2228.00, 5700.00, 1188.00, 2265.00, 5725.00, 2573.00] }, points = [
+            { position = [-77.00, 88.00, 85.50], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 1.60, smoothness = 0.00 },
+            { position = [-77.00, 88.00, 85.50], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 1.60, smoothness = 0.00, timepoint = 23.83 },
+            { position = [-77.00, 88.00, 86.00], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 1.60, smoothness = 0.00, timepoint = 23.9 },
+            { position = [-77.00, 88.00, 86.00], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 1.60, smoothness = 0.00, timepoint = 25.83 },
+            { position = [-77.00, 88.00, 86.00], radiance = [12.20, 11.80, 10.00], scalar = 0.00, radius = 1.60, smoothness = 0.00, timepoint = 25.95 },
+            { position = [-77.00, 88.00, 86.00], radiance = [12.20, 11.80, 10.00], scalar = 5.00, radius = 1.60, smoothness = 0.00, timepoint = 26.15 },
+            { position = [-77.00, 88.00, 86.00], radiance = [12.20, 11.80, 10.00], scalar = 5.00, radius = 1.60, smoothness = 0.00, timepoint = 26.45 },
+            { position = [-77.00, 88.00, 86.00], radiance = [12.20, 11.80, 10.00], scalar = 0.00, radius = 1.60, smoothness = 0.00, timepoint = 26.65 },
+        ] },
+
+        # elevator light button dynamic
+        { trigger = { sound = 0x53C5D0E2 }, attach = { radius = 20.00, bounds = [2228.00, 5700.00, 1188.00, 2265.00, 5725.00, 2573.00] }, points = [
+            { position = [2.50, 0.40, -3.40], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 0.50, smoothness = 0.00 },
+            { position = [2.50, 0.40, -3.40], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 0.50, smoothness = 0.00, timepoint = 23.83 },
+            { position = [2.50, 0.40, -2.90], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 0.50, smoothness = 0.00, timepoint = 23.90 },
+            { position = [2.50, 0.40, -2.90], radiance = [12.20, 11.80, 10.00], scalar = 25.00, radius = 0.50, smoothness = 0.00, timepoint = 25.83 },
+            { position = [2.50, 0.40, -2.90], radiance = [12.20, 11.80, 10.00], scalar = 0.00,  radius = 0.50, smoothness = 0.00, timepoint = 25.95 },
+        ] },
+
+        # elevator light button dynamic no trig (testing)
+        #{ attach = { radius = 20.00, bounds = [2228.00, 5700.00, 1188.00, 2265.00, 5725.00, 2573.00] }, points = [
+        #    { position = [2.50, 0.40, -4.40], radiance = [12.20, 0, 0], scalar = 25.00, radius = 0.50, smoothness = 0.00 },
+        #    { position = [2.50, 0.40, -4.40], radiance = [12.20, 0, 0], scalar = 1.00, radius = 0.50, smoothness = 0.00, timepoint = 1.0 },
+        #], loop = 1, loop_smoothing = 1 },
+
+
+        # elevator light button dynamic no trig single pt (testing)
+        #{ attach = { radius = 20.00, bounds = [2228.00, 5700.00, 1188.00, 2265.00, 5725.00, 2573.00] }, points = [
+        #    { position = [2.50, 0.40, -6.40], radiance = [0, 20, 0], scalar = 25.00, radius = 0.50, smoothness = 0.00 },
+        #]},
+
+
+        # example
+        #{ trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue", delay = 0.1, always = true }, points = [
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [0.0, 10.0, 20.0], radius = 5.0, smoothness = 0.5 },
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 2.0, timepoint = 2 },
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 4 },
+        #    { position = [290.0, 5650.0, 2910.0], radiance = [50.0, 0.0, 0.0], radius =  5.0, smoothness = 1.0, timepoint = 6 },
+        #], run_once = true, loop = false },
+
+        # example
         #{ points = [
         #    { position = [-922.0, -500.0, -60.0], radiance = [0.0, 0.0, 0.0], radius = 10.0 },
         #    { radiance = [50.0, 0.0, 0.0],  radius = 5.0, timepoint = 3 }, # prev position will be used until new pos is defined
