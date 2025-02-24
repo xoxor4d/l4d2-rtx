@@ -14,6 +14,9 @@ namespace components
 		LPDIRECT3DTEXTURE9 white;
 	}
 
+	//bool g_sunoverlay_frame_flag[4] = { false, false, false, false };
+	std::vector<Vector> g_sunoverlay_color = {};
+
 	void model_render::init_texture_addons(bool release)
 	{
 		if (release)
@@ -185,6 +188,9 @@ namespace components
 	// draw 'nocull' map_setting marker meshes
 	void model_render::draw_nocull_markers()
 	{
+		// TODO: this should be moved somewhere else
+		g_sunoverlay_color.clear();
+
 		const auto& msettings = map_settings::get_map_settings();
 
 		// early out
@@ -331,14 +337,14 @@ namespace components
 	// 
 	// main render path for every surface
 
-	void cmeshdx8_renderpass_pre_draw(CMeshDX8* mesh, [[maybe_unused]] CPrimList* primlist)
+	void cmeshdx8_renderpass_pre_draw(CMeshDX8* mesh, [[maybe_unused]] /*CPrimList**/ std::uint32_t primlist)
 	{
 		const auto dev = game::get_d3d_device();
 
-		IDirect3DVertexBuffer9* b = nullptr;
+		IDirect3DVertexBuffer9* buffer9 = nullptr;
 		UINT stride = 0;
 		{
-			UINT ofs = 0; dev->GetStreamSource(0, &b, &ofs, &stride);
+			UINT ofs = 0; dev->GetStreamSource(0, &buffer9, &ofs, &stride);
 		}
 
 		//DWORD bufferedstateaddr = RENDERER_BASE + 0x19530;
@@ -440,12 +446,6 @@ namespace components
 		dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-
-		/*if (ctx.info.material_name.contains("scope_sn"))
-		{
-			int x = 1; 
-		}*/
-
 
 		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
 		/*if (static bool runtime_hack_once = false; !runtime_hack_once)
@@ -824,6 +824,7 @@ namespace components
 		// > __fontpage_additive, vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
 		// > vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
 		// > detail/detailsprites_overgrown
+		// > sun flare
 		else if (mesh->m_VertexFormat == 0x80007)
 		{
 			//ctx.modifiers.do_not_render = true;
@@ -839,7 +840,7 @@ namespace components
 			}*/
 
 			// early out if vgui_white
-			if (ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name != "vgui_white")
+			if (ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name != "vgui_white") 
 			{
 				bool is_world_ui_text = ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name == "__fontpage";
 
@@ -909,9 +910,9 @@ namespace components
 
 					ctx.save_rs(dev, D3DRS_TEXTUREFACTOR);
 					dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_COLORVALUE(
-						vcol_r* scalar,
-						vcol_g* scalar,
-						vcol_b* scalar, scalar));
+						vcol_r * scalar,
+						vcol_g * scalar,
+						vcol_b * scalar, scalar));
 				}
 
 				// some light sprites are rendered as ui through other geo 
@@ -927,6 +928,43 @@ namespace components
 				dev->SetVertexShader(nullptr); 
 				dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			}
+			else if (ctx.info.material_name == "sprites/light_glow02_add_noz")
+			{
+				ctx.save_tss(dev, D3DTSS_COLORARG1);
+				ctx.save_tss(dev, D3DTSS_COLORARG2);
+				ctx.save_tss(dev, D3DTSS_COLOROP);
+				ctx.save_tss(dev, D3DTSS_ALPHAARG2);
+				ctx.save_tss(dev, D3DTSS_ALPHAOP);
+
+				dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+				dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+				dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+				dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+				dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+
+				float r = 0.0f;
+				float g = 0.0f;
+				float b = 0.0f;
+
+				if (!g_sunoverlay_color.empty())
+				{
+					r = g_sunoverlay_color.back().x;
+					g = g_sunoverlay_color.back().y;
+					b = g_sunoverlay_color.back().z;
+					//g_sunoverlay_color.erase(g_sunoverlay_color.begin());
+				}
+
+				ctx.save_rs(dev, D3DRS_TEXTUREFACTOR);
+				dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_COLORVALUE(r, g, b, 1.0f));
+
+				ctx.save_vs(dev);
+				dev->SetVertexShader(nullptr);
+				dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+
+				// slightly offset surfaces so that we do not render sunlayers on the same plane (causes flickering)
+				//ctx.info.buffer_state.m_Transform[0].m[3][3] *= (0.998f - (float)g_sunoverlay_color.size() * 0.001f);
+				//dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 			}
 		}
 
@@ -1689,6 +1727,31 @@ namespace components
 		}
 	}
 
+	void grab_glowoverlay_color_hk(float* color)
+	{
+		if (color) {
+			g_sunoverlay_color.push_back({ color[0], color[1], color[2] });
+		}
+	}
+
+	HOOK_RETN_PLACE_DEF(grab_glowoverlay_color_retn_addr);
+	void __declspec(naked) grab_glowoverlay_color_stub()
+	{
+		__asm
+		{
+			pushad;
+			lea		eax, [ebp - 0x40C];
+			push	eax;
+			call	grab_glowoverlay_color_hk;
+			add		esp, 4;
+			popad;
+
+			// og
+			movss   xmm0, dword ptr[ebp - 0x40C];
+			jmp		grab_glowoverlay_color_retn_addr;
+		}
+	}
+
 	// #
 	// Commands
 
@@ -1722,6 +1785,11 @@ namespace components
 		utils::hook::nop(CLIENT_BASE + 0x3C9F1F, 6);
 		utils::hook(CLIENT_BASE + 0x3C9F1F, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, CLIENT_BASE + 0x3C9F25);
+
+		// CGlowOverlay::Draw :: grab sun overlay color to apply color via TFACTOR instead of vertex colors (as that fails - search for "sprites/light_glow02_add_noz")
+		utils::hook::nop(CLIENT_BASE + 0x108090, 8);
+		utils::hook(CLIENT_BASE + 0x108090, grab_glowoverlay_color_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(grab_glowoverlay_color_retn_addr, CLIENT_BASE + 0x108098);
 
 		// C_FuncAreaPortalWindow::DrawModel :: disable drawing Area Portal Brushmodels
 		utils::hook::nop(CLIENT_BASE + 0x7690E, 2); // 2501
