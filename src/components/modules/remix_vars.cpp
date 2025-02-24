@@ -374,31 +374,39 @@ namespace components
 
 		if (h)
 		{
-			// check if we are already interpolating the value
-			bool exists = false;
-
-			for (auto& ip : interpolate_stack)
-			{
-				if (ip.option == h)
-				{
-					// update
-					ip.identifier = identifier;
-					ip.start = h->second.current;
-					ip.goal = goal;
-					ip.style = ease;
-					ip.time_duration = duration;
-					ip.time_delay_transition_back = delay_transition_back;
-					ip._time_elapsed = -delay;
-
-					exists = true;
-					break;
-				}
+			// directly apply when no duration and no delay
+			if (duration == 0.0f && delay == 0.0f) {
+				set_option(handle, goal);
 			}
-
-			if (!exists)
+			// interpolate over time or set after delay
+			else
 			{
-				interpolate_stack.emplace_back(interpolate_entry_s
-					{ identifier, h, h->second.current, goal, h->second.type, ease, duration, delay_transition_back, -delay });
+				// check if we are already interpolating the value
+				bool exists = false;
+
+				for (auto& ip : interpolate_stack)
+				{
+					if (ip.option == h)
+					{
+						// update
+						ip.identifier = identifier;
+						ip.start = h->second.current;
+						ip.goal = goal;
+						ip.style = ease;
+						ip.time_duration = duration;
+						ip.time_delay_transition_back = delay_transition_back;
+						ip._time_elapsed = -delay;
+
+						exists = true;
+						break;
+					}
+				}
+
+				if (!exists)
+				{
+					interpolate_stack.emplace_back(interpolate_entry_s
+						{ identifier, h, h->second.current, goal, h->second.type, ease, duration, delay_transition_back, -delay });
+				}
 			}
 
 			return true;
@@ -495,10 +503,11 @@ namespace components
 				// remove completed transitions - we do that in-front of the loop so that the final values (complete) can be used for the entire frame
 				auto completed_condition = [](const interpolate_entry_s& ip)
 					{
-						/*if (ip.complete)
-						{
-							DEBUG_PRINT("[VAR-LERP] Complete: %s\n", ip.option->first.c_str());
-						}*/
+						//if (ip._complete)
+						//{
+							//int break_me = 1;
+							//DEBUG_PRINT("[VAR-LERP] Complete: %s\n", ip.option->first.c_str());
+						//}
 
 						return ip._complete;
 					};
