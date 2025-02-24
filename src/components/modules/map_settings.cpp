@@ -768,7 +768,7 @@ namespace components
 										CATCH_ERR;
 									}
 
-									const auto hash = utils::string_hash64(utils::va("%d%s%.2f", temp_sound_hash, temp_sound_name.c_str(), config_name.c_str(), duration));
+									const auto hash = utils::string_hash64(utils::va("%d%s%s%.2f", temp_sound_hash, temp_sound_name.c_str(), config_name.c_str(), duration));
 									m_map_settings.remix_transitions.emplace_back(
 										TRANSITION_TRIGGER_TYPE::SOUND,
 										"",
