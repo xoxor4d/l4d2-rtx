@@ -668,6 +668,13 @@ namespace components
 		{
 			int temp_num = (int)selection->index;
 
+			if (!selection->no_cull)
+			{
+				ImGui::CenterText("- Only 'NoCull' support live editing - ");
+				ImGui::CenterText("- Save and reload MapSettings to see changes - ");
+				ImGui::Spacing(0, 6);
+			}
+
 			SET_CHILD_WIDGET_WIDTH;
 			if (ImGui::DragInt("Number", &temp_num, 0.1f, 0))
 			{
