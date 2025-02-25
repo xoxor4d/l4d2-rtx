@@ -270,7 +270,7 @@ namespace components
 	void __fastcall tbl_hk::model_renderer::DrawModelExecute::Detour(void* ecx, void* edx, const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld)
 	{
 		// draw nocull markers before drawing the first model - no particular reason besides that we dont want to draw them before rendering the sky
-		if (!model_render::get()->m_drew_model)
+		if (game::get_viewid() != VIEW_3DSKY && !model_render::get()->m_drew_model)
 		{
 			model_render::draw_nocull_markers();
 			model_render::get()->m_drew_model = true;
