@@ -31,6 +31,10 @@ namespace components
 		static void trigger_vis_logic();
 		static void xo_debug_toggle_node_vis_fn();
 
+		int m_sky3d_scale = 0;
+		Vector m_sky3d_origin = {};
+		Vector m_sky3d_camera_origin = {};
+
 		int  m_hud_debug_node_vis_pos[2] = { 250, 135 };
 		bool m_hud_debug_node_vis_has_forced_leafs = false;
 		bool m_hud_debug_node_vis_has_forced_arealeafs = false;

@@ -3419,7 +3419,49 @@ namespace components
 	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, modelname, 0x24C);
 	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, transform_matrix, 0x278);
 	STATIC_ASSERT_OFFSET(C_ServerSurvivorBotParent, origin, 0x2CC);
+
+	struct color32_s
+	{
+		unsigned __int8 r;
+		unsigned __int8 g;
+		unsigned __int8 b;
+		unsigned __int8 a;
+	};
+
+	struct fogparams_t
+	{
+		void* vftable;
+		Vector dirPrimary;
+		color32_s colorPrimary;
+		color32_s colorSecondary;
+		color32_s colorPrimaryLerpTo;
+		color32_s colorSecondaryLerpTo;
+		float start;
+		float end;
+		float farz;
+		float maxdensity;
+		float startLerpTo;
+		float endLerpTo;
+		float maxdensityLerpTo;
+		float lerptime;
+		float duration;
+		bool enable;
+		bool blend;
+	};
+	struct sky3dparams_t
+	{
+		void* vtbl;
+		int scale;
+		Vector origin;
+		int area;
+		fogparams_t fog;
+	};
+
+	struct CSkyCamera
+	{
+		char pad[0x42C];
+		sky3dparams_t m_skyboxData;
+		bool m_bUseAngles;
+		CSkyCamera* m_pNext;
+	};
 }
-
-
-

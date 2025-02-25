@@ -91,58 +91,72 @@ namespace components
 	// ##
 	// ##
 
-	//void on_skyboxdraw()
-	//{
-	//	auto enginerender = game::get_engine_renderer();
-	//	const auto dev = game::get_d3d_device();
+	void on_skyboxdraw()
+	{
+		if (game_settings::get()->enable_3d_sky.get_as<bool>())
+		{
+			// not really req. rn
+			if (game::get_viewid() == VIEW_3DSKY)
+			{
+				const auto vec = *reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
+				main_module::get()->m_sky3d_camera_origin = vec;
+			}
 
-	//	auto mat = game::get_material_system();
-	//	auto ctx = mat->vtbl->GetRenderContext(mat);
+			/*
+			auto enginerender = game::get_engine_renderer();
+			const auto dev = game::get_d3d_device();
 
-	//	VMatrix viewm = {};
-	//	ctx->vtbl->GetMatrix2(ctx, MATERIAL_VIEW, &viewm);
+			auto mat = game::get_material_system();
+			auto ctx = mat->vtbl->GetRenderContext(mat);
 
-	//	// setup main camera
-	//	{
-	//		float colView[4][4] = {};
-	//		utils::row_major_to_column_major(enginerender->m_matrixView.m[0], colView[0]);
 
-	//		float colProj[4][4] = {};
-	//		utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
+			VMatrix viewm = {};
+			ctx->vtbl->GetMatrix2(ctx, MATERIAL_VIEW, &viewm);
+			VMatrix worldm = {};
+			ctx->vtbl->GetMatrix2(ctx, MATERIAL_MODEL, &worldm);
 
-	//		auto pos = game::get_current_view_origin();
-	//		auto render_pos = reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
+			// setup main camera
+			{
+				float colView[4][4] = {};
+				utils::row_major_to_column_major(enginerender->m_matrixView.m[0], colView[0]);
 
-	//		D3DXMATRIX world =
-	//		{
-	//			1.0f, 0.0f, 0.0f, 0.0f,
-	//			0.0f, 1.0f, 0.0f, 0.0f,
-	//			0.0f, 0.0f, 1.0f, 0.0f,
-	//			render_pos->x, render_pos->y, render_pos->z, 1.0f
-	//		};
+				float colProj[4][4] = {};
+				utils::row_major_to_column_major(enginerender->m_matrixProjection.m[0], colProj[0]);
 
-	//		dev->SetTransform(D3DTS_WORLD, &world);
-	//		dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
-	//		dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
-	//	}
-	//}
+				auto pos = game::get_current_view_origin();
+				auto render_pos = reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
 
-	//HOOK_RETN_PLACE_DEF(skyboxview_draw_internal_retn);
-	//__declspec(naked) void skyboxview_draw_internal_stub()
-	//{
-	//	__asm
-	//	{
-	//		add     esp, 0x14;
+				D3DXMATRIX world =
+				{
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					render_pos->x, render_pos->y, render_pos->z, 1.0f
+				};
 
-	//		pushad;
-	//		call	on_skyboxdraw;
-	//		popad;
+				dev->SetTransform(D3DTS_WORLD, &world);
+				dev->SetTransform(D3DTS_VIEW, reinterpret_cast<const D3DMATRIX*>(colView));
+				dev->SetTransform(D3DTS_PROJECTION, reinterpret_cast<const D3DMATRIX*>(colProj));
+			}*/
+		}
+	}
 
-	//		// og
-	//		cmp     byte ptr[ebp + 0xC], 0;
-	//		jmp		skyboxview_draw_internal_retn;
-	//	}
-	//}
+	HOOK_RETN_PLACE_DEF(skyboxview_draw_internal_retn);
+	__declspec(naked) void skyboxview_draw_internal_stub()
+	{
+		__asm
+		{
+			add     esp, 0x14;
+
+			pushad;
+			call	on_skyboxdraw;
+			popad;
+
+			// og
+			cmp     byte ptr[ebp + 0xC], 0;
+			jmp		skyboxview_draw_internal_retn;
+		}
+	}
 
 	// called on EndScene - remix_api::end_scene_callback()
 	void main_module::iterate_entities()
@@ -180,6 +194,19 @@ namespace components
 							const auto& rt = entity->read<Vector>(0x1134);
 							const auto& up = entity->read<Vector>(0x1128);
 							remix_api::get()->flashlight_create_or_update(info.name, eyepos, fwd, rt, up, flashlight_enabled, true);
+
+							// not really required rn.
+							if (game_settings::get()->enable_3d_sky.get_as<bool>())
+							{
+								// GetCurrentSkyCamera #OFFS
+								if (const auto sky = utils::hook::call<CSkyCamera * (__cdecl)()>(SERVER_BASE + 0x1D0D10)();
+									sky)
+								{
+									const auto main = get();
+									main->m_sky3d_origin = sky->m_skyboxData.origin;
+									main->m_sky3d_scale = sky->m_skyboxData.scale;
+								}
+							}
 						}
 
 						else // SurvivorBot
@@ -899,6 +926,10 @@ namespace components
 	 */
 	void on_map_load_hk(const char* map_name)
 	{
+		main_module::get()->m_sky3d_origin.Init();
+		main_module::get()->m_sky3d_camera_origin.Init();
+		main_module::get()->m_sky3d_scale = 0;
+
 		imgui::on_map_load();
 		remix_vars::on_map_load();
 		remix_lights::on_map_load();
@@ -1210,10 +1241,10 @@ namespace components
 		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick(); // 2501
 		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
 
-		// not needed
-		//utils::hook::nop(CLIENT_BASE + 0x1D3F1D, 7);
-		//utils::hook(CLIENT_BASE + 0x1D3F1D, skyboxview_draw_internal_stub).install()->quick();
-		//HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F24);
+		// not really req. rn
+		utils::hook::nop(CLIENT_BASE + 0x1D3F1D, 7);
+		utils::hook(CLIENT_BASE + 0x1D3F1D, skyboxview_draw_internal_stub).install()->quick();
+		HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F24);
 
 		// #
 		// culling

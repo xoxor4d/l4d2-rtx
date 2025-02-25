@@ -603,6 +603,13 @@ namespace components
 		// > models/props_foliage/urban_trees_branches03_small
 		else if (mesh->m_VertexFormat == 0xa0103)
 		{
+			if (game_settings::get()->enable_3d_sky.get_as<bool>())
+			{
+				if (ctx.info.shader_name.starts_with("Black")) {
+					ctx.modifiers.do_not_render = true; //skip = true;
+				}
+			}
+			
 			//lookat_vertex_decl(dev);
 			//ctx.modifiers.do_not_render = true; 
 			ctx.save_vs(dev);
@@ -1161,30 +1168,76 @@ namespace components
 			//int break_me = 1;  
 		}
 
+#if 0
+		// Due to the very short renderdist on some maps, the game culls entire areas and that includes large structures.
+		// To make culling of these structures less noticable, some 3d skyboxes include a very simplified world model that includes these large structures.
+		// It is using the black material shader and gets colored by the map fog. So when the actual area gets culled and with it the large structure, a vista object with a single color will stay in its place.
+		// We do not render that vista mesh as it's causing visual artifacts because we have no way to properly fade it using colormode ADD (with the fog color) as we A. have no fog color and B. no per pixel depth.
+		// We cant use per object dist to the skycamera because it's a single mesh .
+
 		if (game_settings::get()->enable_3d_sky.get_as<bool>())
 		{
 			// ignore for now (sometimes used for 3d skybox)
-			if (ctx.info.shader_name.starts_with("Black"))
+			if (mesh->m_VertexFormat == 0xa0103 && ctx.info.shader_name.starts_with("Black"))
 			{
-				ctx.modifiers.do_not_render = true;
+				// sdk: m_clrRender - nope
+				// black shader dithers color to the fog color
 
-#if 0	// i thought that the simple world model might be alpha controlled?
-				// in-case it was changed
-				ctx.restore_texture(dev, 0);
+				//ctx.modifiers.do_not_render = true;
+				//int break_me = 0;
 
-				ctx.save_texture(dev, 0);
-				dev->SetTexture(0, tex_addons::black);
+				if (const auto view = game::get_viewid(); 
+					view == VIEW_3DSKY)
+				{
+					Vector meshpos = {
+					ctx.info.buffer_state.m_Transform[0].m[3][0],
+					ctx.info.buffer_state.m_Transform[0].m[3][1],
+					ctx.info.buffer_state.m_Transform[0].m[3][2] };
 
-				ctx.save_rs(dev, D3DRS_ALPHABLENDENABLE);
-				dev->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+					const auto main_module = main_module::get();
+					auto dist = meshpos.DistTo(main_module->m_sky3d_camera_origin);
+					dist *= (float)main_module->m_sky3d_scale;
+					//if (dist < 3000.0f) {
+						//ctx.modifiers.do_not_render = true;
+					//}
+					//else
+					{
+						dev->SetTexture(0, tex_addons::black);
+						//set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_BEAM);
 
-				ctx.save_tss(dev, D3DTSS_ALPHAARG2);
-				ctx.save_tss(dev, D3DTSS_ALPHAOP);
-				dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-				dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-#endif
+						ctx.save_tss(dev, D3DTSS_COLORARG1);
+						ctx.save_tss(dev, D3DTSS_COLORARG2);
+						ctx.save_tss(dev, D3DTSS_COLOROP);
+						ctx.save_tss(dev, D3DTSS_ALPHAARG2);
+						ctx.save_tss(dev, D3DTSS_ALPHAOP);
+
+						dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+						dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+						dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_ADD);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+						dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+
+						float r = 0.0f; //dist < 3000.0f ? 1.0f : 0.0f;
+						float g = 0.0f; //dist < 3000.0f ? 0.0f : 1.0f;
+						float b = 0.0f;
+
+						ctx.save_rs(dev, D3DRS_TEXTUREFACTOR);
+						dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_COLORVALUE(r, g, b, 1.0f));
+
+						ctx.save_vs(dev);
+						dev->SetVertexShader(nullptr);
+						dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX3);
+
+						float scale = 1.0f; 
+						ctx.info.buffer_state.m_Transform[0].m[0][0] *= scale;
+						ctx.info.buffer_state.m_Transform[0].m[1][1] *= scale;
+						ctx.info.buffer_state.m_Transform[0].m[2][2] *= scale;
+						dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+					}
+				}
 			}
 		}
+#endif
 
 		//ctx.modifiers.do_not_render = false;
 		//int break_me = 1;
