@@ -185,6 +185,7 @@ namespace components
 		{
 			std::string	mapname;
 			float fog_dist = 0.0f;
+			float fog_density = 0.0f;
 			DWORD fog_color = 0xFFFFFFFF;
 			float water_uv_scale = 1.0f;
 			std::unordered_map<std::uint32_t, area_overrides_s> area_settings;

@@ -355,17 +355,25 @@ namespace components
 	void cont_mapsettings_fog()
 	{
 		auto& ms = map_settings::get_map_settings();
+		bool fog_enabled = ms.fog_dist != 0.0f || ms.fog_density != 0.0f;
 
 		Vector fog_color = {};
 		fog_color.x = static_cast<float>((ms.fog_color >> 16) & 0xFF) / 255.0f * 1.0f;
 		fog_color.y = static_cast<float>((ms.fog_color >>  8) & 0xFF) / 255.0f * 1.0f;
 		fog_color.z = static_cast<float>((ms.fog_color >>  0) & 0xFF) / 255.0f * 1.0f;
 
+		ImGui::BeginDisabled(!fog_enabled);
 		ImGui::PushFont(common::imgui::font::BOLD);
 		if (ImGui::Button("Copy Settings to Clipboard   " ICON_FA_SAVE "##Fog", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 		{
-			std::string toml_str = map_settings::get_map_settings().mapname + " = { "s;
-			toml_str += "distance = " + std::to_string(map_settings::get_map_settings().fog_dist) + ", "s;
+			std::string toml_str = ms.mapname + " = { "s;
+			if (ms.fog_dist > 0.0f) {
+				toml_str += "distance = " + std::to_string(ms.fog_dist) + ", "s;
+			}
+			else {
+				toml_str += "density = " + std::to_string(ms.fog_density) + ", "s;
+			}
+			
 			toml_str += "color = ["
 				+ std::to_string(static_cast<int>(std::round(fog_color.x * 255.0f))) + ", "
 				+ std::to_string(static_cast<int>(std::round(fog_color.y * 255.0f))) + ", "
@@ -375,6 +383,7 @@ namespace components
 			ImGui::LogText("%s", toml_str.c_str());
 			ImGui::LogFinish();
 		} ImGui::PopFont();
+		ImGui::EndDisabled();
 
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("Fog");
@@ -382,8 +391,7 @@ namespace components
 		ImGui::Spacing();
 		ImGui::Spacing();
 
-		bool fog_enabled = ms.fog_dist != 0.0f;
-		static float old_fog_val = 0.0f;
+		/*static float old_fog_val = 0.0f;
 		SET_CHILD_WIDGET_WIDTH;
 		if (ImGui::Checkbox("Enable Fog", &fog_enabled))
 		{
@@ -399,11 +407,20 @@ namespace components
 					ms.fog_color = 0xFF646464;
 				}
 			}
+		}*/
+
+		SET_CHILD_WIDGET_WIDTH;
+		if (ImGui::DragFloat("Distance", &ms.fog_dist, 1.0f, 1000.1f)) 
+		{
+			ms.fog_dist = ms.fog_dist < 1000.1f ? 1000.1f : ms.fog_dist;
+			ms.fog_density = 0.0f;
 		}
 
 		SET_CHILD_WIDGET_WIDTH;
-		if (ImGui::DragFloat("Distance", &ms.fog_dist, 1.0f, 0.0f)) {
-			ms.fog_dist = ms.fog_dist < 0.0f ? 0.0f : ms.fog_dist;
+		if (ImGui::DragFloat("Density", &ms.fog_density, 0.00001f, 0.0f, 1.0f, "%.5f")) 
+		{
+			ms.fog_density = std::clamp(ms.fog_density, 0.0f, 1.0f);
+			ms.fog_dist = 0.0f;
 		}
 
 		SET_CHILD_WIDGET_WIDTH;

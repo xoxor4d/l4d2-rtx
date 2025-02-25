@@ -274,10 +274,17 @@ namespace components
 					if (const auto map = fog_table[m_map_settings.mapname];
 						!map.is_empty())
 					{
-						if (map.contains("distance") && map.contains("color"))
+						const bool has_distance = map.contains("distance");
+						const bool has_density = map.contains("density");
+
+						if ((has_distance || has_density) && map.contains("color"))
 						{
-							const auto dist = map.at("distance");
-							m_map_settings.fog_dist = to_float(dist);
+							if (has_distance) {
+								m_map_settings.fog_dist = to_float(map.at("distance"));
+							}
+							else if (has_density) {
+								m_map_settings.fog_density = to_float(map.at("density"));
+							}
 
 							if (const auto& color = map.at("color").as_array(); 
 								color.size() == 3)

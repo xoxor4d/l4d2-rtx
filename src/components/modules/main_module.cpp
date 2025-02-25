@@ -56,11 +56,15 @@ namespace components
 		if (static bool allow_fog = !flags::has_flag("no_fog"); allow_fog)
 		{
 			const auto& s = map_settings::get_map_settings();
-			if (s.fog_dist > 0.0f)
+			const bool has_dist = s.fog_dist > 0.0f;
+			const bool has_density = s.fog_density > 0.0f;
+
+			if (has_dist || has_density)
 			{
 				const float fog_start = 1.0f; // not useful
 				dev->SetRenderState(D3DRS_FOGENABLE, TRUE);
-				dev->SetRenderState(D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR);
+				dev->SetRenderState(D3DRS_FOGTABLEMODE, has_dist ? D3DFOG_LINEAR : has_density ? D3DFOG_EXP : D3DFOG_NONE);
+				dev->SetRenderState(D3DRS_FOGDENSITY, *(DWORD*)&s.fog_density); // 0-1
 				dev->SetRenderState(D3DRS_FOGSTART, *(DWORD*)&fog_start);
 				dev->SetRenderState(D3DRS_FOGEND, *(DWORD*)&s.fog_dist);
 				dev->SetRenderState(D3DRS_FOGCOLOR, s.fog_color);
