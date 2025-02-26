@@ -355,6 +355,7 @@ namespace components
 	namespace tex_addons
 	{
 		extern LPDIRECT3DTEXTURE9 glass_shards;
+		extern LPDIRECT3DTEXTURE9 rain_drop;
 		extern LPDIRECT3DTEXTURE9 black;
 		extern LPDIRECT3DTEXTURE9 white;
 	}

@@ -10,6 +10,7 @@ namespace components
 	namespace tex_addons
 	{
 		LPDIRECT3DTEXTURE9 glass_shards;
+		LPDIRECT3DTEXTURE9 rain_drop;
 		LPDIRECT3DTEXTURE9 black;
 		LPDIRECT3DTEXTURE9 white;
 	}
@@ -22,6 +23,7 @@ namespace components
 		if (release)
 		{
 			if (tex_addons::glass_shards) tex_addons::glass_shards->Release();
+			if (tex_addons::rain_drop) tex_addons::rain_drop->Release();
 			if (tex_addons::black) tex_addons::black->Release();
 			if (tex_addons::white) tex_addons::white->Release();
 			return;
@@ -29,6 +31,7 @@ namespace components
 
 		const auto dev = game::get_d3d_device();
 		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\glass_shards.png", &tex_addons::glass_shards);
+		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\raindrop.png", &tex_addons::rain_drop);
 		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\black.dds", &tex_addons::black);
 		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\white.dds", &tex_addons::white);
 	}
@@ -188,21 +191,19 @@ namespace components
 	// draw 'nocull' map_setting marker meshes
 	void model_render::draw_nocull_markers()
 	{
-		// TODO: this should be moved somewhere else
-		g_sunoverlay_color.clear();
+		g_sunoverlay_color.clear(); // TODO: this should be moved somewhere else
+
+		// -----
 
 		const auto& msettings = map_settings::get_map_settings();
-
-		// early out
-		if (msettings.map_markers.empty()) {
-			return;
-		}
-
 		const auto dev = game::get_d3d_device();
 
-		struct vertex {
-			D3DXVECTOR3 position; D3DCOLOR color; float tu, tv;
-		};
+		struct vertex { D3DXVECTOR3 position; D3DCOLOR color; float tu, tv; };
+
+		// early out - nope -> always render a single tri to register tex_addon texture
+		/*if (msettings.map_markers.empty()) {
+			return;
+		}*/
 
 		// save & restore after drawing
 		IDirect3DVertexShader9* og_vs = nullptr;
@@ -256,6 +257,20 @@ namespace components
 
 			dev->SetTransform(D3DTS_WORLD, &world);
 			dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, mesh_verts, sizeof(vertex));
+		}
+
+		// #HACK: render single tri with rain_drop texture so remix loads the texture
+		{
+			const vertex mesh_verts[3] =
+			{
+				D3DXVECTOR3(-1.337f - 0.01f, -1.337f - 0.01f, 0), D3DCOLOR_XRGB(0, 0, 0), 0.0f, 0.0f,
+				D3DXVECTOR3(1.337f + 0.01f, -1.337f - 0.01f, 0), D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0.0f,
+				D3DXVECTOR3(1.337f + 0.01f,  1.337f + 0.01f, 0), D3DCOLOR_XRGB(0, 0, 0), 1.0f, 1.0f,
+			};
+
+			dev->SetTexture(0, tex_addons::rain_drop);
+			dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
+			dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, 1, mesh_verts, sizeof(vertex));
 		}
 
 		// restore
@@ -354,7 +369,7 @@ namespace components
 		auto& ctx = model_render::primctx;
 		const auto shaderapi = game::get_shaderapi();
 
-		bool scale_water_uvs = false;
+		bool scale_water_uvs = false; 
 
 		if (ctx.get_info_for_pass(shaderapi)) 
 		{
@@ -832,7 +847,7 @@ namespace components
 		// > vgui/hud/scalablepanel_bgmidgrey_outlinegreen_glow
 		// > detail/detailsprites_overgrown
 		// > sun flare
-		else if (mesh->m_VertexFormat == 0x80007)
+		else if (mesh->m_VertexFormat == 0x80007) 
 		{
 			//ctx.modifiers.do_not_render = true;
 
@@ -1138,14 +1153,52 @@ namespace components
 		// particle/warp_rain
 		else if (mesh->m_VertexFormat == 0x80037)
 		{
-			ctx.modifiers.do_not_render = false;
+			//lookat_vertex_decl(dev); 
+			set_remix_emissive_intensity(dev, ctx, 0.05f); 
+			set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_PARTICLE);
+
+			ctx.save_rs(dev, D3DRS_SRCBLEND);
+			ctx.save_rs(dev, D3DRS_DESTBLEND);
+			ctx.save_rs(dev, D3DRS_ALPHABLENDENABLE);
+
+			dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+
+			ctx.save_vs(dev);
+			dev->SetVertexShader(nullptr);
+			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+
+			// we have to use the rain_drop texture somewhere else or remix does not load the texture
+			// see: model_render::draw_nocull_markers #HACK
+			ctx.save_texture(dev, 0);
+			dev->SetTexture(0, tex_addons::rain_drop);
+
+			/*ctx.save_tss(dev, D3DTSS_COLORARG1);
+			ctx.save_tss(dev, D3DTSS_COLORARG2);
+			ctx.save_tss(dev, D3DTSS_COLOROP);
+			ctx.save_tss(dev, D3DTSS_ALPHAARG2);
+			ctx.save_tss(dev, D3DTSS_ALPHAOP);
+
+			dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+			dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+			dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+			dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+			dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+
+			float r = 1.0f;
+			float g = 1.0f;
+			float b = 1.0f;
+
+			ctx.save_rs(dev, D3DRS_TEXTUREFACTOR);
+			dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_COLORVALUE(r, g, b, 0.0f));*/
 		}
 
 		// shader: Water_DX9_HDR (with bottommaterial)
 		// > liquids/water_swamp_m2
 		else if (mesh->m_VertexFormat == 0x480033)
 		{
-			//ctx.modifiers.do_not_render = false;
+			//ctx.modifiers.do_not_render = true;
 			//lookat_vertex_decl(dev);
 
 			ctx.save_vs(dev);
@@ -1158,8 +1211,8 @@ namespace components
 		// > liquids/water_swamp_m2_beneath
 		else if (mesh->m_VertexFormat == 0x80033)
 		{
-			ctx.modifiers.do_not_render = false;
-			lookat_vertex_decl(dev);
+			//ctx.modifiers.do_not_render = true;
+			//lookat_vertex_decl(dev);
 
 			ctx.save_vs(dev);
 			dev->SetVertexShader(nullptr);
@@ -1167,9 +1220,26 @@ namespace components
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 		}
 
+		// shader: Spritecard
+		// > particle/string_light_beam
+		else if (mesh->m_VertexFormat == 0x3724900005)
+		{
+			// cant fix for now
+			ctx.modifiers.do_not_render = false;
+
+			//lookat_vertex_decl(dev);
+
+			//ctx.save_vs(dev);
+			//dev->SetVertexShader(nullptr);
+			//dev->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX5);
+
+			//ctx.save_texture(dev, 0);
+			//dev->SetTexture(0, tex_addons::black);
+		}
+
 		else 
 		{
-			ctx.modifiers.do_not_render = false;
+			ctx.modifiers.do_not_render = false; 
 			//int break_me = 1;  
 		}
 
