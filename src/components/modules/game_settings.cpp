@@ -175,6 +175,7 @@ namespace components
 				} 
 
 				ASSIGN(lod_forcing);
+				ASSIGN(force_graphic_settings);
 				ASSIGN(enable_3d_sky);
 				ASSIGN(default_nocull_distance);
 

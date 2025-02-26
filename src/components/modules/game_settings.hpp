@@ -284,6 +284,13 @@ namespace components
 				true
 			};
 
+			variable force_graphic_settings =
+			{
+				"force_graphic_settings",
+				"This forces required graphic settings (Shader/Effect etc.)",
+				true
+			};
+
 			variable enable_3d_sky =
 			{
 				"enable_3d_sky",

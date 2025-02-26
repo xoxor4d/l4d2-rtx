@@ -1102,7 +1102,14 @@ namespace components
 			game::cvar_uncheat_and_set_int("r_lod_switch_scale", 1); // hidden cvar
 		}
 
-		game::cvar_uncheat_and_set_int("r_dopixelvisibility", 0); // hopefully fix random crash (dxvk cmdBindPipeline) on map load
+		if (game_settings::get()->force_graphic_settings.get_as<bool>())
+		{
+			game::cvar_uncheat_and_set_int("cpu_level", 2);
+			game::cvar_uncheat_and_set_int("gpu_level", 0);
+			game::cvar_uncheat_and_set_int("gpu_mem_level", 2);
+		}
+
+		game::cvar_uncheat_and_set_int("r_dopixelvisibility", 0); // fix random crash (dxvk cmdBindPipeline) on map load -> affects sunflare
 
 		game::cvar_uncheat_and_set_int("r_WaterDrawRefraction", 0); // fix weird culling behaviour near water surfaces
 		game::cvar_uncheat_and_set_int("r_WaterDrawReflection", 0); // perf?
