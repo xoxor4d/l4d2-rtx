@@ -281,6 +281,7 @@ namespace common::toml
 			if (!a.leaf_tweaks.empty())
 			{
 				is_multiline = true;
+				auto leaf_count = 0u;
 				toml_str += ", leaf_tweak = [\n";
 				for (auto& lf : a.leaf_tweaks)
 				{
@@ -290,15 +291,25 @@ namespace common::toml
 						std::set<int> sorted_twk_inleafs(lf.in_leafs.begin(), lf.in_leafs.end());
 
 						// {
-						toml_str += "                { in_leafs = [";
+						toml_str += "                { in_leafs = [\n                    ";
 						for (auto it = sorted_twk_inleafs.begin(); it != sorted_twk_inleafs.end(); ++it)
 						{
-							if (it != sorted_twk_inleafs.begin()) {
+							if (it != sorted_twk_inleafs.begin()) 
+							{
 								toml_str += ", ";
+
+								// new line every X leafs
+								if (!(leaf_count % 8))
+								{
+									toml_str += "\n                    ";
+									is_multiline = true;
+								}
 							}
 							toml_str += std::to_string(*it);
+							leaf_count++;
 						}
 
+						leaf_count = 0u;
 						if (!lf.areas.empty())
 						{
 							// temp set to sort areas
@@ -406,9 +417,9 @@ namespace common::toml
 			// }
 			toml_str += " },\n";
 
-			if (is_multiline && ar_num != (int)sorted_area_settings.size()) {
+			/*if (is_multiline && ar_num != (int)sorted_area_settings.size() - 1) {
 				toml_str += "\n";
-			}
+			}*/
 
 		} // end loop
 		toml_str += "    ]";

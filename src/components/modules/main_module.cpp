@@ -763,7 +763,8 @@ namespace components
 						{
 							// visualize near-by leafs that are part of area overrides (RED)
 							if (const auto	forced_leaf = &world->leafs[i];
-								lt.areas.contains((std::uint32_t)forced_leaf->area))
+								lt.areas.contains((std::uint32_t)forced_leaf->area)
+								|| lt.leafs.contains(i))
 							{
 								force_leaf_vis(i);
 							}
@@ -1019,6 +1020,9 @@ namespace components
 		// ----------
 
 		map_settings::on_map_unload();
+
+		// reload rtx.conf
+		remix_vars::xo_vars_parse_options_fn();
 	}
 
 	HOOK_RETN_PLACE_DEF(on_host_disconnect_retn);
