@@ -76,7 +76,7 @@ namespace game
 				freopen_s(&file, "CONIN$", "r", stdin);
 				freopen_s(&file, "CONOUT$", "w", stdout);
 				freopen_s(&file, "CONOUT$", "w", stderr);
-				SetConsoleTitleA("L4D2-RTX Debug Console");
+				SetConsoleTitleA(COMPMOD_NAME " Debug Console");
 			}
 		}
 	}

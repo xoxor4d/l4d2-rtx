@@ -4,6 +4,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 
+#define COMPMOD_NAME "L4D2-RTX"
+#define COMPMOD_ASSET_DIR "l4d2-rtx\\"
+
 // enable/disable benchmark logic
 //#define BENCHMARK
 
@@ -70,20 +73,9 @@
 #include "sdk/client/c_player_info_manager.hpp"
 #include "sdk/engine/c_engine_client.hpp"
 #include "sdk/client/c_collideable.hpp"
-//#include "sdk/engine/c_engine_vgui.hpp"
-//#include "sdk/engine/c_achievement_mgr.hpp"
-//#include "sdk/engine/c_model_info.hpp"
-//#include "sdk/engine/c_input_system.hpp"
 #include "sdk/entity/c_base_entity.hpp"
 #include "sdk/entity/c_entity_list.hpp"
-//#include "sdk/movement/c_user_cmd.hpp"
-//#include "sdk/vec/vec.hpp"
-//#include "sdk/vgui/c_panel.hpp"
 #include "sdk/vgui/surface/c_surface_mgr.hpp"
-//#include "sdk/world/c_debug_overlay.hpp"
-//#include "sdk/world/c_matrix.hpp"
-//#include "sdk/world/c_view_matrix.hpp"
-//#include "sdk/world/c_trace_ray.hpp"
 
 #include "utils/hooking.hpp"
 #include "utils/memory.hpp"

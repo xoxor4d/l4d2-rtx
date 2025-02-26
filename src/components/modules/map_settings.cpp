@@ -177,7 +177,7 @@ namespace components
 	{
 		try 
 		{
-			auto config = toml::parse("l4d2-rtx\\map_settings.toml", toml::spec::v(1, 1, 0));
+			auto config = toml::parse(COMPMOD_ASSET_DIR "map_settings.toml", toml::spec::v(1, 1, 0));
 
 			// #
 			auto to_float = [](const toml::value& entry, const float default_val = 0.0f)
@@ -1221,7 +1221,7 @@ namespace components
 
 	void map_settings::open_and_set_var_config(const std::string& config, const bool no_error, const bool ignore_hashes, const char* custom_path)
 	{
-		std::string path = "l4d2-rtx\\map_configs";
+		std::string path = COMPMOD_ASSET_DIR "map_configs";
 		if (custom_path)
 		{
 			path = custom_path;
@@ -1264,7 +1264,7 @@ namespace components
 		else if (!no_error)
 		{
 			game::console();
-			printf("[MapSettings] Failed to find config: \"%s\" in %s \n", config.c_str(), custom_path ? custom_path : "\"l4d2-rtx\\map_configs\"");
+			printf("[MapSettings] Failed to find config: \"%s\" in %s \n", config.c_str(), custom_path ? custom_path : "\"" COMPMOD_ASSET_DIR "map_configs\"");
 		}
 	}
 

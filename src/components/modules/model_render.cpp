@@ -30,10 +30,10 @@ namespace components
 		}
 
 		const auto dev = game::get_d3d_device();
-		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\glass_shards.png", &tex_addons::glass_shards);
-		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\raindrop.png", &tex_addons::rain_drop);
-		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\black.dds", &tex_addons::black);
-		D3DXCreateTextureFromFileA(dev, "l4d2-rtx\\textures\\white.dds", &tex_addons::white);
+		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\glass_shards.png", &tex_addons::glass_shards);
+		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\raindrop.png", &tex_addons::rain_drop);
+		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\black.dds", &tex_addons::black);
+		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\white.dds", &tex_addons::white);
 	}
 
 	// check for specific material var and return it in 'out_var'

@@ -306,7 +306,7 @@ namespace components
 	void remix_vars::parse_and_apply_conf_with_lerp(const std::string& conf_name, const std::uint64_t& identifier, const EASE_TYPE ease, const float duration, const float delay, const float delay_transition_back)
 	{
 		std::ifstream file;
-		if (utils::open_file_homepath("l4d2-rtx\\map_configs", conf_name, file))
+		if (utils::open_file_homepath(COMPMOD_ASSET_DIR "map_configs", conf_name, file))
 		{
 			std::string input;
 			while (std::getline(file, input))
@@ -340,7 +340,7 @@ namespace components
 		else
 		{
 			game::console();
-			printf("[RemixVars] Failed to find config: \"%s\" in \"l4d2-rtx\\map_configs\"\n", conf_name.c_str());
+			printf("[RemixVars] Failed to find config: \"%s\" in \"" COMPMOD_ASSET_DIR "map_configs\"\n", conf_name.c_str());
 		}
 	}
 

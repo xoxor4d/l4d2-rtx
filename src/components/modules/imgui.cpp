@@ -2789,7 +2789,7 @@ namespace components
 			configs.clear();
 			if (!game::root_path.empty())
 			{
-				std::string conf_path = game::root_path + "l4d2-rtx\\map_configs\\";
+				std::string conf_path = game::root_path + COMPMOD_ASSET_DIR "map_configs\\";
 				if (std::filesystem::exists(conf_path))
 				{
 					for (const auto& d : std::filesystem::directory_iterator(conf_path))
