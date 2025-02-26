@@ -852,7 +852,7 @@ namespace components
 				bool is_world_ui_text = ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name == "__fontpage";
 
 				if (is_world_ui_text) {
-					set_remix_texture_categories(dev, ctx, WorldUI);
+					set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_WORLD_UI);
 				}
 				else if (is_world_ui_text)
 				{
@@ -982,7 +982,7 @@ namespace components
 		{
 			//ctx.modifiers.do_not_render = true;
 
-			if (ctx.info.shader_name == "WorldVertexTransition_DX9") 
+			if (ctx.info.shader_name == "WorldVertexTransition_DX9")
 			{
 				ctx.save_texture(dev, 0); // helps with culling issue
 				ctx.modifiers.dual_render_with_basetexture2 = true;  
@@ -1009,12 +1009,13 @@ namespace components
 			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 		}
 
-		// shader: DecalModulate_dx9
+		// shader: DecalModulate_dx9, Sprite_DX9
 		// > decals/bloodstain_002
+		// > sprites/glow_test02_rendermode_5
 		else if (mesh->m_VertexFormat == 0x80005) // stride 0x20
 		{
 			//ctx.modifiers.do_not_render = true;
-			bool mod_shader = true; 
+			bool mod_shader = true;
 
 			// render bik using shaders
 			/*if (ctx.info.material_name.starts_with("videobik") || ctx.info.material_name.starts_with("media/"))
@@ -1023,6 +1024,10 @@ namespace components
 				set_remix_texture_hash(dev, ctx, utils::string_hash32(ctx.info.material_name));
 				mod_shader = false;
 			}*/
+
+			if (ctx.info.shader_name.starts_with("Spr")) {
+				set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_PARTICLE);
+			}
 
 			if (mod_shader)
 			{
@@ -1140,8 +1145,8 @@ namespace components
 		// > liquids/water_swamp_m2
 		else if (mesh->m_VertexFormat == 0x480033)
 		{
-			ctx.modifiers.do_not_render = false;
-			lookat_vertex_decl(dev);
+			//ctx.modifiers.do_not_render = false;
+			//lookat_vertex_decl(dev);
 
 			ctx.save_vs(dev);
 			dev->SetVertexShader(nullptr);
@@ -1433,7 +1438,7 @@ namespace components
 				ctx.save_rs(dev, D3DRS_ZENABLE);
 				dev->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-				set_remix_texture_categories(dev, ctx, WorldMatte | IgnoreOpacityMicromap);
+				set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_WORLD_MATTE | REMIXAPI_INSTANCE_CATEGORY_BIT_IGNORE_OPACITY_MICROMAP);
 			}
 
 			if (ctx.modifiers.dual_render_texture_z_offset != 0.0f)

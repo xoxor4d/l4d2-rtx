@@ -2525,32 +2525,6 @@ namespace components
 		char* (__thiscall* GetIDString)(C_Prop_Portal*);
 	};
 
-	enum RemixInstanceCategories : uint32_t
-	{
-		WorldUI					= 1 << 0,
-		WorldMatte				= 1 << 1,
-		Sky						= 1 << 2,
-		Ignore					= 1 << 3,
-		IgnoreLights			= 1 << 4,
-		IgnoreAntiCulling		= 1 << 5,
-		IgnoreMotionBlur		= 1 << 6,
-		IgnoreOpacityMicromap	= 1 << 7,
-		IgnoreAlphaChannel		= 1 << 8,
-		Hidden					= 1 << 9,
-		Particle				= 1 << 10,
-		Beam					= 1 << 11,
-		DecalStatic				= 1 << 12,
-		DecalDynamic			= 1 << 13,
-		DecalSingleOffset		= 1 << 14,
-		DecalNoOffset			= 1 << 15,
-		AlphaBlendToCutout		= 1 << 16,
-		Terrain					= 1 << 17,
-		AnimatedWater			= 1 << 18,
-		ThirdPersonPlayerModel	= 1 << 19,
-		ThirdPersonPlayerBody	= 1 << 20,
-		IgnoreBakedLighting		= 1 << 21,
-	};
-
 	struct msurface2_t
 	{
 		unsigned int flags;
