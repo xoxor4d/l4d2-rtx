@@ -9,17 +9,23 @@
     c1m1_hotel = { distance = 15000, color = [100, 100, 100] }
     c1m2_streets = { density = 0.000210, color = [120, 107, 79] }
     c2m1_highway = { distance = 5000.000000, color = [18, 171, 85] }
+    c3m2_swamp = { density = 0.000310, color = [24, 49, 91] }
     c4m1_milltown_a = { distance = 3000, color = [100, 100, 100] }
     c6m1_riverbank = { density = 0.000200, color = [10, 9, 9] }
 
-# Water UV Scale -------------------------------------------------------------------------------------------------------------------------------
-# :: Change water scaling per map
+# Water Settings -------------------------------------------------------------------------------------------------------------------------------
+# :: Adjust various water related settings per map
 # ~~ Parameters: 
 #
-# Small values reduce repetition while larger values will increase tiling (default = 1.0)
+# scale:                uv scale - small values reduce repetition while larger values will increase tiling    [float] << defaults to 1.0
+# top_layer_offset:     can offset the dual rendered water mesh along the Z-Axis (usually the animated surface)
+# bottom_layer_offset:  can offset the original water mesh along the Z-Axis (usually the surface defining water color)
 
 [WATER]
-    c3m2_swamp = 10.0
+    c3m2_swamp = { scale = 10.0, top_layer_offset = 0.0, bottom_layer_offset = -0.25 }
+    c3m3_shantytown = { scale = 20.0 }
+    c5m1_waterfront = { scale = 3.50, top_layer_offset = 0.0, bottom_layer_offset = -20.0 }
+    c5m3_cemetery = { scale = 10.0 }
 
 
 
@@ -130,12 +136,24 @@
         { in_area =   5, leafs = [] },
     ]
 
+    c3m2_swamp = [
+        { in_area =   2, nocull_dist = 600.00, leaf_tweak = [
+                { in_leafs = [
+                    1305, 1307, 1308, 1344], leafs = [950, 986, 1025, 1570] },
+                { in_leafs = [
+                    1344], leafs = [1004] },
+                { in_leafs = [
+                    1337], leafs = [1547] },
+            ] },
+    ]
+
     c4m1_milltown_a = [
         { in_area =   2, cull = 5, nocull_dist = 600.0 },
     ]
 
     c5m3_cemetery = [
         { in_area =   4, nocull_dist = 700.00 },
+        { in_area =   5, cull = 4, nocull_dist = 600.00 },
     ]
 
     c6m1_riverbank = [
