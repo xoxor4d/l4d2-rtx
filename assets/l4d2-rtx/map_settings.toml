@@ -66,36 +66,37 @@
     c1m1_hotel = [
         { in_area =   2, nocull_dist = 650.00 },
         { in_area =   7, nocull_dist = 630.00, leaf_tweak = [
-                { in_leafs = [2498], areas = [14] },
+                { in_leafs = [
+                    2498], areas = [14] },
             ] },
-
-        { in_area =   8, nocull_dist = 600.00, leaf_tweak = [
-                { in_leafs = [3616, 3617], leafs = [3580] },
+        { in_area =   8, nocull_dist = 780.00, leaf_tweak = [
+                { in_leafs = [
+                    3616, 3617], leafs = [3580] },
             ] },
-
         { in_area =  12, areas = [8], leafs = [
                 2516
-            ], nocull_dist = 600.00 },
+            ], nocull_dist = 600.00, leaf_tweak = [
+            ] },
         { in_area =  13, areas = [23], leafs = [
                 2339
             ], nocull_dist = 950.00, leaf_tweak = [
-                { in_leafs = [1939, 2324, 2328, 2331], areas = [13] },
+                { in_leafs = [
+                    1939, 2324, 2328, 2331], areas = [13] },
             ] },
-
         { in_area =  14, leafs = [
                 2549, 2599
             ], cull = 4, nocull_dist = 600.00, leaf_tweak = [
-                { in_leafs = [2508, 2511], areas = [7] },
+                { in_leafs = [
+                    2508, 2511], areas = [7] },
             ] },
-
         { in_area =  21, nocull_dist = 650.00 },
         { in_area =  23, areas = [13], nocull_dist = 600.00 },
         { in_area =  24, leafs = [
                 2856, 2881, 3938, 3969, 4373
             ], cull = 4, nocull_dist = 600.00, leaf_tweak = [
-                { in_leafs = [3664, 4361, 4364, 4367, 4373, 4400], areas = [26] },
+                { in_leafs = [
+                    3664, 4361, 4364, 4367, 4373, 4400], areas = [26] },
             ] },
-
         { in_area =  25, areas = [26], nocull_dist = 600.00 },
         { in_area =  26, areas = [25], leafs = [
                 2856, 2881, 3938, 3969, 4340, 4373
@@ -395,6 +396,39 @@
             { position = [1670.53, 6243.12, 2754.03], radiance = [10.00, 10.00, 10.00], scalar = 0.00, radius = 3.00, smoothness = 0.00, timepoint = 0.40 },
             { position = [1670.53, 6243.12, 2754.03], radiance = [10.00, 10.00, 10.00], scalar = 0.00, radius = 3.00, smoothness = 0.50, timepoint = 2.27 },
         ], loop = true },
+
+        # flashlight on map-table (spot)
+        { points = [
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 2000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 2000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 2.00 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 2.10 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 1000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 2.20 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 2.35 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 3.10 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 2000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 3.20 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 2000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 4.00 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 4.10 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 4.50 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 2000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 4.60 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 2000.00, radius = 1.40, smoothness = 0.00, direction = [0.99, -0.17, 0.02], degrees = 20.50, softness = 0.10, exponent = 1.00, timepoint = 6.60 },
+        ], loop = true },
+
+        # flashlight on map-table (spot towards glass)
+        { points = [
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 30000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 30000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 2.00 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 2.10 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 15000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 2.20 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 2.35 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 3.10 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 30000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 3.20 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 30000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 4.00 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 4.10 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 0.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 4.50 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 30000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 4.60 },
+            { position = [951.12, 5243.12, 2687.15], radiance = [13.80, 12.60, 8.80], scalar = 30000.0, radius = 0.20, smoothness = 0.00,   direction = [-0.99, 0.13, 0.02], degrees = 48.8, softness = 0.10, exponent = 1.00, timepoint = 6.60 },
+        ], loop = true },
+
 
         # fire dummy on lower floor
         { points = [
