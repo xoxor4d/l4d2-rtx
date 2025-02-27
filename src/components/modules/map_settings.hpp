@@ -188,6 +188,8 @@ namespace components
 			float fog_density = 0.0f;
 			DWORD fog_color = 0xFFFFFFFF;
 			float water_uv_scale = 1.0f;
+			float water_offset_top = 0.5f; // top layer
+			float water_offset_bottom = 0.0f; // bottom layer
 			std::unordered_map<std::uint32_t, area_overrides_s> area_settings;
 			float default_nocull_dist = DEFAULT_NOCULL_DIST;
 			hide_models_s hide_models;

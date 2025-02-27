@@ -312,7 +312,17 @@ namespace components
 					if (const auto map = water_table[m_map_settings.mapname];
 						!map.is_empty())
 					{
-						m_map_settings.water_uv_scale = to_float(map, 1.0f);
+						if (map.contains("scale")) {
+							m_map_settings.water_uv_scale = to_float(map.at("scale"), 1.0f);
+						}
+
+						if (map.contains("top_layer_offset")) {
+							m_map_settings.water_offset_top = to_float(map.at("top_layer_offset"), 0.5f);
+						}
+
+						if (map.contains("bottom_layer_offset")) {
+							m_map_settings.water_offset_bottom = to_float(map.at("bottom_layer_offset"), 0.0f);
+						}
 					}
 				}
 			} // end 'WATER'

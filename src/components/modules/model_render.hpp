@@ -272,11 +272,9 @@ namespace components
 			bool with_high_gamma = false;
 			bool as_sky = false;
 			bool as_water = false;
-			bool as_transport_beam = false;
-			bool as_portalgun_pickup_beam = false;
-			Vector2D emancipation_offset = {};
-			Vector2D emancipation_scale = { 1.0f, 1.0f };
-			float emancipation_color_scale = 1.0f;
+
+			float og_mesh_z_offset = 0.0f;
+
 			bool dual_render_with_basetexture2 = false; // render prim a second time with tex2 set as tex1
 			bool dual_render_with_specified_texture = false; // render prim a second time with tex defined in 'dual_render_texture'
 			bool dual_render_with_specified_texture_blend_add = false; // renders second prim using blend mode ADD
@@ -289,12 +287,8 @@ namespace components
 				with_high_gamma = false;
 				as_sky = false;
 				as_water = false;
-				as_transport_beam = false;
-
-				as_portalgun_pickup_beam = false;
-				emancipation_offset = { 0.0f, 0.0f };
-				emancipation_scale = { 1.0f, 1.0f };
-				emancipation_color_scale = 1.0f;
+				og_mesh_z_offset = 0.0f;
+				
 				dual_render_with_basetexture2 = false;
 				dual_render_with_specified_texture = false;
 				dual_render_texture = nullptr;

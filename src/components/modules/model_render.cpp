@@ -390,11 +390,14 @@ namespace components
 
 							if (has_bottom_mat)
 							{
+								const auto& ms = map_settings::get_map_settings();
+
 								// we only need one surface
 								scale_water_uvs = true;
 								ctx.modifiers.as_water = true;
+								ctx.modifiers.og_mesh_z_offset = ms.water_offset_bottom;
 								ctx.modifiers.dual_render_with_specified_texture = true;
-								ctx.modifiers.dual_render_texture_z_offset = 0.5f;
+								ctx.modifiers.dual_render_texture_z_offset = ms.water_offset_top; //0.5f;
 								ctx.modifiers.dual_render_texture = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[2]);
 								
 								// assign flowmap
@@ -404,6 +407,19 @@ namespace components
 									ctx.save_texture(dev, 0);
 									dev->SetTexture(0, tex);
 								}
+
+								// scale water uv
+								D3DXMATRIX scaleMatrix; // create a scaling matrix
+								D3DXMatrixScaling(&scaleMatrix, 1.5f * ms.water_uv_scale, 1.5f * ms.water_uv_scale, 1.0f);
+
+								ctx.save_ss(dev, D3DSAMP_ADDRESSU);
+								ctx.save_ss(dev, D3DSAMP_ADDRESSV);
+								dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+								dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+
+								ctx.set_texture_transform(dev, &scaleMatrix);
+								ctx.save_tss(dev, D3DTSS_TEXTURETRANSFORMFLAGS);
+								dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
 							}
 
 							// ignore 'beneath'
@@ -412,21 +428,6 @@ namespace components
 								ctx.modifiers.do_not_render = true;
 							}
 						}
-
-						//do we need this?
-						// material has defined a $basetexture
-						//else
-						//{
-						//	//  sampler 10
-						//	IDirect3DBaseTexture9* tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[10]);
-						//	if (tex)
-						//	{
-						//		// save og texture
-						//		ctx.modifiers.as_water = true;
-						//		ctx.save_texture(dev, 0);
-						//		dev->SetTexture(0, tex);
-						//	}
-						//}
 					}
 				}
 			}
@@ -436,25 +437,6 @@ namespace components
 		{
 			int break_me = 0;
 		}*/
-
-		// scale water uv's
-		if (scale_water_uvs)
-		{
-			const auto& scale_setting = map_settings::get_map_settings().water_uv_scale;
-
-			// create a scaling matrix
-			D3DXMATRIX scaleMatrix;
-			D3DXMatrixScaling(&scaleMatrix, 1.5f * scale_setting, 1.5f * scale_setting, 1.0f);
-
-			ctx.save_ss(dev, D3DSAMP_ADDRESSU);
-			ctx.save_ss(dev, D3DSAMP_ADDRESSV);
-			dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
-			dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
-
-			ctx.set_texture_transform(dev, &scaleMatrix);
-			ctx.save_tss(dev, D3DTSS_TEXTURETRANSFORMFLAGS);
-			dev->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
-		}
 
 		// no longer set cam transforms in 'main_module::on_renderview'
 		// setting them there causes meshes rendered with shaders to lag behind
@@ -1353,6 +1335,12 @@ namespace components
 		// do not render next surface if set
 		if (!ctx.modifiers.do_not_render)
 		{
+			if (ctx.modifiers.og_mesh_z_offset != 0.0f)
+			{
+				ctx.info.buffer_state.m_Transform[0].m[3][2] += ctx.modifiers.og_mesh_z_offset;
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			}
+
 			// dirty hack to fix 1 oob point
 			//if (ctx.modifiers.as_portalgun_pickup_beam) {
 			//	prim_count -= 1;
@@ -1387,6 +1375,13 @@ namespace components
 			//}
 
 			dev->DrawIndexedPrimitive(type, base_vert_index, min_vert_index, num_verts, start_index, prim_count);
+
+			// restore transform
+			if (ctx.modifiers.og_mesh_z_offset != 0.0f)
+			{
+				ctx.info.buffer_state.m_Transform[0].m[3][2] -= ctx.modifiers.og_mesh_z_offset;
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			}
 
 			// restore emissive sky settings
 			/*if (ctx.modifiers.as_sky)

@@ -256,6 +256,8 @@ namespace components
 
 	void cont_mapsettings_general()
 	{
+		auto& ms = map_settings::get_map_settings();
+
 		ImGui::PushFont(common::imgui::font::BOLD);
 		if (ImGui::Button("Reload rtx.conf    " ICON_FA_REDO, ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 		{
@@ -314,12 +316,35 @@ namespace components
 		ImGui::SliderInt2("HUD: Area Debug Pos", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
 
 		{
-			auto* default_nocull_dist = &map_settings::get_map_settings().default_nocull_dist;
+			auto default_nocull_dist = ms.default_nocull_dist;
 			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-			if (ImGui::DragFloat("Def. NoCull Dist", default_nocull_dist, 0.5f, 0.0f)) {
-				*default_nocull_dist = *default_nocull_dist < 0.0f ? 0.0f : *default_nocull_dist;
+			if (ImGui::DragFloat("Def. NoCull Dist", &default_nocull_dist, 0.5f, 0.0f)) {
+				default_nocull_dist = default_nocull_dist < 0.0f ? 0.0f : default_nocull_dist;
 			}
 			TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
+		}
+
+		ImGui::Spacing(0, 4);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+		ImGui::TableHeaderDropshadow();
+		const bool water_header_state = ImGui::CollapsingHeader("Water Settings");
+		ImGui::PopStyleVar();
+
+		if (water_header_state)
+		{
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			if (ImGui::DragFloat("UV Scale##Water", &ms.water_uv_scale, 0.05f, 0.01f, FLT_MAX, "%.2f")) {
+				ms.water_uv_scale = std::clamp(ms.water_uv_scale, 0.0f, FLT_MAX);
+			}
+
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			ImGui::DragFloat("Top Layer Offset", &ms.water_offset_top, 0.05f, -100.0f, 100.0f, "%.2f");
+			TT("This can offset the dual rendered water mesh along the Z-Axis (usually the animated surface)");
+
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			ImGui::DragFloat("Bottom Layer Offset", &ms.water_offset_bottom, 0.05f, -100.0f, 100.0f, "%.2f");
+			TT("This can offset the original water mesh along the Z-Axis (usually the surface defining water color)");
 		}
 
 #if DEBUG
@@ -2460,8 +2485,7 @@ namespace components
 
 			if (light_transform_state)
 			{
-				const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
-
+				//const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
 				//static float cont_height = 0.0f;
 				//cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [active_points, edit_active_light, is_static_light_with_single_point]
 					{
