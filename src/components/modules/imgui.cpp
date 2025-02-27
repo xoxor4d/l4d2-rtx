@@ -2575,7 +2575,7 @@ namespace components
 
 
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-				if (ImGui::DragFloat("Radius", &active_point_selection->radius, 0.005f, 0.0f, FLT_MAX, "%.1f")) {
+				if (ImGui::DragFloat("Radius", &active_point_selection->radius, 0.005f, 0.0f, FLT_MAX, "%.2f")) {
 					active_point_selection->radius = active_point_selection->radius < 0.0f ? 0.0f : active_point_selection->radius;
 				} TT("Radius of light (defaults to 1.0)");
 
@@ -2608,7 +2608,7 @@ namespace components
 					}
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					if (ImGui::DragFloat("Timepoint", &active_point_selection->timepoint, 0.005f, min_timepoint, max_timepoint, "%.1f")) 
+					if (ImGui::DragFloat("Timepoint", &active_point_selection->timepoint, 0.005f, min_timepoint, max_timepoint, "%.3f")) 
 					{
 						active_point_selection->timepoint = std::clamp(active_point_selection->timepoint, min_timepoint, max_timepoint);
 						edit_active_light->mover.calculate_segment_durations();
@@ -2620,7 +2620,7 @@ namespace components
 				}
 
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-				if (ImGui::DragFloat("Smoothness", &active_point_selection->smoothness, 0.005f, 0.0f, 3.0f, "%.1f")) {
+				if (ImGui::DragFloat("Smoothness", &active_point_selection->smoothness, 0.005f, 0.0f, 3.0f, "%.2f")) {
 					active_point_selection->smoothness = active_point_selection->smoothness < 0.0f ? 0.0f : active_point_selection->smoothness;
 				} TT("Curve smoothness (defaults to 0.5 - values above 1 might produce odd results)");
 
