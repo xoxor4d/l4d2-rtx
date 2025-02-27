@@ -60,6 +60,7 @@ consider buying me some coffee:
 - Current releases ship with a [custom build of the remix-dxvk runtime](https://github.com/xoxor4d/dxvk-remix/tree/combine/l4d2) which includes necessary changes for L4D2 (`bin/.trex/d3d9.dll`)
 
 #### 🟩 Remixing:  
+- Press __F5__ to open the in-game gui to tweak compatibility mod related settings or to edit [MapSettings](https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings)
 - Infected will be really colorful when viewed in the toolkit. That is the colormap the infected shader is using. __DO NOT__ touch anything on infected meshes __BESIDES__ the normal map!
 - Water surfaces have two layers. Make the top one translucent (and animate the normalmap with a spritesheet if you want). The lower layer can be used to color the water and make it interact with the flashlight.
 Remove the albedo map and set a albedo color + opacity if you want. Reduce the roughness and increase the metallic amount to your liking.  
