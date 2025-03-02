@@ -250,7 +250,7 @@ dependencies_launcher.load()
 
 workspace "l4d2-rtx"
 
-	startproject "l4d2-rtx-launcher"
+	startproject "comp-rtx-launcher"
 	location "./build"
 	objdir "%{wks.location}/obj"
 	targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
@@ -366,7 +366,7 @@ workspace "l4d2-rtx"
 				print ("Setup paths using environment variable 'L4D2_ROOT' :: '" .. os.getenv("L4D2_ROOT") .. "'")
 				targetdir(os.getenv("L4D2_ROOT"))
 				debugdir (os.getenv("L4D2_ROOT"))
-				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "l4d2-rtx-launcher.exe")
+				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "comp-rtx-launcher.exe")
 			end
 		filter {}
 		
@@ -391,7 +391,7 @@ workspace "l4d2-rtx"
 		group ""
 	
 
-	project "l4d2-rtx-launcher"
+	project "comp-rtx-launcher"
 		kind "ConsoleApp"
         language "C++"
 
@@ -417,7 +417,7 @@ workspace "l4d2-rtx"
 				print ("Setup paths using environment variable 'L4D2_ROOT' :: '" .. os.getenv("L4D2_ROOT") .. "'")
 				targetdir(os.getenv("L4D2_ROOT"))
 				debugdir (os.getenv("L4D2_ROOT"))
-				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "l4d2-rtx-launcher.exe")
+				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "comp-rtx-launcher.exe")
 			end
 		filter {}
 
@@ -430,7 +430,7 @@ workspace "l4d2-rtx"
 
 		-- Post-build
 		postbuildcommands {
-			"MOVE /Y \"$(TargetDir)l4d2-rtx-launcher.exe\" \"$(TargetDir)l4d2-rtx-launcher.exe\"",
+			"MOVE /Y \"$(TargetDir)comp-rtx-launcher.exe\" \"$(TargetDir)comp-rtx-launcher.exe\"",
 		}
 
 		dependencies_launcher.imports()

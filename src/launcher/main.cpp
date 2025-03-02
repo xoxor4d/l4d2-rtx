@@ -2,12 +2,14 @@
 #include <windows.h>
 #include <string>
 #include <filesystem>
-#include <version.hpp> // git version
 
 #include "detours.h" 
 #pragma comment(lib, "detours.lib")
 
-# define ENDL "\n"
+#include "toml.hpp"
+
+#define ENDL "\n"
+#define PAUSE system("pause")
 
 bool find_window_by_process_id(const DWORD proc_id)
 {
@@ -25,31 +27,102 @@ bool find_window_by_process_id(const DWORD proc_id)
 	}
 
 	return false;
-} 
+}
 
-int wmain(int argc, wchar_t* argv[])
+#ifdef DEBUG
+int main(int argc, char* argv[])
+#else
+int main(int, char*[])
+#endif
 {
-	std::filesystem::path game_path = std::filesystem::current_path();
+	std::filesystem::path current_path = std::filesystem::current_path();
 
-	std::filesystem::path exe_path = game_path;
-	exe_path.append("left4dead2.exe");
+	std::filesystem::path toml_path = current_path;
+	toml_path.append("comp-rtx-launcher.toml");
 
-	std::filesystem::path dll_path = game_path;
-	dll_path.append("l4d2-rtx.dll");
+	if (!exists(toml_path)) 
+	{
+		std::cout << "[!] Could not find 'comp-rtx-launcher.toml' in " << current_path << ENDL;
+		PAUSE; return -1;
+	}
+
+	std::filesystem::path exe_path = current_path;
+	std::filesystem::path dll_path = current_path;
+	std::string exe_name, dll_name, commandline;
+
+	try
+	{
+		auto config = toml::parse(toml_path, toml::spec::v(1, 1, 0));
+		if (config.contains("exe_name"))
+		{
+			if (const auto& exe = config.at("exe_name"); exe.is_string() && !exe.is_empty()) 
+			{
+				exe_name = exe.as_string();
+				exe_path.append(exe_name);
+			}
+			else {
+				std::cout << "exe_name: Empty or malformed!" << ENDL; PAUSE; return -1;
+			}
+		} else {
+			std::cout << "exe_name: Unspecified!" << ENDL; PAUSE; return -1;
+		}
+
+		if (config.contains("dll_name"))
+		{
+			if (const auto& dll = config.at("dll_name"); dll.is_string() && !dll.is_empty()) 
+			{
+				dll_name = dll.as_string();
+				dll_path.append(dll_name);
+			}
+			else {
+				std::cout << "dll_name: Empty or malformed!" << ENDL; PAUSE; return -1;
+			}
+		} else {
+			std::cout << "dll_name: Unspecified!" << ENDL; PAUSE; return -1;
+		}
+
+		if (config.contains("commandline"))
+		{
+			if (const auto& cmd = config.at("commandline"); cmd.is_string()) {
+				commandline = cmd.as_string();
+			}
+			else {
+				std::cout << "commandline: Expected a string! Launching without commandline arguments." << ENDL;
+			}
+		}
+	}
+	catch (const toml::syntax_error& err)
+	{
+		std::cout << err.what() << ENDL;
+		PAUSE; return -1;
+	}
 
 	if (!exists(exe_path))
 	{
-		std::cout << "[!] Could not find 'left4dead2.exe'. Path was: " << exe_path.generic_string().c_str() << ENDL;
-		system("pause");
-		return -1;
+		std::cout << "[!] Could not find '" << exe_name << "'. Path was: " << exe_path.generic_string() << ENDL;
+		PAUSE; return -1;
 	}
 
 	if (!exists(dll_path))
 	{
-		std::cout << "[!] Could not find 'l4d2-rtx.dll'. Path was: " << dll_path.generic_string().c_str() << ENDL;
-		system("pause");
-		return -1;
+		std::cout << "[!] Could not find '" << dll_name << "'. Path was: " << dll_path.generic_string() << ENDL;
+		PAUSE; return -1;
 	}
+
+#ifdef DEBUG // get launcher arguments
+	std::string command_line_str = exe_name + " -insecure " + commandline;
+	for (int i = 1; i < argc; ++i) // skip the launcher name
+	{
+		command_line_str += " ";
+		command_line_str += argv[i];
+	}
+#else
+	const std::string command_line_str = exe_name + " -insecure " + commandline;
+#endif
+
+	int size = MultiByteToWideChar(CP_UTF8, 0, command_line_str.c_str(), -1, nullptr, 0);
+	std::wstring wide_cmd(size, L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, command_line_str.c_str(), -1, wide_cmd.data(), size);
 
 	STARTUPINFOW si;
 	PROCESS_INFORMATION pi;
@@ -59,28 +132,18 @@ int wmain(int argc, wchar_t* argv[])
 
 	const DWORD flags = CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED;
 
-	// first arg has to be the executable name
-	std::wstring command_line = L"left4dead2.exe -novid -insecure -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1";
-
-	// get launcher arguments
-	for (int i = 1; i < argc; ++i) // skip the launcher name
-	{
-		command_line += L" ";
-		command_line += argv[i];
-	}
-
 	const std::string narrow_dll_path = dll_path.string();
 	LPCSTR dll_str = narrow_dll_path.c_str();
 
-	if (!DetourCreateProcessWithDllsW(exe_path.c_str(), command_line.data(), nullptr, nullptr, NULL, flags, nullptr, game_path.c_str(), &si, &pi, 1, &dll_str, nullptr))
+	if (!DetourCreateProcessWithDllsW(exe_path.c_str(), wide_cmd.data(), nullptr, nullptr, NULL, flags, nullptr, current_path.c_str(), &si, &pi, 1, &dll_str, nullptr))
 	{
 		DWORD err = GetLastError();
-		std::cout << "[!] !DetourCreateProcessWithDllsW - Failed to launch portal2.exe" << ENDL;
+		std::cout << "[!] !DetourCreateProcessWithDllsW - Failed to launch '" << exe_name << "'" << ENDL;
 		std::cout << "[!] Error:" << err << ENDL;
-		std::cout << "[!] |> Game: " << game_path.generic_string().c_str() << ENDL;
-		std::cout << "[!] |> DLL: " << dll_path.generic_string().c_str() << ENDL;
-		system("pause");
-		return -1;
+		std::cout << "[!] |> EXE: " << current_path.generic_string() << ENDL;
+		std::cout << "[!] |> DLL: " << dll_path.generic_string() << ENDL;
+		std::cout << "[!] |> COMMANDLINE: " << commandline << ENDL;
+		PAUSE; return -1;
 	}
 
 	ResumeThread(pi.hThread);
@@ -105,19 +168,15 @@ int wmain(int argc, wchar_t* argv[])
 				if (time >= 30000)
 				{
 					error = true;
-					std::cout << "[Debug] Failed to find spawned process!" << ENDL;
+					std::cout << "[!] Failed to find spawned process!" << ENDL;
 					break;
 				}
 			}
 		}
 	}
 
-	//else { // normal startup
-	//	WaitForSingleObject(pi.hThread, INFINITE);
-	//}
-
 	if (error) {
-		system("pause");
+		PAUSE;
 	}
 
 	return 0;

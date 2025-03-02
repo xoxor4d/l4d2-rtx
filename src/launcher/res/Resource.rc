@@ -2,7 +2,10 @@
 //
 #pragma code_page(65001)
 
-#include "version.hpp"
+#define VERSION_PRODUCT_RC 1,0,0
+#define VERSION_PRODUCT "1.0"
+#define VERSION_FILE_RC 1,0,0
+#define VERSION_FILE "1.0"
 
 #define STRINGIZE_(x) #x
 #define STRINGIZE(x) STRINGIZE_(x)
@@ -66,12 +69,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "L4D2 RTX Remix Compatibility Mod"
+            VALUE "FileDescription", "RTX Remix Compatibility Mod"
             VALUE "FileVersion", VERSION_FILE
-            VALUE "InternalName", "l4d2-rtx-launcher"
+            VALUE "InternalName", "comp-rtx-launcher"
             VALUE "LegalCopyright", "xoxor4d.github.io"
-            VALUE "OriginalFilename", "l4d2-rtx-launcher.exe"
-            VALUE "ProductName", "l4d2-rtx"
+            VALUE "OriginalFilename", "comp-rtx-launcher.exe"
+            VALUE "ProductName", "comp-rtx"
             VALUE "ProductVersion", VERSION_PRODUCT
         END
     END
