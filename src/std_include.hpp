@@ -6,6 +6,7 @@
 
 #define COMPMOD_NAME "L4D2-RTX"
 #define COMPMOD_ASSET_DIR "l4d2-rtx\\"
+#define WINDOW_TITLE_STR "Left 4 Dead 2 - Direct3D 9"
 
 // enable/disable benchmark logic
 //#define BENCHMARK

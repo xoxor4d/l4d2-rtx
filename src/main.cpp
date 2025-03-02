@@ -55,7 +55,7 @@ std::string hash_file_sha1(const char* file_path)
 void init_fail_msg_setup()
 {
 	Beep(300, 100); Sleep(100); Beep(200, 100);
-	game::console(); std::cout << "[!][INIT FAILED] Not loading P2-RTX Compatibility Mod" << std::endl;
+	game::console(); std::cout << "[!][INIT FAILED] Not loading " COMPMOD_NAME " Compatibility Mod" << std::endl;
 
 	if (char file_path[MAX_PATH] = {};
 		GetModuleFileNameA(nullptr, file_path, MAX_PATH))
@@ -63,7 +63,7 @@ void init_fail_msg_setup()
 		std::string hash = hash_file_sha1(file_path);
 		if (hash != "007F496DBAC6C45A450E8966958CB741ACEE6702") 
 		{
-			std::cout << "---------------> Unexpected left4dead2.exe hash. Hash was: " << hash.c_str() << std::endl;
+			std::cout << "---------------> Unexpected game exe hash. Hash was: " << hash.c_str() << std::endl;
 			std::cout << "---------------> Path was: " << file_path << std::endl;
 		}
 	}
@@ -73,7 +73,7 @@ void init_fail_msg_post()
 {
 	std::cout << "\n\tMake sure that:" << std::endl;
 	std::cout << "\t- Steam is running." << std::endl;
-	std::cout << "\t- That it is a legit copy of the game." << std::endl;
+	std::cout << "\t- That it is a legit copy and the latest version of the game." << std::endl;
 	std::cout << "\t- That you followed the install instructions and installed everything correctly." << std::endl;
 	std::cout << "\n\tPlease copy/paste the contents of this window when you open a GitHub issue." << std::endl;
 }
@@ -98,14 +98,14 @@ DWORD WINAPI find_window_loop(LPVOID)
 	{
 		// get main window hwnd
 		if (!glob::main_window) {
-			glob::main_window = FindWindowA(nullptr, "Left 4 Dead 2 - Direct3D 9");
+			glob::main_window = FindWindowA(nullptr, WINDOW_TITLE_STR);
 		}
 
 		Sleep(100); T += 100;
 		if (T >= 30000) 
 		{
 			init_fail_msg_setup();
-			std::cout << "---------------> Failed to find main window with name: Left 4 Dead 2 - Direct3D 9" << std::endl;
+			std::cout << "---------------> Failed to find main window with name: '" WINDOW_TITLE_STR "'" << std::endl;
 			init_fail_msg_post();
 			return TRUE;
 		}

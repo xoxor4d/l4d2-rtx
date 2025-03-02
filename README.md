@@ -50,8 +50,30 @@ consider buying me some coffee:
 
 ## Usage / Installation
 - Download the latest [release](https://github.com/xoxor4d/l4d2-rtx/releases) and follow instructions found __there__.
-- Start the game by executing `l4d2-rtx-launcher.exe` (_start as admin if game is installed under `Program Files`_)
+- Start the game by executing `comp-rtx-launcher.exe` (_start as admin if game is installed under `Program Files`_)
 - The window title should change to Left 4 Dead 2 - RTX - followed by the GitHub commit number if successful
+
+<br>
+
+#### 🟨 Expectancy:
+Let me get this straight again: __This is not a remaster__.  
+The compatibility mod itself does not enhance any assets and only handles a few lights and as such, might even look worse than the original game. This will however change when community made mods with proper enhanced assets and proper lighting get available.   
+There is a [base-remix-mod](https://github.com/xoxor4d/l4d2-rtx-base-mod) that I have created that remixes things on a few maps (eg. water, a few lights) but it's really limited.
+
+You'll encounter some of the following:
+- Ugly looking water surfaces
+- Rubbery looking textures
+- Missing sunlight
+- Very dark areas
+- Missing (black) skybox (you need to assign the __Sky__ category to skybox textures via remix in-game settings)
+
+<br>
+
+#### 🟥 Issues:
+- The renderer is forced to run single threaded (currently required)
+- Alpha tested foliage kills performance. This might improve with future updates to rtx-remix itself or when community mods with _proper_ assets are available
+- Skinning of meshes (animated meshes) is done via software (on the CPU) resulting in CPU bottlenecks
+- Some effects look incorrect because of the limitations of fixed-function, other issues or they are simply not yet handled correctly.
 
 <br>
 
@@ -61,15 +83,7 @@ consider buying me some coffee:
 
 #### 🟩 Remixing:  
 - Press __F5__ to open the in-game gui to tweak compatibility mod related settings or to edit [MapSettings](https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings)
-- Infected will be really colorful when viewed in the toolkit. That is the colormap the infected shader is using. __DO NOT__ touch anything on infected meshes __BESIDES__ the normal map!
-- Water surfaces have two layers. Make the top one translucent (and animate the normalmap with a spritesheet if you want). The lower layer can be used to color the water and make it interact with the flashlight.
-Remove the albedo map and set a albedo color + opacity if you want. Reduce the roughness and increase the metallic amount to your liking.  
-
-  Then, modify the alpha blending as follows:  
-
-  - [ ] Use Legacy Alpha
-  - [x] Blend Enabled
-  - Alpha Test Type :: LessOrEqual
+- A few things when it comes to remixing of certain objects [Wiki](https://github.com/xoxor4d/l4d2-rtx/wiki/Remixing-Notes)
 
 <br>
 
