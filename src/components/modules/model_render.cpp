@@ -488,7 +488,8 @@ namespace components
 				}
 			}
 
-			if (ctx.info.shader_name == "Infected" && ctx.info.material_name.contains("/l4d2/"))
+			if (ctx.info.shader_name == "Infected" && 
+				(ctx.info.material_name.contains("/l4d2/") || ctx.info.material_name.contains("/l4d1/cim_ceda")))
 			{
 				//ctx.modifiers.do_not_render = true;
 
