@@ -60,7 +60,7 @@ int wmain(int argc, wchar_t* argv[])
 	const DWORD flags = CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED;
 
 	// first arg has to be the executable name
-	std::wstring command_line = L"left4dead2.exe -novid -insecure -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1";
+	std::wstring command_line = L"left4dead2.exe -steam -novid -insecure -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1";
 
 	// get launcher arguments
 	for (int i = 1; i < argc; ++i) // skip the launcher name
