@@ -1,0 +1,3 @@
+exe_name = "left4dead2.exe"
+dll_name = "l4d2-rtx.dll"
+commandline = "-novid -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1"
