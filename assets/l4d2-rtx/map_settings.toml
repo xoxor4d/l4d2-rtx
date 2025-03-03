@@ -26,7 +26,7 @@
     c3m3_shantytown = { scale = 20.0 }
     c5m1_waterfront = { scale = 3.50, top_layer_offset = 0.0, bottom_layer_offset = -20.0 }
     c5m3_cemetery = { scale = 10.0 }
-
+    c10m5_houseboat = { scale = 0.16 }
 
 
 # Override culling per game area ---------------------------------------------------------------------------------------------------------------
@@ -186,8 +186,9 @@
 #
 # marker    ]     THIS:     number of marker mesh - can get culled BUT that can be controlled via leaf/area forcing (initial spawning can't be forced)  [int 0-100]
 # nocull    ]  OR THAT:     number of marker mesh - never getting culled and spawned on map load (eg: useful for distant light)                         [int 0-inf]
-#           |>   areas:     (opt.) only show nocull marker when player is in specified area/s                                                           [int array]
-#           |> N_leafs:     (opt.) only show nocull marker when player is in ^ and NOT in specified leaf/s                                              [int array]
+#
+# areas:                    (opt.) only show nocull marker when player is in specified area/s                                                           [int array]
+# N_leafs:                  (opt.) only show nocull marker when player is in ^ and NOT in specified leaf/s                                              [int array]
 #
 # position:                 position of the marker mesh     [3D Vector]
 # rotation:                 rotation of the marker mesh     [3D Vector]
