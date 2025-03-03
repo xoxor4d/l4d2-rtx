@@ -88,7 +88,7 @@ namespace components
 	// called on device->EndScene
 	void remix_api::end_scene_callback()
 	{
-		imgui::endscene_stub();
+		//imgui::endscene_stub();
 
 #if 0
 		if (!model_render::get()->m_drew_hud)

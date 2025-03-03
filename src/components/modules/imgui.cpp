@@ -3429,6 +3429,25 @@ namespace components
 		merge_icons_with_latest_font(17.0f, false);
 	}
 
+	namespace
+	{
+		using present_fn = long(__stdcall*)(IDirect3DDevice9*, RECT*, RECT*, HWND, RGNDATA*); present_fn present_original = {};
+		long __stdcall present_hk(IDirect3DDevice9* device, RECT* source_rect, RECT* dest_rect, HWND dest_window_override, RGNDATA* dirty_region)
+		{
+			imgui::endscene_stub();
+			return present_original(device, source_rect, dest_rect, dest_window_override, dirty_region);
+		}
+
+		using reset_fn = long(__stdcall*)(IDirect3DDevice9*, D3DPRESENT_PARAMETERS*); reset_fn reset_original = {};
+		long __stdcall reset_hk(IDirect3DDevice9* device, D3DPRESENT_PARAMETERS* present_parameters)
+		{
+			ImGui_ImplDX9_InvalidateDeviceObjects();
+			const auto result = reset_original(device, present_parameters);
+			ImGui_ImplDX9_CreateDeviceObjects();
+			return result;
+		}
+	}
+
 	imgui::imgui()
 	{
 		p_this = this;
@@ -3445,6 +3464,15 @@ namespace components
 
 		ImGui_ImplWin32_Init(glob::main_window);
 		g_game_wndproc = reinterpret_cast<WNDPROC>(SetWindowLongPtr(glob::main_window, GWLP_WNDPROC, LONG_PTR(wnd_proc_hk)));
+
+
+		auto get_virtual = [](void* _class, unsigned int index) {
+			return static_cast<unsigned int>((*static_cast<int**>(_class))[index]);
+		};
+
+		const auto dev = game::get_d3d_device();
+		MH_CreateHook(reinterpret_cast<void*>(get_virtual(dev, 17)), present_hk, reinterpret_cast<void**>(&present_original));
+		MH_CreateHook(reinterpret_cast<void*>(get_virtual(dev, 16)), reset_hk, reinterpret_cast<void**>(&reset_original));
 	}
 
 	imgui::~imgui()
