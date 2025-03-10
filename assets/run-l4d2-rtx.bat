@@ -1,0 +1,1 @@
+START left4dead2.exe -insecure -steam -novid -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1 %*

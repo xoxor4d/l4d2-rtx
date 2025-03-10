@@ -369,8 +369,6 @@ namespace components
 		auto& ctx = model_render::primctx;
 		const auto shaderapi = game::get_shaderapi();
 
-		bool scale_water_uvs = false; 
-
 		if (ctx.get_info_for_pass(shaderapi)) 
 		{
 			// added format check
@@ -393,7 +391,6 @@ namespace components
 								const auto& ms = map_settings::get_map_settings();
 
 								// we only need one surface
-								scale_water_uvs = true;
 								ctx.modifiers.as_water = true;
 								ctx.modifiers.og_mesh_z_offset = ms.water_offset_bottom;
 								ctx.modifiers.dual_render_with_specified_texture = true;
