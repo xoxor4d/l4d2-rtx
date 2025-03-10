@@ -212,45 +212,9 @@ end
 
 dependencies.load()
 
--- 
--- launcher deps
-
-dependencies_launcher = {
-	basePath = "./deps"
-}
-
-function dependencies_launcher.load()
-	dir = path.join(dependencies_launcher.basePath, "premake_launcher/*.lua")
-	deps = os.matchfiles(dir)
-
-	for i, dep in pairs(deps) do
-		dep = dep:gsub(".lua", "")
-		require(dep)
-	end
-end
-
-function dependencies_launcher.imports()
-	for i, proj in pairs(dependencies_launcher) do
-		if type(i) == 'number' then
-			proj.import()
-		end
-	end
-end
-
-function dependencies_launcher.projects()
-	for i, proj in pairs(dependencies_launcher) do
-		if type(i) == 'number' then
-			proj.project()
-		end
-	end
-end
-
-dependencies_launcher.load()
-
-
 workspace "l4d2-rtx"
 
-	startproject "comp-rtx-launcher"
+	startproject "l4d2-rtx"
 	location "./build"
 	objdir "%{wks.location}/obj"
 	targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
@@ -346,8 +310,6 @@ workspace "l4d2-rtx"
 			"./src/**.cpp",
 		}
 
-		removefiles { "./src/launcher/**" }
-
 		includedirs {
 			"%{prj.location}/src",
 			"./src",
@@ -366,7 +328,7 @@ workspace "l4d2-rtx"
 				print ("Setup paths using environment variable 'L4D2_ROOT' :: '" .. os.getenv("L4D2_ROOT") .. "'")
 				targetdir(os.getenv("L4D2_ROOT"))
 				debugdir (os.getenv("L4D2_ROOT"))
-				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "comp-rtx-launcher.exe")
+				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "run-l4d2-rtx.bat")
 			end
 		filter {}
 		
@@ -390,50 +352,3 @@ workspace "l4d2-rtx"
             dependencies.projects()
 		group ""
 	
-
-	project "comp-rtx-launcher"
-		kind "ConsoleApp"
-        language "C++"
-
-		dependson { "l4d2-rtx" }
-
-        files { "src/launcher/**"}
-		flags { "NoPCH" }
-
-		linkoptions {
-			"/PDBCompress"
-		}
-		
-		resincludedirs {
-			"$(ProjectDir)src/launcher/res"
-		}
-
-		includedirs {
-			"%{prj.location}/src"
-		}
-		
-		filter "configurations:Debug or configurations:Release"
-			if(os.getenv("L4D2_ROOT")) then
-				print ("Setup paths using environment variable 'L4D2_ROOT' :: '" .. os.getenv("L4D2_ROOT") .. "'")
-				targetdir(os.getenv("L4D2_ROOT"))
-				debugdir (os.getenv("L4D2_ROOT"))
-				debugcommand (os.getenv("L4D2_ROOT") .. "/" .. "comp-rtx-launcher.exe")
-			end
-		filter {}
-
-		-- Pre-build
-		prebuildcommands {
-			"pushd %{_MAIN_SCRIPT_DIR}",
-			"tools\\premake5 generate-buildinfo",
-			"popd",
-		}
-
-		-- Post-build
-		postbuildcommands {
-			"MOVE /Y \"$(TargetDir)comp-rtx-launcher.exe\" \"$(TargetDir)comp-rtx-launcher.exe\"",
-		}
-
-		dependencies_launcher.imports()
-		group "Dependencies"
-			dependencies_launcher.projects()
-		group ""

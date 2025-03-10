@@ -6,7 +6,7 @@
 # color:                   R G B transmission                       [3D Vector - 0-255]
 
 [FOG]
-    c1m1_hotel = { distance = 15000, color = [100, 100, 100] }
+    c1m1_hotel = { density = 0.000130, color = [220, 200, 181] }
     c1m2_streets = { density = 0.000210, color = [120, 107, 79] }
     c2m1_highway = { distance = 5000.000000, color = [18, 171, 85] }
     c3m2_swamp = { density = 0.000310, color = [24, 49, 91] }
