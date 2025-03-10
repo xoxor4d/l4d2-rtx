@@ -50,7 +50,7 @@ consider buying me some coffee:
 
 ## Usage / Installation
 - Download the latest [release](https://github.com/xoxor4d/l4d2-rtx/releases) and follow instructions found __there__.
-- Start the game by executing `comp-rtx-launcher.exe` (_start as admin if game is installed under `Program Files`_)
+- Start the game by executing `run-l4d2-rtx.bat` (_start as admin if game is installed under `Program Files`_)
 - The window title should change to Left 4 Dead 2 - RTX - followed by the GitHub commit number if successful
 
 <br>
