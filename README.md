@@ -7,6 +7,8 @@ How does a shader based game work with remix? By manually reimplementing fixed f
 
 <br>
 
+<img src=".github/img/logo.png" alt="Description" width="50%">
+
 __WIP__ & __Please Note:__  
 RTX Remix was never intented to support this game so expect stuff to be broken.  
 __This is not trying to be a remaster__. It simply makes the game compatible with RTX Remix.
