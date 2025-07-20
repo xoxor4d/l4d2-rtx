@@ -175,6 +175,7 @@ namespace components
 			if (ImGui::Button("Reload", button_size))
 			{
 				result = true;
+				imgui::get()->m_light_edit_mode = false;
 				map_settings::reload();
 				ImGui::CloseCurrentPopup();
 			}
@@ -1896,6 +1897,7 @@ namespace components
 				{
 					im->m_light_edit_mode = true;
 					map_settings::reload();
+					im->m_light_edit_mode = true; // hack
 					ImGui::CloseCurrentPopup();
 				}
 

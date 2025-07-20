@@ -577,7 +577,7 @@ namespace components
 	// called from model_renderer::DrawModelExecute::Detour
 	void remix_lights::on_draw_model_exec(const ModelRenderInfo_t& info)
 	{
-		if (map_settings::get_map_settings().using_any_light_attached_to_prop)
+		if (map_settings::get_map_settings().using_any_light_attached_to_prop || imgui::get()->m_light_edit_mode)
 		{
 			for (auto& light : m_active_lights)
 			{

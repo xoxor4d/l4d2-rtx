@@ -1321,6 +1321,7 @@ namespace components
 	{
 		get()->clear_map_settings();
 		get()->set_settings_for_map("");
+		imgui::get()->m_light_edit_mode = false;
 	}
 
 	map_settings::map_settings()
