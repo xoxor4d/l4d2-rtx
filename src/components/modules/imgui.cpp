@@ -2564,8 +2564,8 @@ namespace components
 				Vector screen_pos; common::imgui::world2screen((im->m_debugvis_live ? &edit_active_light->ext.position.x : active_point_selection->position) + edit_active_light->attached_offset, screen_pos);
 				ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(screen_pos.x, screen_pos.y), 8.0f, debug_color);
 
-
-				ImGui::Widget_PrettyDragVec3("Radiance", &active_point_selection->radiance.x, true, 120.0f, 0.1f, 0.0f, FLT_MAX,
+				//ImGui::ColorButton
+				ImGui::Widget_PrettyDragVec3WithColorPicker("Radiance", &active_point_selection->radiance.x, true, 120.0f, 0.1f, 0.0f, FLT_MAX,
 					"R", "G", "B");
 
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);

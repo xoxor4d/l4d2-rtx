@@ -96,6 +96,8 @@ namespace ImGui
 	void Draw3DCircle(ImDrawList* draw_list, const Vector& world_pos, const Vector& normal, float radius, bool filled, const ImColor& color, const float& thickness, int num_points = 200);
 	void TableHeaderDropshadow(float height = 12.0f, float max_alpha = 0.6f, float neg_y_offset = 0.0f, float custom_width = 0.0f);
 
+	bool Widget_PrettyDragVec3WithColorPicker(const char* ID, float* vec_in, bool show_label = false, float label_size = 80.0f, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
+		const char* x_str = "X", const char* y_str = "Y", const char* z_str = "Z");
 	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label = false, float label_size = 80.0f, float speed = 0.25f, float min = -FLT_MAX, float max = FLT_MAX,
 		const char* x_str = "X", const char* y_str = "Y", const char* z_str = "Z");
 	bool Widget_PrettyStepVec3(const char* ID, float* vec_in, bool show_labels = false, float label_size = 80.0f, float step_amount = 1.0f,

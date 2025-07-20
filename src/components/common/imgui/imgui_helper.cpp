@@ -514,6 +514,124 @@ namespace ImGui
 	}
 
 	// Labelwidth = 80
+	bool Widget_PrettyDragVec3WithColorPicker(const char* ID, float* vec_in, bool show_label, const float label_size, const float speed, const float min, const float max,
+		const char* x_str, const char* y_str, const char* z_str)
+	{
+		auto left_label_button = [](const char* label, const ImVec2& button_size, const ImVec4& text_color, const ImVec4& bg_color)
+			{
+				bool clicked = false;
+
+				//PushFont(common::imgui::font::REGULAR);
+				PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 5.0f));
+				PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+				PushStyleColor(ImGuiCol_Text, text_color);
+				PushStyleColor(ImGuiCol_Border, GetColorU32(ImGuiCol_Border));
+				PushStyleColor(ImGuiCol_Button, bg_color); // GetColorU32(ImGuiCol_FrameBg)
+				PushStyleColor(ImGuiCol_ButtonHovered, bg_color);
+
+				if (ButtonEx(label, button_size, ImGuiButtonFlags_MouseButtonMiddle)) {
+					clicked = true;
+				}
+
+				PopStyleColor(4);
+				PopStyleVar(2);
+				//PopFont();
+
+				SameLine();
+				SetCursorPosX(GetCursorPosX() - 1.0f);
+
+				return clicked;
+			};
+
+		// ---------------
+		bool dirty = false;
+
+		PushID(ID);
+		PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 4));
+
+		const float line_height = GetFrameHeight();
+		const auto  button_size = ImVec2(line_height - 2.0f, line_height);
+		const float widget_spacing = 4.0f;
+
+		//ImVec2 label_size = CalcTextSize(ID, nullptr, true);
+		//label_size.x = ImMax(label_size.x, 80.0f);
+
+		const float widget_width_horz = (GetContentRegionAvail().x - 3.0f * button_size.x - 2.0f * widget_spacing -
+			(show_label ? label_size + GetStyle().ItemInnerSpacing.x + GetStyle().FramePadding.y : 0.0f)) * 0.333333f;
+
+		/*const float widget_width_vert = (GetContentRegionAvail().x - 3.0f * button_size.x - 2.0f * widget_spacing -
+			(show_label ? label_size.x + GetStyle().ItemInnerSpacing.x + GetStyle().FramePadding.y : 0.0f));*/
+
+		const bool  narrow_window = GetWindowWidth() < 440.0f;
+
+		// label if window width < min
+		if (narrow_window) {
+			SeparatorText(ID);
+		}
+
+		// -------
+		// -- X --
+
+		if (left_label_button(x_str, button_size, ImVec4(0.84f, 0.55f, 0.53f, 1.0f), ImVec4(0.21f, 0.16f, 0.16f, 1.0f))) {
+			vec_in[0] = 0.0f; dirty = true;
+		}
+
+		SetNextItemWidth(!narrow_window ? widget_width_horz : -1);
+		if (DragFloat("##X", &vec_in[0], speed, min, max, "%.2f")) {
+			dirty = true;
+		}
+
+
+		// -------
+		// -- Y --
+
+		if (!narrow_window) {
+			SameLine(0, widget_spacing);
+		}
+
+		if (left_label_button(y_str, button_size, ImVec4(0.73f, 0.78f, 0.5f, 1.0f), ImVec4(0.17f, 0.18f, 0.15f, 1.0f))) {
+			vec_in[1] = 0.0f; dirty = true;
+		}
+
+		SetNextItemWidth(!narrow_window ? widget_width_horz : -1);
+		if (DragFloat("##Y", &vec_in[1], speed, min, max, "%.2f")) {
+			dirty = true;
+		}
+
+		// -------
+		// -- Z --
+
+		if (!narrow_window) {
+			SameLine(0, widget_spacing);
+		}
+
+		if (left_label_button(z_str, button_size, ImVec4(0.67f, 0.71f, 0.79f, 1.0f), ImVec4(0.18f, 0.21f, 0.23f, 1.0f))) {
+			vec_in[2] = 0.0f; dirty = true;
+		}
+
+		SetNextItemWidth(!narrow_window ? widget_width_horz : -1);
+		if (DragFloat("##Z", &vec_in[2], speed, min, max, "%.2f")) {
+			dirty = true;
+		}
+
+		SameLine(0, widget_spacing);
+		ColorEdit4("##Colorpicker", &vec_in[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_PickerHueBar);
+
+		PopStyleVar();
+		PopID();
+
+		// right label if window width > min 
+		if (!narrow_window)
+		{
+			SameLine(0, GetStyle().ItemInnerSpacing.x);
+			TextUnformatted(ID);
+		}
+
+		return dirty;
+	}
+
+	// Labelwidth = 80
 	bool Widget_PrettyDragVec3(const char* ID, float* vec_in, bool show_label, const float label_size, const float speed, const float min, const float max,
 		const char* x_str, const char* y_str, const char* z_str)
 	{
