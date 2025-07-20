@@ -417,6 +417,24 @@ public:
 		return false;
 	}
 
+	bool operator>(const Vector& vec) const
+	{
+		if (x > vec.x && y > vec.y && z > vec.z) {
+			return true;
+		}
+
+		return false;
+	}
+
+	bool operator<(const Vector& vec) const
+	{
+		if (x < vec.x && y < vec.y && z < vec.z) {
+			return true;
+		}
+
+		return false;
+	}
+
 	// return std::fabs(a - b) < eps;
 
 	float Length(void) const

@@ -1763,6 +1763,17 @@ namespace components
 					ImGui::BeginDisabled(!edit_active_light->has_attach_parms());
 					ImGui::Widget_PrettyDragVec3("Bounds Min", &edit_active_light->def.attach_prop_mins.x, true, 120.0f, 0.05f);
 					ImGui::Widget_PrettyDragVec3("Bounds Max", &edit_active_light->def.attach_prop_maxs.x, true, 120.0f, 0.05f);
+
+					// check if any val of max is smaller than any val of mins and warn the user 
+					if (edit_active_light->def.attach_prop_maxs < edit_active_light->def.attach_prop_mins) 
+					{
+						ImGui::PushFont(common::imgui::font::BOLD);
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.15f, 0.15f, 1.0f));
+						ImGui::TextUnformatted("Invalid Bounds! MAX smaller than MIN (any of X Y Z)");
+						ImGui::PopStyleColor();
+						ImGui::PopFont();
+					}
+
 					ImGui::EndDisabled();
 
 					ImGui::Spacing(0, 4);
