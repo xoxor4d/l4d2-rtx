@@ -44,8 +44,6 @@ jobs:
         run: |
           move build/bin/${{matrix.configuration}}/l4d2-rtx.dll ./assets/
           move build/bin/${{matrix.configuration}}/l4d2-rtx.pdb ./assets/
-          move build/bin/${{matrix.configuration}}/comp-rtx-launcher.exe ./assets/
-          move build/bin/${{matrix.configuration}}/comp-rtx-launcher.pdb ./assets/
 
       - name: Upload ${{matrix.configuration}}-binaries-l4d2-rtx
         uses: actions/upload-artifact@v4
