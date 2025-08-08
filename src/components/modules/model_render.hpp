@@ -7,6 +7,8 @@ namespace components
 		extern bool model_info_vis;
 	}
 
+	extern std::vector<Vector> g_sunoverlay_color;
+
 	namespace tbl_hk::model_renderer
 	{
 		inline utils::vtable table;
@@ -364,7 +366,7 @@ namespace components
 		static model_render* get() { return p_this; }
 
 		static void xo_debug_toggle_model_info_fn();
-		static void draw_nocull_markers();
+		//static void draw_nocull_markers();
 
 		static void init_texture_addons(bool release = false);
 		static inline prim_fvf_context primctx {};

@@ -35,6 +35,7 @@ namespace components
 		//choreo_events::on_client_frame();
 		remix_vars::on_client_frame();
 		remix_lights::on_client_frame();
+		remix_markers::on_client_frame();
 
 		main_module::force_cvars();
 

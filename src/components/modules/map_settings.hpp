@@ -54,6 +54,21 @@ namespace components
 			bool _state_enter = false;
 		};
 
+		struct marker_trigger_s
+		{
+			std::string choreo_name;
+			std::string choreo_actor;
+			std::string choreo_event;
+			std::string choreo_param1;
+			std::uint32_t sound_hash;
+			std::string sound_name;
+			float delay = 0.0f;
+
+			bool was_used = false; // internal use :: was this already for any choreo or sound trigger already?
+			bool delay_start = false; // internal use :: set to true to start counting
+			float delay_elapsed_time = 0.0f; // internal use :: time since counting started
+		};
+
 		struct marker_settings_s
 		{
 			std::uint32_t index = 0;
@@ -63,6 +78,11 @@ namespace components
 			Vector scale = { 1.0f, 1.0f, 1.0f }; // no_cull only
 			std::unordered_set<std::uint32_t> areas; // no_cull only
 			std::unordered_set<std::uint32_t> when_not_in_leafs; // no_cull only
+
+			marker_trigger_s trigger_show = {};
+			marker_trigger_s trigger_hide = {};
+			bool trigger_always = false;
+
 			std::string comment;
 
 			void* handle = nullptr; // internal use
@@ -92,6 +112,7 @@ namespace components
 				float degrees = 180.0; // cone angle
 				float softness = 0.0f; // cone
 				float exponent = 0.0f; // focus
+				float volumetric = 1.0f;
 			};
 
 			std::vector<point_s> points;
@@ -201,6 +222,10 @@ namespace components
 			bool using_any_light_attached_to_prop = false;
 			bool using_any_transition_sound_hash = false;
 			bool using_any_transition_sound_name = false;
+
+			bool using_any_marker_choreo = false;
+			bool using_any_marker_sound_hash = false;
+			bool using_any_marker_sound_name = false;
 		};
 
 		static map_settings_s& get_map_settings() { return m_map_settings; }

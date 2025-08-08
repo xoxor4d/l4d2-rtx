@@ -32,6 +32,7 @@ namespace components
 #include "modules/sound_events.hpp"
 #include "modules/remix_lights.hpp"
 #include "modules/remix_vars.hpp"
+#include "modules/remix_markers.hpp"
 #include "modules/main_module.hpp"
 #include "modules/model_render.hpp"
 #include "modules/map_settings.hpp"

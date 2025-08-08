@@ -32,15 +32,19 @@ namespace components
 				sound_name)
 			{
 				// check if we need to hash sounds
-				bool lights_use_hash = map_settings::get_map_settings().using_any_light_sound_hash;
-				bool transition_use_hash = map_settings::get_map_settings().using_any_transition_sound_hash;
-				bool transition_use_name = map_settings::get_map_settings().using_any_transition_sound_name;
+				const auto& ms = map_settings::get_map_settings();
 
-				std::string forward_slashes = sound_name;
-				utils::replace_all(forward_slashes, "\\", "/");
+				const bool lights_use_hash = ms.using_any_light_sound_hash;
+				const bool transition_use_hash = ms.using_any_transition_sound_hash;
+				const bool transition_use_name = ms.using_any_transition_sound_name;
+				const bool markers_use_sound_hash = ms.using_any_marker_sound_hash;
+				const bool markers_use_sound_name = ms.using_any_marker_sound_name;
+
+				std::string snd_name_forward = sound_name;
+				utils::replace_all(snd_name_forward, "\\", "/");
 
 				uint32_t hash = 0u;
-				if (lights_use_hash || transition_use_hash || cmd::sound_debug_printing)
+				if (lights_use_hash || transition_use_hash || markers_use_sound_hash || cmd::sound_debug_printing)
 				{
 					hash = utils::hash32_combine(hash, sound_name);
 					hash = utils::hash32_combine(hash, parms->delay);
@@ -52,7 +56,7 @@ namespace components
 					if (cmd::sound_debug_printing) 
 					{
 						game::print_ingame("[sound_hk] HASH: ( 0x%x ) -- %s -- delay: %.2f -- vol: %.2f -- origin: [%.5f %.5f %.5f] @ time: %.2f\n",
-							hash, !forward_slashes.empty() ? forward_slashes.c_str() : "NULL", parms->delay, parms->fvol,
+							hash, !snd_name_forward.empty() ? snd_name_forward.c_str() : "NULL", parms->delay, parms->fvol,
 							parms->origin.x, parms->origin.y, parms->origin.z, interfaces::get()->m_globals->curtime);
 					}
 				}
@@ -62,7 +66,11 @@ namespace components
 				}
 
 				if (transition_use_hash || transition_use_name) {
-					remix_vars::on_sound_start(hash, forward_slashes);
+					remix_vars::on_sound_start(hash, snd_name_forward);
+				}
+
+				if (markers_use_sound_hash || markers_use_sound_name) {
+					remix_markers::on_sound_start(hash, snd_name_forward);
 				}
 			}
 		}

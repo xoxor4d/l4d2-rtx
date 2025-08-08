@@ -72,6 +72,33 @@ namespace components
 			}
 		}
 
+		// are we using any sound hashes/names or choreo trigger on markers?
+		{
+			if (!m_map_settings.map_markers.empty())
+			{
+				for (const auto& m : m_map_settings.map_markers)
+				{
+					if (m.trigger_show.sound_hash || m.trigger_hide.sound_hash)
+					{
+						m_map_settings.using_any_marker_sound_hash = true;
+						break;
+					}
+
+					if (!m.trigger_show.sound_name.empty() || !m.trigger_hide.sound_name.empty())
+					{
+						m_map_settings.using_any_marker_sound_name = true;
+						break;
+					}
+
+					if (!m.trigger_show.choreo_name.empty() || !m.trigger_hide.choreo_name.empty())
+					{
+						m_map_settings.using_any_marker_choreo = true;
+						break;
+					}
+				}
+			}
+		}
+
 		m_loaded = true;
 	}
 
@@ -566,7 +593,7 @@ namespace components
 				auto& marker_table = config["MARKER"];
 
 				// #
-				auto process_marker_entry = [to_int, to_float](const toml::value& entry)
+				auto process_marker_entry = [to_bool, to_uint, to_int, to_float](const toml::value& entry)
 					{
 						bool temp_is_nocull_marker = false;
 						std::uint32_t temp_marker_index = 0u;
@@ -640,6 +667,131 @@ namespace components
 									}
 								}
 
+								// optional
+								marker_trigger_s temp_trigger_show = {};
+								marker_trigger_s temp_trigger_hide = {};
+								bool temp_trigger_always = false;
+								bool temp_hide_by_default = false;
+
+								if (entry.contains("trigger"))
+								{
+									const auto& trigger = entry.at("trigger");
+									bool has_valid_trigger = false;
+
+									// SHOW
+									if (trigger.contains("show"))
+									{
+										const auto& show = trigger.at("show");
+										if (show.contains("choreo"))
+										{
+											try { temp_trigger_show.choreo_name = show.at("choreo").as_string(); }
+											CATCH_ERR;
+
+											if (show.contains("actor"))
+											{
+												try { temp_trigger_show.choreo_actor = show.at("actor").as_string(); }
+												CATCH_ERR;
+											}
+
+											if (show.contains("event"))
+											{
+												try { temp_trigger_show.choreo_event = show.at("event").as_string(); }
+												CATCH_ERR;
+											}
+
+											if (show.contains("param1"))
+											{
+												try { temp_trigger_show.choreo_param1 = show.at("param1").as_string(); }
+												CATCH_ERR;
+											}
+
+											has_valid_trigger = true;
+										}
+										// sound trigger
+										else if (show.contains("sound"))
+										{
+											if (show.at("sound").type() == toml::value_t::integer) {
+												temp_trigger_show.sound_hash = to_uint(show.at("sound"), 0u);
+											}
+											else
+											{
+												try { temp_trigger_show.sound_name = show.at("sound").as_string(); }
+												CATCH_ERR;
+											}
+
+											has_valid_trigger = true;
+										}
+
+										if (has_valid_trigger)
+										{
+											temp_hide_by_default = true;
+
+											if (show.contains("delay")) {
+												temp_trigger_show.delay = to_float(show.at("delay"), 0.0f);
+											}
+										}
+										else { TOML_ERROR("[MARKER] #trigger", show, "defined show trigger with no choreo / sound hash"); }
+									}
+
+									// HIDE
+									if (trigger.contains("hide"))
+									{
+										const auto& hide = trigger.at("hide");
+										if (hide.contains("choreo"))
+										{
+											try { temp_trigger_hide.choreo_name = hide.at("choreo").as_string(); }
+											CATCH_ERR;
+
+											if (hide.contains("actor"))
+											{
+												try { temp_trigger_hide.choreo_actor = hide.at("actor").as_string(); }
+												CATCH_ERR;
+											}
+
+											if (hide.contains("event"))
+											{
+												try { temp_trigger_hide.choreo_event = hide.at("event").as_string(); }
+												CATCH_ERR;
+											}
+
+											if (hide.contains("param1"))
+											{
+												try { temp_trigger_hide.choreo_param1 = hide.at("param1").as_string(); }
+												CATCH_ERR;
+											}
+
+											has_valid_trigger = true;
+										}
+
+										// sound trigger
+										else if (hide.contains("sound"))
+										{
+											if (hide.at("sound").type() == toml::value_t::integer) {
+												temp_trigger_hide.sound_hash = to_uint(hide.at("sound"), 0u);
+											}
+											else 
+											{
+												try { temp_trigger_hide.sound_name = hide.at("sound").as_string(); }
+												CATCH_ERR;
+											}
+
+											has_valid_trigger = true;
+										}
+
+										if (has_valid_trigger)
+										{
+											if (hide.contains("delay")) {
+												temp_trigger_hide.delay = to_float(hide.at("delay"), 0.0f);
+											}
+										}
+										else { TOML_ERROR("[MARKER] #trigger", hide, "defined hide trigger with no choreo / sound hash"); }
+									}
+
+									if (trigger.contains("always")) {
+										temp_trigger_always = to_bool(trigger.at("always"), false);
+									}
+								}
+
 								m_map_settings.map_markers.emplace_back(
 									marker_settings_s
 									{
@@ -650,7 +802,12 @@ namespace components
 										.scale = temp_scale,
 										.areas = std::move(temp_area_set),
 										.when_not_in_leafs = std::move(temp_not_in_leaf_set),
-										.comment = std::move(temp_comment)
+										.trigger_show = std::move(temp_trigger_show),
+										.trigger_hide = std::move(temp_trigger_hide),
+										.trigger_always = temp_trigger_always,
+										.comment = std::move(temp_comment),
+
+										.is_hidden = temp_hide_by_default
 									});
 							}
 							else { TOML_ERROR("[MARKER] #position", entry.at("position"), "expected a 3D vector but got => %d ", entry.at("position").as_array().size()); }

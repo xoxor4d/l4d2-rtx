@@ -110,22 +110,25 @@ namespace components
 				const char* param1_str = ev->m_Parameters.string ? ev->m_Parameters.string : "";
 
 				// ...
-				std::string forward_slashes = ev->m_pScene->m_szFileName;
-				utils::replace_all(forward_slashes, "\\", "/");
+				std::string choreo_string = ev->m_pScene->m_szFileName;
+				utils::replace_all(choreo_string, "\\", "/");
 
 				if (cmd::scene_print)
 				{
 					game::print_ingame(
 						"[SCENE] [Start] VCD: %s ~~~~ ACTOR: %s ~~~~ EV: %s ~~~~ PARM1: %s\n", 
-						forward_slashes.c_str(),
+						choreo_string.c_str(),
 						actor_str ? actor_str : "UNUSED", 
 						event_str, param1_str ? param1_str : "UNUSED");
 				}
 
-				remix_lights::on_event_start(forward_slashes, actor_str, event_str, param1_str);
+				remix_lights::on_event_start(choreo_string, actor_str, event_str, param1_str);
 
 				// handle remix config transitions added via mapsettings
-				handle_confvar_transition(forward_slashes, actor_str, event_str, param1_str, true);
+				handle_confvar_transition(choreo_string, actor_str, event_str, param1_str, true);
+
+				// marker triggers
+				remix_markers::on_event_start(choreo_string, actor_str, event_str, param1_str);
 			}
 		}
 	}

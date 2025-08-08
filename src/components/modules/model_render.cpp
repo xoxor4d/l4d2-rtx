@@ -188,106 +188,13 @@ namespace components
 #endif
 	}
 
-	// draw 'nocull' map_setting marker meshes
-	void model_render::draw_nocull_markers()
-	{
-		g_sunoverlay_color.clear(); // TODO: this should be moved somewhere else
-
-		// -----
-
-		const auto& msettings = map_settings::get_map_settings();
-		const auto dev = game::get_d3d_device();
-
-		struct vertex { D3DXVECTOR3 position; D3DCOLOR color; float tu, tv; };
-
-		// early out - nope -> always render a single tri to register tex_addon texture
-		/*if (msettings.map_markers.empty()) {
-			return;
-		}*/
-
-		// save & restore after drawing
-		IDirect3DVertexShader9* og_vs = nullptr;
-		dev->GetVertexShader(&og_vs);
-		dev->SetVertexShader(nullptr);
-
-		IDirect3DBaseTexture9* og_tex = nullptr;
-		dev->GetTexture(0, &og_tex);
-		dev->SetTexture(0, tex_addons::white);
-
-		DWORD og_rs;
-		dev->GetRenderState((D3DRENDERSTATETYPE)150, &og_rs);
-
-		dev->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
-		//D3DXMATRIX mtx = game::IDENTITY;
-
-		for (auto& m : msettings.map_markers)
-		{
-			// ignore normal markers
-			if (!m.no_cull) {
-				continue;
-			}
-
-			// main_module::pre_recursive_world_node
-			if (m.is_hidden) {
-				continue;
-			}
-
-			const float f_index = static_cast<float>(m.index);
-			const vertex mesh_verts[4] =
-			{
-				D3DXVECTOR3(-1.337f - (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, 0), 0.0f, f_index / 100.0f,
-				D3DXVECTOR3( 1.337f + (f_index * 0.01f), -1.337f - (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, m.index, 0), f_index / 100.0f, 0.0,
-				D3DXVECTOR3( 1.337f + (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(0, 0, m.index), 0.0f, f_index / 100.0f,
-				D3DXVECTOR3(-1.337f - (f_index * 0.01f),  1.337f + (f_index * 0.01f), 0), D3DCOLOR_XRGB(m.index, 0, m.index), 0.0f, f_index / 100.0f,
-			};
-
-			D3DXMATRIX scale_matrix, rotation_x, rotation_y, rotation_z, mat_rotation, mat_translation, world;
-
-			D3DXMatrixScaling(&scale_matrix, m.scale.x, m.scale.y, m.scale.z);
-			D3DXMatrixRotationX(&rotation_x, m.rotation.x); // pitch
-			D3DXMatrixRotationY(&rotation_y, m.rotation.y); // yaw
-			D3DXMatrixRotationZ(&rotation_z, m.rotation.z); // roll
-			mat_rotation = rotation_z * rotation_y * rotation_x; // combine rotations (order: Z * Y * X)
-
-			D3DXMatrixTranslation(&mat_translation, m.origin.x, m.origin.y, m.origin.z);
-			world = scale_matrix * mat_rotation * mat_translation;
-
-			// set remix texture hash ~req. dxvk-runtime changes - not really needed
-			dev->SetRenderState((D3DRENDERSTATETYPE)150, 100 + m.index);
-
-			dev->SetTransform(D3DTS_WORLD, &world);
-			dev->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, mesh_verts, sizeof(vertex));
-		}
-
-		// #HACK: render single tri with rain_drop texture so remix loads the texture
-		{
-			const vertex mesh_verts[3] =
-			{
-				D3DXVECTOR3(-1.337f - 0.01f, -1.337f - 0.01f, 0), D3DCOLOR_XRGB(0, 0, 0), 0.0f, 0.0f,
-				D3DXVECTOR3(1.337f + 0.01f, -1.337f - 0.01f, 0), D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0.0f,
-				D3DXVECTOR3(1.337f + 0.01f,  1.337f + 0.01f, 0), D3DCOLOR_XRGB(0, 0, 0), 1.0f, 1.0f,
-			};
-
-			dev->SetTexture(0, tex_addons::rain_drop);
-			dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
-			dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, 1, mesh_verts, sizeof(vertex));
-		}
-
-		// restore
-		dev->SetVertexShader(og_vs);
-		dev->SetTexture(0, og_tex);
-		dev->SetRenderState((D3DRENDERSTATETYPE)150, og_rs);
-		dev->SetFVF(NULL);
-		dev->SetTransform(D3DTS_WORLD, &game::IDENTITY);
-	}
-
 	// detoured 'CModelRender::DrawModelExecute'
 	void __fastcall tbl_hk::model_renderer::DrawModelExecute::Detour(void* ecx, void* edx, const DrawModelState_t& state, const ModelRenderInfo_t& pInfo, matrix3x4_t* pCustomBoneToWorld)
 	{
 		// draw nocull markers before drawing the first model - no particular reason besides that we dont want to draw them before rendering the sky
 		if (game::get_viewid() != VIEW_3DSKY && !model_render::get()->m_drew_model)
 		{
-			model_render::draw_nocull_markers();
+			remix_markers::draw_nocull_markers();
 			model_render::get()->m_drew_model = true;
 		}
 
