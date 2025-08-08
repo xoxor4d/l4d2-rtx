@@ -1523,6 +1523,7 @@ namespace components
 			if (!utils::float_equal(edit_p.degrees, map_p.degrees)) { return true; }
 			if (!utils::float_equal(edit_p.softness, map_p.softness)) { return true; }
 			if (!utils::float_equal(edit_p.exponent, map_p.exponent)) { return true; }
+			if (!utils::float_equal(edit_p.volumetric, map_p.volumetric)) { return true; }
 		}
 
 		return false;
@@ -2311,7 +2312,7 @@ namespace components
 
 			ImGui::TableHeaderDropshadow();
 			
-			if (ImGui::BeginTable("PointTable", 12,
+			if (ImGui::BeginTable("PointTable", 13,
 				ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
 				ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 134.0f)))
 			{
@@ -2329,6 +2330,7 @@ namespace components
 				ImGui::TableSetupColumn("Degrees", ImGuiTableColumnFlags_WidthStretch, 30.0f);
 				ImGui::TableSetupColumn("Soft", ImGuiTableColumnFlags_WidthStretch, 30.0f);
 				ImGui::TableSetupColumn("Expo", ImGuiTableColumnFlags_WidthStretch, 30.0f);
+				ImGui::TableSetupColumn("Volu", ImGuiTableColumnFlags_WidthStretch, 30.0f);
 				ImGui::TableHeadersRow();
 
 				bool selection_matches_any_entry = false;
@@ -2410,9 +2412,13 @@ namespace components
 					ImGui::TableNextColumn();
 					ImGui::Text("%.2f", p.softness);
 
-					// smooth
+					// expo
 					ImGui::TableNextColumn();
-					ImGui::Text("%.2f", p.smoothness);
+					ImGui::Text("%.2f", p.exponent);
+
+					// volumetric
+					ImGui::TableNextColumn();
+					ImGui::Text("%.2f", p.volumetric);
 				}
 
 				if (!selection_matches_any_entry) {
@@ -2596,6 +2602,10 @@ namespace components
 					active_point_selection->radiance_scalar = active_point_selection->radiance_scalar < 0.0f ? 0.0f : active_point_selection->radiance_scalar;
 				} TT("General radiance scalar");
 
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				if (ImGui::DragFloat("Volumetric", &active_point_selection->volumetric, 0.005f, 0.0f, 10.0f, "%.2f")) {
+					active_point_selection->volumetric = std::clamp(active_point_selection->volumetric, 0.0f, 10.0f);
+				} TT("Volumetric Intensity Scalar");
 
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 				if (ImGui::DragFloat("Radius", &active_point_selection->radius, 0.005f, 0.0f, FLT_MAX, "%.2f")) {

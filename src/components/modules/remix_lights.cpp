@@ -109,7 +109,7 @@ namespace components
 	 * @param exponent			(LightInfoEXT)
 	 */
 	void light_interpolator::interpolate(remixapi_Float3D* position, remixapi_Float3D* radiance, float* radius, 
-										 remixapi_Float3D* direction, float* degrees, float* softness, float* exponent)
+										 remixapi_Float3D* direction, float* degrees, float* softness, float* exponent, float* volumetric)
 	{
 		{
 			map_settings::remix_light_settings_s::point_s* temp_pt = nullptr;
@@ -128,7 +128,7 @@ namespace components
 				if (degrees) { *degrees = temp_pt->degrees; }
 				if (softness) { *softness = temp_pt->softness; }
 				if (exponent) { *exponent = temp_pt->exponent; }
-
+				if (volumetric) { *volumetric = temp_pt->volumetric; }
 				return;
 			}
 		}
@@ -193,6 +193,10 @@ namespace components
 					*exponent = lerp(p1.exponent, p2.exponent, t);
 				}
 
+				if (volumetric) {
+					*volumetric = lerp(p1.volumetric, p2.volumetric, t);
+				}
+
 				return;
 			}
 
@@ -207,6 +211,7 @@ namespace components
 		if (degrees) { *degrees = m_points.back().degrees; }
 		if (softness) { *softness = m_points.back().softness; }
 		if (exponent) { *exponent = m_points.back().exponent; }
+		if (volumetric) { *volumetric = m_points.back().volumetric; }
 	}
 
 	// ----
@@ -237,6 +242,7 @@ namespace components
 			light->ext.shaping_value.coneAngleDegrees = pt->degrees;
 			light->ext.shaping_value.coneSoftness = pt->softness;
 			light->ext.shaping_value.focusExponent = pt->exponent;
+			light->ext.volumetricRadianceScale = pt->volumetric;
 
 			// not updating these can result in a crash in bridge::remix_api?
 			light->ext.pNext = nullptr;
@@ -276,7 +282,8 @@ namespace components
 				&light->ext.shaping_value.direction,
 				&light->ext.shaping_value.coneAngleDegrees,
 				&light->ext.shaping_value.coneSoftness,
-				&light->ext.shaping_value.focusExponent);
+				&light->ext.shaping_value.focusExponent,
+				&light->ext.volumetricRadianceScale);
 
 			light->ext.shaping_hasvalue = light->ext.shaping_value.coneAngleDegrees != 180.0f;
 
@@ -321,6 +328,7 @@ namespace components
 			light->ext.shaping_value.coneAngleDegrees = pt.degrees;
 			light->ext.shaping_value.coneSoftness = pt.softness;
 			light->ext.shaping_value.focusExponent = pt.exponent;
+			light->ext.volumetricRadianceScale = pt.volumetric;
 
 			light->info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
 			light->info.pNext = &light->ext;

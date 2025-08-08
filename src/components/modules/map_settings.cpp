@@ -1241,6 +1241,12 @@ namespace components
 									temp_exponent = to_float(p.at("exponent"), 0.0f);
 								}
 
+								// volumetrics
+								float temp_volumetric = 0.0f;
+								if (p.contains("volumetric_scale")) { // volumetricRadianceScale
+									temp_volumetric = to_float(p.at("volumetric_scale"), 1.0f);
+								}
+
 								// to avoid code duplication
 								Vector pt;
 
@@ -1266,7 +1272,8 @@ namespace components
 										temp_direction,
 										temp_degrees,
 										temp_softness,
-										temp_exponent)
+										temp_exponent,
+										temp_volumetric)
 								);
 							}
 

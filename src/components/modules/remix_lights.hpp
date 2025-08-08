@@ -31,7 +31,8 @@ namespace components
 			remixapi_Float3D* direction = nullptr,
 			float* degrees = nullptr,
 			float* softness = nullptr, 
-			float* exponent = nullptr
+			float* exponent = nullptr,
+			float* volumetric = nullptr
 		);
 
 		map_settings::remix_light_settings_s::point_s* get_points() {
