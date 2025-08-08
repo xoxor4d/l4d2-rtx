@@ -313,6 +313,14 @@ namespace components
 		ImGui::Checkbox("Show Static Prop Debug Info", &cmd::model_info_vis);
 		TT("Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
 
+		if (ImGui::Button("Print Choreo/Scene Debug Info to Console")) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_scene_print");
+		} TT("This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
+
+		if (ImGui::Button("Print Sound Debug Info to Console")) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_toggle_sound_print");
+		} TT("This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_toggle_sound_print");
+
 		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 		ImGui::SliderInt2("HUD: Area Debug Pos", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
 
@@ -1419,7 +1427,9 @@ namespace components
 		}
 
 		ImGui::Spacing();
-		if (ImGui::TreeNodeEx("Help", ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAvailWidth))
+
+		// Outdated and not useful
+		/*if (ImGui::TreeNodeEx("Help", ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAvailWidth))
 		{
 			ImGui::TextUnformatted(
 				"# Override culling per game area\n"
@@ -1455,7 +1465,7 @@ namespace components
 				"# hide_leafs :		force hide leaf/s															[int array]\n");
 
 			ImGui::TreePop();
-		}
+		}*/
 	}
 
 	bool check_light_for_modifications(const map_settings::remix_light_settings_s& edit_def, const map_settings::remix_light_settings_s& map_def, std::vector<map_settings::remix_light_settings_s::point_s>* mover_pts)
