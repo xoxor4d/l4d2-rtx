@@ -592,7 +592,8 @@ namespace components
 			{
 				.def = {.pos = pos, .fwd = fwd, .rt = rt, .up = up },
 				.is_player = is_player,
-				.is_enabled = is_enabled
+				.is_enabled = is_enabled,
+				.is_alive = true
 			};
 		}
 		else
@@ -604,6 +605,7 @@ namespace components
 			it->second.def.up = up;
 			it->second.is_player = is_player;
 			it->second.is_enabled = is_enabled;
+			it->second.is_alive = true;
 		}
 	}
 
@@ -614,6 +616,10 @@ namespace components
 		{
 			for (auto& [name, fl] : api->m_flashlights)
 			{
+				// reset on each frame
+				// main_module::iterate_entities() checks if light is still alive
+				fl.is_alive = false;
+
 				if (fl.handle)
 				{
 					api->m_bridge.DestroyLight(fl.handle);

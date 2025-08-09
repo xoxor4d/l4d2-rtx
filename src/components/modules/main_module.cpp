@@ -233,6 +233,17 @@ namespace components
 				}
 			}
 		}
+
+		// check if all flashlights were found
+		// remix_api::flashlight_frame() resets is_alive on each frame and
+		// remix_api::flashlight_create_or_update() sets is_alive if the entity was found
+		// > disable light if is_alive is still false at this point because the player/npc might have died or disconnected
+		for (auto& fl : remix_api::get()->m_flashlights)
+		{
+			if (!fl.second.is_alive) {
+				fl.second.is_enabled = false;
+			}
+		}
 	}
 
 

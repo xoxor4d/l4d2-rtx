@@ -56,6 +56,7 @@ namespace components
 			flashlight_def_s def = {};
 			bool is_player = false;
 			bool is_enabled = false;
+			bool is_alive = false; // internal use
 		};
 		std::unordered_map<std::string, flashlight_s> m_flashlights;
 
