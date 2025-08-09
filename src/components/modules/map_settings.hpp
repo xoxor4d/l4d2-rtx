@@ -67,6 +67,14 @@ namespace components
 			bool was_used = false; // internal use :: was this already for any choreo or sound trigger already?
 			bool delay_start = false; // internal use :: set to true to start counting
 			float delay_elapsed_time = 0.0f; // internal use :: time since counting started
+
+			bool has_trigger() const
+			{
+				if (sound_hash || !sound_name.empty() || !choreo_name.empty()) {
+					return true;
+				}
+				return false;
+			}
 		};
 
 		struct marker_settings_s

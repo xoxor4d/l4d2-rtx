@@ -121,6 +121,8 @@ namespace common::toml
 				toml_str += ", exponent = " + format_float(p.exponent);
 			}
 
+			toml_str += ", volumetric_scale = " + format_float(p.volumetric);
+
 			// ignore t0
 			if (!utils::float_equal(p.timepoint, 0.0f)) {
 				toml_str += ", timepoint = " + format_float(p.timepoint);
@@ -164,6 +166,77 @@ namespace common::toml
 
 			if (m.no_cull)
 			{
+				if (m.trigger_show.has_trigger() || m.trigger_hide.has_trigger())
+				{
+					// build single trigger
+					auto build_trigger = [&toml_str](const map_settings::marker_trigger_s& trig)
+						{
+							// choreo trigger
+							if (!trig.choreo_name.empty())
+							{
+								toml_str += "{ choreo = \"" + (trig.choreo_name + "\"");
+
+								if (!trig.choreo_actor.empty()) {
+									toml_str += ", actor = \"" + trig.choreo_actor + "\"";
+								}
+
+								if (!trig.choreo_event.empty()) {
+									toml_str += ", event = \"" + trig.choreo_event + "\"";
+								}
+
+								if (!trig.choreo_param1.empty()) {
+									toml_str += ", param1 = \"" + trig.choreo_param1 + "\"";
+								}
+
+								if (!utils::float_equal(trig.delay, 0.0f)) {
+									toml_str += ", delay = " + format_float(trig.delay);
+								}
+
+								toml_str += " }"; // end table
+							}
+							// sound trigger
+							else if (trig.sound_hash || !trig.sound_name.empty())
+							{
+								if (trig.sound_hash) {
+									toml_str += "{ sound = " + std::format("0x{:X}", trig.sound_hash);
+								}
+								else {
+									toml_str += "{ sound = \"" + (trig.sound_name + "\"");
+								}
+
+								if (!utils::float_equal(trig.delay, 0.0f)) {
+									toml_str += ", delay = " + format_float(trig.delay);
+								}
+
+								toml_str += " }"; // end table
+							}
+						};
+
+
+					toml_str += ", trigger = { ";
+
+					if (m.trigger_show.has_trigger()) 
+					{
+						toml_str += "show = ";
+						build_trigger(m.trigger_show);
+
+						if (m.trigger_hide.has_trigger()) {
+							toml_str += ", ";
+						}
+					}
+
+					if (m.trigger_hide.has_trigger()) 
+					{
+						toml_str += "hide = ";
+						build_trigger(m.trigger_hide);
+					}
+
+					toml_str += ", always = " + (m.trigger_always ? "true"s : "false"s);
+					toml_str += " }";
+				}
+
+				// ---
+
 				toml_str += ", areas = [";
 				for (auto it = m.areas.begin(); it != m.areas.end(); ++it)
 				{

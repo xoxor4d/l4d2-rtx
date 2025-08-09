@@ -126,7 +126,7 @@ namespace components
 						m.trigger_show.was_used = true;
 					}
 
-					if (is_hide_trigger && !m.is_hidden)
+					else if (is_hide_trigger && !m.is_hidden)
 					{
 						if (m.trigger_hide.delay > 0.0f) {
 							m.trigger_hide.delay_start = true; // start delay logic

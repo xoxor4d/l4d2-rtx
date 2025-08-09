@@ -1,4 +1,5 @@
 #include "std_include.hpp"
+#include "std_include.hpp"
 #include "components/common/imgui/imgui_helper.hpp"
 #include "components/common/toml.hpp"
 #include "components/common/imgui/font_awesome_solid_900.hpp"
@@ -486,7 +487,7 @@ namespace components
 		// MARKER TABLE
 
 		ImGui::TableHeaderDropshadow();
-		if (ImGui::BeginTable("MarkerTable", 10,
+		if (ImGui::BeginTable("MarkerTable", 11,
 			ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
 			ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 380)))
 		{
@@ -494,6 +495,7 @@ namespace components
 			ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_NoResize | ImGuiTableColumnFlags_NoHide, 12.0f);
 			ImGui::TableSetupColumn("Num", ImGuiTableColumnFlags_NoResize, 24.0f);
 			ImGui::TableSetupColumn("NC", ImGuiTableColumnFlags_NoResize, 24.0f);
+			ImGui::TableSetupColumn("Trig", ImGuiTableColumnFlags_NoResize, 24.0f);
 			ImGui::TableSetupColumn("Areas", ImGuiTableColumnFlags_WidthStretch, 80.0f);
 			ImGui::TableSetupColumn("NLeafs", ImGuiTableColumnFlags_WidthStretch, 80.0f);
 			ImGui::TableSetupColumn("Comment", ImGuiTableColumnFlags_WidthStretch, 200.0f);
@@ -556,7 +558,11 @@ namespace components
 				ImGui::TableNextColumn();
 				ImGui::TextUnformatted(m.no_cull ? "x" : "");
 
-				// - Area Input
+				// - trig
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(m.trigger_show.has_trigger() || m.trigger_hide.has_trigger() ? "x" : "");
+
+				// - area Input
 				ImGui::TableNextColumn();
 
 				if (is_selected) {
@@ -567,7 +573,7 @@ namespace components
 				ImGui::TextWrapped_IntegersFromUnorderedSet(m.areas);
 				ImGui::Spacing();
 
-				// - NLeaf Input
+				// - not in leaf input
 				ImGui::TableNextColumn();
 				if (is_selected) {
 					ImGui::Widget_UnorderedSetModifier("MarkerNLeafs", ImGui::Widget_UnorderedSetModifierFlags_Leaf, selection->when_not_in_leafs, in_nleaf_buf, in_buflen);
@@ -595,7 +601,7 @@ namespace components
 				ImGui::TableNextColumn(); ImGui::Spacing();
 				ImGui::Text("%.2f, %.2f, %.2f", m.scale.x, m.scale.y, m.scale.z);
 
-				// Delete Button
+				// delete Button
 				ImGui::TableNextColumn();
 				{
 					ImGui::Style_DeleteButtonPush();
@@ -662,7 +668,7 @@ namespace components
 				}
 			}
 
-			markers.emplace_back(map_settings::marker_settings_s{
+			markers.emplace_back(map_settings::marker_settings_s {
 					free_marker, *game::get_current_view_origin() - Vector(0,0,1), true
 				});
 
@@ -721,7 +727,7 @@ namespace components
 
 			if (!selection->no_cull)
 			{
-				ImGui::CenterText("- Only 'NoCull' support live editing - ");
+				ImGui::CenterText("- Only 'NoCull' supports live editing - ");
 				ImGui::CenterText("- Save and reload MapSettings to see changes - ");
 				ImGui::Spacing(0, 6);
 			}
@@ -764,10 +770,183 @@ namespace components
 
 			SET_CHILD_WIDGET_WIDTH;
 			ImGui::InputText("Comment", &selection->comment);
+
+			// Trigger section
+			{
+				auto marker_trigger_settings = [](map_settings::marker_trigger_s& trig, const char* imgui_id)
+					{
+						ImGui::PushID(imgui_id);
+
+						// --- choreo
+
+						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						ImGui::InputText("Choreo Name", &trig.choreo_name);
+						TT("Show marker when a specified choreography (vcd) starts playing.\n"
+							"Using a show trigger will hide the marker by default until the event triggers logic.\n"
+							"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+						// clear sound trigger if choreo is not empty
+						if ( !trig.choreo_name.empty() &&
+							(!trig.sound_name.empty() || trig.sound_hash))
+						{
+							trig.sound_name.clear();
+							trig.sound_hash = 0u;
+						}
+
+						if (!trig.choreo_name.empty())
+						{
+							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							ImGui::InputText("Choreo Actor", &trig.choreo_actor);
+							TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should show the marker.\n"
+								"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							ImGui::InputText("Choreo Event", &trig.choreo_event);
+							TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should show the marker.\n"
+								"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							ImGui::InputText("Choreo Param1", &trig.choreo_param1);
+							TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should show the marker.\n"
+								"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+						}
+
+						// --- sound
+
+						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						std::string temp_sound_hash_str = trig.sound_hash ? std::format("0x{:X}", trig.sound_hash) : "";
+
+						if (ImGui::InputText("Sound Hash", &temp_sound_hash_str, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue,
+							[](ImGuiInputTextCallbackData* data)
+							{
+								const auto c = static_cast<char>(data->EventChar);
+								if (std::isxdigit(c) || c == 'x' || c == 'X') {
+									return 0; // allow input
+								}
+								return 1; // block input
+							}))
+						{
+							trig.sound_hash = static_cast<uint32_t>(std::strtoul(temp_sound_hash_str.c_str(), nullptr, 16));
+							temp_sound_hash_str = std::format("0x{:X}", trig.sound_hash);
+						}
+						TT( "Show marker when a specified sound starts playing.\n"
+							"The sound trigger has LOWER precedence than choreo triggering.\n"
+							"Use cmd 'xo_debug_toggle_sound_print' to get info about playing sounds.");
+
+						// clear choreo and sound_name if sound_hash is not empty
+						if (trig.sound_hash)
+						{
+							trig.sound_name.clear();
+							trig.choreo_name.clear();
+						}
+
+						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						ImGui::InputText("Sound Name", &trig.sound_name);
+						TT("Show marker when a specified sound starts playing.\n"
+							"The sound trigger has LOWER precedence than choreo triggering.\n"
+							"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
+
+						// clear choreo and sound_has if sound_name is not empty
+						if (!trig.sound_name.empty() &&
+							(trig.sound_hash || !trig.choreo_name.empty()))
+						{
+							trig.choreo_name.clear();
+							trig.sound_hash = 0u;
+						}
+
+						ImGui::BeginDisabled(!trig.has_trigger());
+						{
+							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							if (ImGui::DragFloat("Delay", &trig.delay, 0.05f, 0.0f, 1000.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
+								trig.delay = trig.delay < 0.0f ? 0.0f : trig.delay;
+							} TT("Delay show after trigger in seconds.");
+						}
+						ImGui::EndDisabled();
+						ImGui::PopID();
+					};
+
+				const auto im = imgui::get();
+				const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
+
+				ImGui::Spacing(0, 12);
+				ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+				ImGui::SeparatorText(" Trigger Settings ");
+				ImGui::PopFont();
+				ImGui::Spacing(0, 4);
+
+				static float cont_height = 0.0f;
+				cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [marker_trigger_settings]
+					{
+						ImGui::Checkbox("Allow re-triggering when the event reoccurs.", &selection->trigger_always);
+						TT("Allow re-triggering when the event reoccurs.");
+
+						ImGuiWindow* window = ImGui::GetCurrentWindow();
+						const auto s_workrect_max_x = window->WorkRect.Max.x;
+						window->WorkRect.Max.x -= (ImGui::GetStyle().WindowPadding.x * 3.0f);
+
+						// show
+						//ImGui::Spacing(0, 12);
+
+						ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+						ImGui::TableHeaderDropshadow(12.0f, 0.6f, 0.0f, window->WorkRect.Max.x - window->DC.CursorPos.x);
+
+						auto spos_header = ImGui::GetCursorScreenPos();
+						const auto trigger_show_state = ImGui::CollapsingHeader("Show Trigger");
+						if (selection->trigger_show.has_trigger())
+						{
+							const auto spos_post_header = ImGui::GetCursorScreenPos();
+							const auto header_dims = ImGui::GetItemRectSize();
+							const auto icon_dims = ImGui::CalcTextSize(ICON_FA_CHECK);
+							ImGui::SetCursorScreenPos(spos_header + ImVec2(header_dims.x - icon_dims.x - ImGui::GetStyle().WindowPadding.x - 8.0f, header_dims.y * 0.5f - icon_dims.y * 0.5f));
+							ImGui::TextUnformatted(ICON_FA_CHECK);
+							ImGui::SetCursorScreenPos(spos_post_header);
+						}
+						ImGui::PopStyleVar(); // FrameRounding
+
+						if (trigger_show_state) {
+							ImGui::Spacing(0, 2);
+							marker_trigger_settings(selection->trigger_show, "ShowTrigger");
+							ImGui::Spacing(0, 2);
+						}
+
+						// hide
+						//ImGui::Spacing(0, 12);
+
+						ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+						ImGui::TableHeaderDropshadow(12.0f, 0.6f, 0.0f, window->WorkRect.Max.x - window->DC.CursorPos.x);
+						spos_header = ImGui::GetCursorScreenPos();
+
+						const auto trigger_hide_state = ImGui::CollapsingHeader("Hide Trigger");
+						if (selection->trigger_show.has_trigger())
+						{
+							const auto spos_post_header = ImGui::GetCursorScreenPos();
+							const auto header_dims = ImGui::GetItemRectSize();
+							const auto icon_dims = ImGui::CalcTextSize(ICON_FA_CHECK);
+							ImGui::SetCursorScreenPos(spos_header + ImVec2(header_dims.x - icon_dims.x - ImGui::GetStyle().WindowPadding.x - 8.0f, header_dims.y * 0.5f - icon_dims.y * 0.5f));
+							ImGui::TextUnformatted(ICON_FA_CHECK);
+							ImGui::SetCursorScreenPos(spos_post_header);
+						}
+						ImGui::PopStyleVar(); // FrameRounding
+
+						if (trigger_hide_state) {
+							ImGui::Spacing(0, 2);
+							marker_trigger_settings(selection->trigger_hide, "HideTrigger");
+							ImGui::Spacing(0, 2);
+						}
+
+						// -------
+
+						window->WorkRect.Max.x = s_workrect_max_x;
+
+					}, & cont_bg_color, & im->ImGuiCol_ContainerBorder);
+
+				ImGui::Spacing(0, 4);
+			}
+
 		} // selection
 
 		ImGui::Spacing();
-		ImGui::Spacing();
+		/*ImGui::Spacing();
 		if (ImGui::TreeNodeEx("Help##Marker", ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_SpanAvailWidth))
 		{
 			ImGui::TextUnformatted(
@@ -784,7 +963,7 @@ namespace components
 				"# scale:                    X Y Z scale of the marker mesh [3D Vector]\n");
 
 			ImGui::TreePop();
-		}
+		}*/
 	}
 
 	void cont_mapsettings_culling_manipulation()
