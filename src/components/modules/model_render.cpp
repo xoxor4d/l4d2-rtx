@@ -978,12 +978,16 @@ namespace components
 			//dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 
-			D3DMATRIX view, proj;
+			/*D3DMATRIX view, proj;
 			dev->GetTransform(D3DTS_VIEW, &view);
-			dev->GetTransform(D3DTS_PROJECTION, &proj);
+			dev->GetTransform(D3DTS_PROJECTION, &proj);*/
 
-			ctx.save_texture(dev, 0);  
-			dev->SetTexture(0, tex_addons::black); 
+			//ctx.save_texture(dev, 0);  
+			//dev->SetTexture(0, tex_addons::black);
+
+			ctx.save_vs(dev);
+			dev->SetVertexShader(nullptr);
+			dev->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
 		}
 
 		// shader: Cable_DX9
@@ -991,8 +995,18 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x480035)
 		{
 			//ctx.modifiers.do_not_render = true;
-			ctx.save_texture(dev, 0);
-			dev->SetTexture(0, tex_addons::black);
+			//ctx.save_texture(dev, 0);
+			//dev->SetTexture(0, tex_addons::black);
+
+			if (const auto basemap2 = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[1]); basemap2)
+			{
+				ctx.save_texture(dev, 0);
+				dev->SetTexture(0, basemap2);
+			}
+
+			ctx.save_vs(dev);
+			dev->SetVertexShader(nullptr);
+			dev->SetFVF(NULL); // using vertexdecl is fine
 		}
 
 
@@ -1772,6 +1786,115 @@ namespace components
 		}
 	}
 
+	void RopeManager_DrawRenderCache_mid_hk(CMeshBuilder* builder)
+	{
+		const auto dev = game::get_d3d_device();
+
+		auto CatmullRomSpline = [](const Vector4D& a, const Vector4D& b, const Vector4D& c, const Vector4D& d, const float t)
+			{
+				return b + 0.5f * t * (c - a + t * (2.0f * a - 5.0f * b + 4.0f * c - d + t * (-a + 3.0f * b - 3.0f * c + d)));
+			};
+
+		auto DCatmullRomSpline3 = [](const Vector& a, const Vector& b, const Vector& c, const Vector& d, const float t)
+			{
+				return 0.5f * (c - a + t * (2.0f * a - 5 * b + 4 * c - d + t * (3.0f * b - a - 3.0f * c + d))
+					+ t * (2.0f * a - 5.0f * b + 4 * c - d + 2.0f * (t * (3 * b - a - 3.0f * c + d))));
+			};
+
+		Vector eyePos;
+		{
+			float v[4] = {}; dev->GetVertexShaderConstantF(2, v, 1);
+			eyePos = Vector(v[0], v[1], v[2]);
+		}
+
+		// m_pCurr... are at the very last vert - get the first one
+		//float* firstPos = (float*)((char*)builder->m_VertexBuilder.m_pCurrPosition - (builder->m_VertexBuilder.m_VertexSize_Position));
+
+		for (auto v = 1; v <= builder->m_VertexBuilder.m_nVertexCount; v++)
+		{
+			const auto v_pos_in_src_buffer = v * builder->m_VertexBuilder.m_VertexSize_Position;
+
+			const auto src_vParms = reinterpret_cast<Vector*>(((DWORD)builder->m_VertexBuilder.m_pCurrPosition - v_pos_in_src_buffer));
+			const auto dest_pos = reinterpret_cast<Vector*>(src_vParms);
+
+			const auto src_vTint = reinterpret_cast<D3DCOLOR*>(((DWORD)builder->m_VertexBuilder.m_pCurrColor - v_pos_in_src_buffer));
+
+			const auto src_vSplinePt0 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[0] - v_pos_in_src_buffer));
+			const auto dest_tc = reinterpret_cast<Vector2D*>(src_vSplinePt0);
+
+			const auto src_vSplinePt1 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[1] - v_pos_in_src_buffer));
+			const auto src_vSplinePt2 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[2] - v_pos_in_src_buffer));
+			const auto src_vSplinePt3 = reinterpret_cast<Vector4D*>(((DWORD)builder->m_VertexBuilder.m_pCurrTexCoord[3] - v_pos_in_src_buffer));
+
+			// save vParms (because we will be overriding them when writing pos)
+			const float parmsX = src_vParms->x;
+			const float parmsY = src_vParms->y;
+			const float parmsZ = src_vParms->z;
+
+			const auto P0 = *src_vSplinePt0;
+			const auto P1 = *src_vSplinePt1;
+			const auto P2 = *src_vSplinePt2;
+			const auto P3 = *src_vSplinePt3;
+
+			auto posrad = CatmullRomSpline(P0, P1, P2, P3, parmsX);
+
+			Vector v2p = { 0.0f, 0.0f, 1.0f };
+			v2p.x = posrad.x - eyePos.x;	// screen aligned
+			v2p.y = posrad.y - eyePos.y;
+			v2p.z = posrad.z - eyePos.z;
+
+			Vector tangent = DCatmullRomSpline3(P0, P1, P2, P3, parmsX);
+
+			//float3 ofs = normalize(cross(v2p, normalize(tangent)));
+			tangent.NormalizeChecked();
+			Vector ofs = v2p.Cross(tangent); // maybe switch these - no difference
+			ofs.NormalizeChecked();
+
+			//posrad.xyz += ofs * (posrad.w * (v.vParms.z - .5));
+			const auto add = ofs.Scale(posrad.w * (parmsZ - 0.5f));
+			posrad.x += add.x;
+			posrad.y += add.y;
+			posrad.z += add.z;
+
+			// pos
+			dest_pos->x = posrad.x;
+			dest_pos->y = posrad.y;
+			dest_pos->z = posrad.z;
+
+			// o.texCoord.xy = float2( 1.0f - v.vParms.z, v.vParms.y );
+			dest_tc->x = 1.0f - parmsZ;
+			dest_tc->y = parmsY;
+
+			// unpack color
+			Vector4D color;
+			color.x = static_cast<float>((*src_vTint >> 16) & 0xFF) / 255.0f * 1.0f;
+			color.y = static_cast<float>((*src_vTint >> 8) & 0xFF) / 255.0f * 1.0f;
+			color.z = static_cast<float>((*src_vTint >> 0) & 0xFF) / 255.0f * 1.0f;
+			color.w = static_cast<float>((*src_vTint >> 24) & 0xFF) / 255.0f * 0.1f; // ! 0.1
+
+			// write color
+			*src_vTint = D3DCOLOR_COLORVALUE(color.x, color.y, color.z, color.w);
+		}
+	}
+
+	HOOK_RETN_PLACE_DEF(RopeManager_DrawRenderCache_retn_addr);
+	void __declspec(naked) RopeManager_DrawRenderCache_stub()
+	{
+		__asm
+		{
+			pushad;
+			lea     eax, [ebp - 0x1EC]; // meshbuilder
+			push	eax;
+			call	RopeManager_DrawRenderCache_mid_hk;
+			add		esp, 4;
+			popad;
+
+			// og
+			mov     ecx, [ebp - 0x138];
+			jmp		RopeManager_DrawRenderCache_retn_addr;
+		}
+	}
+
 	void grab_glowoverlay_color_hk(float* color)
 	{
 		if (color) {
@@ -1830,6 +1953,11 @@ namespace components
 		utils::hook::nop(CLIENT_BASE + 0x3C9F1F, 6);
 		utils::hook(CLIENT_BASE + 0x3C9F1F, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, CLIENT_BASE + 0x3C9F25);
+
+		// Fix actual ropes
+		utils::hook::nop(CLIENT_BASE + 0x93A3D, 6);
+		utils::hook(CLIENT_BASE + 0x93A3D, RopeManager_DrawRenderCache_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(RopeManager_DrawRenderCache_retn_addr, CLIENT_BASE + 0x93A43);
 
 		// CGlowOverlay::Draw :: grab sun overlay color to apply color via TFACTOR instead of vertex colors (as that fails - search for "sprites/light_glow02_add_noz")
 		utils::hook::nop(CLIENT_BASE + 0x108090, 8);
