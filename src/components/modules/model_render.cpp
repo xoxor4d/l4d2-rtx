@@ -273,7 +273,7 @@ namespace components
 		//auto x = reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50));
 		//auto y = reinterpret_cast<components::IShaderAPIDX8*>((RENDERER_BASE + 0xC9C54));
 
-		auto& ctx = model_render::primctx;
+		prim_fvf_context& ctx = model_render::primctx;
 		const auto shaderapi = game::get_shaderapi();
 
 		if (ctx.get_info_for_pass(shaderapi)) 
@@ -912,9 +912,10 @@ namespace components
 			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 		}
 
-		// shader: DecalModulate_dx9, Sprite_DX9
+		// shader: DecalModulate_dx9, Sprite_DX9, Bik
 		// > decals/bloodstain_002
 		// > sprites/glow_test02_rendermode_5
+		// > videobikmaterial_background
 		else if (mesh->m_VertexFormat == 0x80005) // stride 0x20
 		{
 			//ctx.modifiers.do_not_render = true;
@@ -930,6 +931,8 @@ namespace components
 
 			if (ctx.info.shader_name.starts_with("Spr")) {
 				set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_PARTICLE);
+			} else if (ctx.info.shader_name == "Bik") {
+				mod_shader = false;
 			}
 
 			if (mod_shader)
