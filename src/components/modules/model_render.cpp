@@ -394,9 +394,21 @@ namespace components
 
 			if (ctx.info.shader_name == "Infected" && 
 				(ctx.info.material_name.contains("/l4d2/") || 
-				 ctx.info.material_name.contains("/l4d1/cim_"))) 
+				 (ctx.info.material_name.contains("/l4d1/cim_") && !ctx.info.material_name.ends_with("pilot")))) // ignore "cim_fallen_survivor_l4d1_pilot.vmt"
 			{
 				//ctx.modifiers.do_not_render = true;
+
+				//IMaterialVar* var = nullptr;
+				//if (has_materialvar(ctx.info.material, "$gradienttexture", &var))
+				//{
+				//	// if material has NO defined basetexture
+				//	if (var && !var->vftable->IsDefined(var)) {
+				//		goto NOT_INFECTED_SHADER;
+				//	}
+
+				//	auto asd = var->vftable->GetStringValue(var); 
+				//	int xas = 0;
+				//}
 
 				// gradient
 				if (const auto tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[5]); tex)
@@ -492,6 +504,7 @@ namespace components
 				use_shader = true;
 			}
 
+		//NOT_INFECTED_SHADER:
 			if (!use_shader)
 			{
 				ctx.save_vs(dev);
