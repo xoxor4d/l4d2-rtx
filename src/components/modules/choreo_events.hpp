@@ -2,6 +2,11 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		extern bool scene_print;
+	}
+
 	class choreo_events : public component
 	{
 	public:

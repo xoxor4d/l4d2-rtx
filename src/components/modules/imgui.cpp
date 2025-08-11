@@ -148,6 +148,84 @@ namespace components
 
 	// ------
 
+	bool imgui::cvar_toggle_button_bool(const char* cvar_str, const char* btn_text, ImVec2 btn_size, const char* tt_text)
+	{
+		bool return_val = false;
+
+		if (const auto& var = game::find_cvar_const(cvar_str); var)
+		{
+			bool styled = false;
+			if (var->m_Value.m_nValue)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_TabHovered));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				styled = true;
+			}
+
+			if (ImGui::Button(btn_text, btn_size)) 
+			{
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("sv_cheats 1; %s %s", cvar_str, var->m_Value.m_nValue ? "0" : "1"));
+				return_val = true;
+			}
+
+			if (tt_text) {
+				TT(tt_text);
+			}
+
+			if (styled) {
+				ImGui::PopStyleColor(3);
+			}
+		}
+		else {
+			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "BAD CVAR");
+			ImGui::PopFont();
+		}
+
+		return return_val;
+	}
+
+	bool imgui::toggle_button_bool(bool* bool_ptr, const char* btn_text, ImVec2 btn_size, const char* tt_text)
+	{
+		bool return_val = false;
+
+		if (bool_ptr)
+		{
+			bool styled = false;
+			if (*bool_ptr)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_TabHovered));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				styled = true;
+			}
+
+			if (ImGui::Button(btn_text, btn_size))
+			{
+				*bool_ptr = !*bool_ptr;
+				return_val = true;
+			}
+
+			if (tt_text) {
+				TT(tt_text);
+			}
+
+			if (styled) {
+				ImGui::PopStyleColor(3);
+			}
+		}
+		else {
+			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "BAD CVAR");
+			ImGui::PopFont();
+		}
+
+		return return_val;
+	}
+
+	// ------
+
 	bool reload_mapsettings_popup()
 	{
 		bool result = false;
@@ -210,37 +288,512 @@ namespace components
 
 	void cont_general_quickcommands()
 	{
-		if (ImGui::Button("Director Start")) {
+		const auto four_row_button_size = ImVec2((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 3) / 4.0f, 0);
+
+		ImGui::SeparatorTextLarge(" Director / Bots ", false);
+
+		if (ImGui::Button("Director Start", four_row_button_size)) {
 			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; director_start");
-		}
+		} TT("sv_cheats 1; director_start");
 
 		ImGui::SameLine();
-		if (ImGui::Button("Director Stop")) {
+		if (ImGui::Button("Director Stop", four_row_button_size)) {
 			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; director_stop");
-		}
+		} TT("sv_cheats 1; director_stop");
 
 		ImGui::SameLine();
-		if (ImGui::Button("Kick Survivor Bots")) {
+		imgui::cvar_toggle_button_bool("director_no_specials", "No Specials", four_row_button_size, "director_no_specials :: This command, if set to 1, will disable the spawning of PZ zombies");
+
+		ImGui::SameLine();
+		imgui::cvar_toggle_button_bool("director_no_bosses", "No Bosses", four_row_button_size, "director_no_bosses :: Setting this command to 1 will completely disable the spawning of bosses");
+
+
+		if (ImGui::Button("Kick Survivor Bots", four_row_button_size)) {
 			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; kick rochelle; kick coach; kick ellis; kick roach; kick louis; kick zoey; kick francis; kick bill");
+		} TT("sv_cheats 1; kick rochelle; kick coach; kick ellis; kick roach; kick louis; kick zoey; kick francis; kick bill");
+
+		ImGui::SameLine();
+		imgui::cvar_toggle_button_bool("sb_stop", "Freeze Surv Bots", four_row_button_size, "sb_stop :: This command, if set to 1, will stop all survivor bots, but not zombie bots");
+
+		ImGui::SameLine();
+		imgui::cvar_toggle_button_bool("nb_stop", "Freeze All Bots", four_row_button_size, "nb_stop :: This command will freeze all bots in the game. Setting this command back to 0 will unfreeze the bots");
+
+		ImGui::SameLine();
+		imgui::cvar_toggle_button_bool("nb_vision_ignore_survivors", "Infected Ignore Player", four_row_button_size, "nb_vision_ignore_survivors :: Enables and disable infinite ammo");
+
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Cheats ");
+
+		imgui::cvar_toggle_button_bool("god", "God", four_row_button_size, "god :: This cheat enables and disables god mode for your entire team. In god mode, you and your team are invincible and will not take any damage");
+
+		ImGui::SameLine();
+		imgui::cvar_toggle_button_bool("buddha", "Buddha", four_row_button_size, "buddha :: Enables or disables buddha mode (you appear to take damage but can't die)");
+
+		ImGui::SameLine();
+		imgui::cvar_toggle_button_bool("sv_infinite_ammo", "Infinite Ammo", four_row_button_size, "sv_infinite_ammo :: Enables and disable infinite ammo");
+
+		
+		
+		
+
+
+	}
+
+	void cont_general_infected()
+	{
+		const auto three_row_button_size = ImVec2((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 2) / 3.0f, 0);
+
+		ImGui::SeparatorTextLarge(" Infected Spawing ");
+
+		if (ImGui::Button("Spawn Infected", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn zombie");
 		}
 
 		ImGui::SameLine();
-		if (ImGui::Button("Give Autoshotgun")) {
+		if (ImGui::Button("Spawn Spitter", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn spitter");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn Jockey", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn jockey");
+		}
+
+
+		if (ImGui::Button("Spawn Charger", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn charger");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn Boomer", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn boomer");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn Hunter", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn hunter");
+		}
+
+
+		if (ImGui::Button("Spawn Witch", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn witch");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn Smoker", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn smoker");
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Spawn Tank", three_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; z_spawn tank");
+		}
+	}
+
+	void cont_general_weapons()
+	{
+		const auto four_row_button_size = ImVec2((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 3) / 4.0f, 0);
+
+		if (ImGui::Button("Give Pistol", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give pistol");
+		} TT("sv_cheats 1; give pistol");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Pistol Magnum", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give pistol_magnum");
+		} TT("sv_cheats 1; give pistol_magnum");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Autoshotgun", four_row_button_size)) {
 			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give autoshotgun");
-		}
+		} TT("sv_cheats 1; give autoshotgun");
 
-		ImGui::Spacing();
+		ImGui::SameLine();
+		if (ImGui::Button("Give Shotgun Chrome", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give shotgun_chrome");
+		} TT("sv_cheats 1; give shotgun_chrome");
 
-		static bool im_zignore_player = false;
-		if (ImGui::Checkbox("Infected Ignore Player", &im_zignore_player))
-		{
-			if (!im_zignore_player) {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; nb_vision_ignore_survivors 0");
-			}
-			else {
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; nb_vision_ignore_survivors 1");
-			}
-		}
+		//
+		if (ImGui::Button("Give Pumpshotgun", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give pumpshotgun");
+		} TT("sv_cheats 1; give pumpshotgun");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Shotgun Spas", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give shotgun_spas");
+		} TT("sv_cheats 1; give shotgun_spas");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give SMG", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give smg");
+		} TT("sv_cheats 1; give smg");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Mp5", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give smg_mp5");
+		} TT("sv_cheats 1; give smg_mp5");
+
+		// 
+		if (ImGui::Button("Give SMG Silenced", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give smg_silenced");
+		} TT("sv_cheats 1; give smg_silenced");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Ak47", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give rifle_ak47");
+		} TT("sv_cheats 1; give rifle_ak47");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Sg552", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give rifle_sg552");
+		} TT("sv_cheats 1; give rifle_sg552");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give M16", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give rifle");
+		} TT("sv_cheats 1; give rifle");
+
+
+		// 
+		if (ImGui::Button("Give M60", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give rifle_m60");
+		} TT("sv_cheats 1; give rifle_m60");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Combat Rifle", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give rifle_desert");
+		} TT("sv_cheats 1; give rifle_desert");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Hunting Rifle", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give hunting_rifle");
+		} TT("sv_cheats 1; give hunting_rifle");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Sniper Military", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give sniper_military");
+		} TT("sv_cheats 1; give sniper_military");
+
+
+		// 
+		if (ImGui::Button("Give AWP", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give sniper_awp");
+		} TT("sv_cheats 1; give sniper_awp");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Sniper Scout", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give sniper_scout");
+		} TT("sv_cheats 1; give sniper_scout");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Grenade Launcher", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give weapon_grenade_launcher");
+		} TT("sv_cheats 1; give weapon_grenade_launcher");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Hunter Claws", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give melee");
+		} TT("sv_cheats 1; give melee");
+
+		// 
+		if (ImGui::Button("Give Boomer Bile", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give vomitjar");
+		} TT("sv_cheats 1; give vomitjar");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Chainsaw", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give chainsaw");
+		} TT("sv_cheats 1; give chainsaw");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Frying Pan", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give frying_pan");
+		} TT("sv_cheats 1; give frying_pan");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Guitar", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give electric_guitar");
+		} TT("sv_cheats 1; give electric_guitar");
+
+		// 
+		if (ImGui::Button("Give Katana", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give katana");
+		} TT("sv_cheats 1; give katana");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Machete", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give machete");
+		} TT("sv_cheats 1; give machete");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Nightstick", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give tonfa");
+		} TT("sv_cheats 1; give tonfa");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Molotov", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give molotov");
+		} TT("sv_cheats 1; give molotov");
+
+		// 
+		if (ImGui::Button("Give Pipe Bomb", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give pipe_bomb");
+		} TT("sv_cheats 1; give pipe_bomb");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Propane Tank", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give propanetank");
+		} TT("sv_cheats 1; give propanetank");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Gas Can", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give gascan");
+		} TT("sv_cheats 1; give gascan");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Oxygen Tank", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give oxygentank");
+		} TT("sv_cheats 1; give oxygentank");
+
+		// 
+		if (ImGui::Button("Give First Aid Kit", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give first_aid_kit");
+		} TT("sv_cheats 1; give first_aid_kit");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Defibrilator", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give defibrilator");
+		} TT("sv_cheats 1; give defibrilator");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Adrenaline", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give adrenaline");
+		} TT("sv_cheats 1; give adrenaline");
+
+		ImGui::SameLine();
+		if (ImGui::Button("Give Pain Pills", four_row_button_size)) {
+			interfaces::get()->m_engine->execute_client_cmd_unrestricted("sv_cheats 1; give pain_pills");
+		} TT("sv_cheats 1; give pain_pills");
+	}
+
+	void cont_general_maps()
+	{
+		const auto five_row_button_size = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 3) / 4.0f;
+
+		ImGui::SeparatorTextLarge(" Dead Center C1 ");
+
+		if (ImGui::Button("c1m1_hotel", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c1m1_hotel"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c1m2_streets", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c1m2_streets"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c1m3_mall", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c1m3_mall"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c1m4_atrium", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c1m4_atrium"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Dark Carnival C2 ");
+
+		if (ImGui::Button("c2m1_highway", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c2m1_highway"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c2m2_fairgrounds", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c2m2_fairgrounds"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c2m3_coaster", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c2m3_coaster"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c2m4_barns", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c2m4_barns"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c2m5_concert", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c2m5_concert"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Swamp Fever C3 ");
+
+		if (ImGui::Button("c3m1_plankcountry", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c3m1_plankcountry"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c3m2_swamp", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c3m2_swamp"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c3m3_shantytown", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c3m3_shantytown"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c3m4_plantation", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c3m4_plantation"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Hard Rain C4 ");
+
+		if (ImGui::Button("c4m1_milltown_a", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c4m1_milltown_a"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c4m2_sugarmill_a", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c4m2_sugarmill_a"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c4m3_sugarmill_b", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c4m3_sugarmill_b"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c4m4_milltown_b", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c4m4_milltown_b"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c4m5_milltown_escape", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c4m5_milltown_escape"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" The Parish C5 ");
+
+		if (ImGui::Button("c5m1_waterfront", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c5m1_waterfront"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c5m2_park", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c5m2_park"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c5m3_cemetery", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c5m3_cemetery"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c5m4_quarter", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c5m4_quarter"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c5m5_bridge", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c5m5_bridge"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" The Passing C6 ");
+
+		if (ImGui::Button("c6m1_riverbank", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c6m1_riverbank"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c6m2_bedlam", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c6m2_bedlam"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c6m3_port", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c6m3_port"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" The Scarifice C7 ");
+
+		if (ImGui::Button("c7m1_docks", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c7m1_docks"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c7m2_barge", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c7m2_barge"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c7m3_port", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c7m3_port"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" NO Mercy C8 ");
+
+		if (ImGui::Button("c8m1_apartment", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c8m1_apartment"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c8m2_subway", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c8m2_subway"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c8m3_sewers", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c8m3_sewers"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c8m4_interior", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c8m4_interior"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c8m5_rooftop", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c8m5_rooftop"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Crash Course C9 ");
+
+		if (ImGui::Button("c9m1_alleys", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c9m1_alleys"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c9m2_lots", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c9m2_lots"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Death Toll C10 ");
+
+		if (ImGui::Button("c10m1_caves", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c10m1_caves"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c10m2_drainage", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c10m2_drainage"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c10m3_ranchhouse", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c10m3_ranchhouse"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c10m4_mainstreet", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c10m4_mainstreet"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c10m5_houseboat", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c10m5_houseboat"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Dead Air C11 ");
+
+		if (ImGui::Button("c11m1_greenhouse", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c11m1_greenhouse"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c11m2_offices", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c11m2_offices"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c11m3_garage", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c11m3_garage"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c11m4_terminal", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c11m4_terminal"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c11m5_runway", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c11m5_runway"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Blood Harvest C12 ");
+
+		if (ImGui::Button("c12m1_hilltop", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c12m1_hilltop"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c12m2_traintunnel", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c12m2_traintunnel"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c12m3_bridge", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c12m3_bridge"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c12m4_barn", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c12m4_barn"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c12m5_cornfield", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c12m5_cornfield"); }
+
+		// --
+
+		ImGui::Spacing(0, 4);
+		ImGui::SeparatorTextLarge(" Cold Stream C13 ");
+
+		if (ImGui::Button("c13m1_alpinecreek", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c13m1_alpinecreek"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c13m2_southpinestream", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c13m2_southpinestream"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c13m3_memorialbridge", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c13m3_memorialbridge"); }
+
+		ImGui::SameLine();
+		if (ImGui::Button("c13m4_cutthroatcreek", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c13m4_cutthroatcreek"); }
 	}
 
 	void imgui::tab_general()
@@ -250,6 +803,24 @@ namespace components
 			static float cont_quickcmd_height = 0.0f;
 			cont_quickcmd_height = ImGui::Widget_ContainerWithCollapsingTitle("Quick Commands", cont_quickcmd_height, cont_general_quickcommands,
 				true, ICON_FA_TERMINAL, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		{
+			static float cont_infected_height = 0.0f;
+			cont_infected_height = ImGui::Widget_ContainerWithCollapsingTitle("Infected", cont_infected_height, cont_general_infected,
+				true, ICON_FA_RADIATION, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		{
+			static float cont_weapons_height = 0.0f;
+			cont_weapons_height = ImGui::Widget_ContainerWithCollapsingTitle("Weapons", cont_weapons_height, cont_general_weapons,
+				false, ICON_FA_TOOLS, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		{
+			static float cont_maps_height = 0.0f;
+			cont_maps_height = ImGui::Widget_ContainerWithCollapsingTitle("Maps", cont_maps_height, cont_general_maps,
+				false, ICON_FA_BUILDING, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 	}
 
@@ -308,31 +879,43 @@ namespace components
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("General");
 
-		ImGui::Checkbox("Show Area Debug Info", &cmd::debug_node_vis);
-		TT("Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
 
-		ImGui::Checkbox("Show Static Prop Debug Info", &cmd::model_info_vis);
-		TT("Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
 
-		if (ImGui::Button("Print Choreo/Scene Debug Info to Console")) {
-			interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_scene_print");
-		} TT("This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
 
-		if (ImGui::Button("Print Sound Debug Info to Console")) {
-			interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_toggle_sound_print");
-		} TT("This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_toggle_sound_print");
+		const auto two_row_button_size = ImVec2((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 1) / 2.0f, 0);
+
+		ImGui::SeparatorTextLarge(" Debug Views / Info ", true);
+
+		imgui::toggle_button_bool(&cmd::debug_node_vis, "Area/Leaf Info", two_row_button_size, "Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
+
+		ImGui::SameLine();
+		imgui::toggle_button_bool(&cmd::model_info_vis, "Static Prop Info", two_row_button_size, "Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
+
+		imgui::toggle_button_bool(&cmd::scene_print, "Print Choreo Info to Console", two_row_button_size, "This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
+
+		ImGui::SameLine();
+		imgui::toggle_button_bool(&cmd::sound_debug_printing, "Print Sound Info to Console", two_row_button_size, "This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_sound_print");
+
+		//ImGui::Checkbox("Show Area Debug Info", &cmd::debug_node_vis);
+		//TT("Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
+
+		//ImGui::Checkbox("Show Static Prop Debug Info", &cmd::model_info_vis);
+		//TT("Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
+
+		// cmd::scene_print
+		//if (ImGui::Button("Print Choreo/Scene Debug Info to Console")) {
+		//	interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_scene_print");
+		//} TT("This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
+
+		// cmd::sound_debug_printing
+		//if (ImGui::Button("Print Sound Debug Info to Console")) {
+		//	interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_sound_print");
+		//} TT("This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_sound_print");
+
+		ImGui::Spacing(0, 4);
 
 		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 		ImGui::SliderInt2("HUD: Area Debug Pos", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
-
-		{
-			auto default_nocull_dist = ms.default_nocull_dist;
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-			if (ImGui::DragFloat("Def. NoCull Dist", &default_nocull_dist, 0.5f, 0.0f)) {
-				default_nocull_dist = default_nocull_dist < 0.0f ? 0.0f : default_nocull_dist;
-			}
-			TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
-		}
 
 		ImGui::Spacing(0, 4);
 
@@ -361,7 +944,6 @@ namespace components
 		{
 			const auto im = imgui::get();
 
-			ImGui::Spacing(0,8);
 			if (ImGui::CollapsingHeader("DEBUG Build Section", ImGuiTreeNodeFlags_SpanFullWidth))
 			{
 				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Disable R_CullNode", &im->m_disable_cullnode);
@@ -1575,11 +2157,11 @@ namespace components
 			}
 			ImGui::Style_ColorButtonPop();
 			ImGui::EndDisabled();
-			ImGui::SameLine();
 		}
 
 		if (area_selection)
 		{
+			ImGui::SameLine();
 			ImGui::Style_ColorButtonPush(imgui::get()->ImGuiCol_ButtonRed, true);
 			if (ImGui::Button("X Remove Selected Area Entry##Cull", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 			{
@@ -1596,6 +2178,15 @@ namespace components
 				was_area_removed = true;
 			}
 			ImGui::Style_ColorButtonPop();
+		}
+
+		{
+			auto default_nocull_dist = map_settings::get_map_settings().default_nocull_dist;
+			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			if (ImGui::DragFloat("Def. NoCull Dist", &default_nocull_dist, 0.5f, 0.0f)) {
+				default_nocull_dist = default_nocull_dist < 0.0f ? 0.0f : default_nocull_dist;
+			}
+			TT("Default distance value for the default anti-cull mode (distance) if there is no override for the current area");
 		}
 
 		// resets
@@ -3430,7 +4021,15 @@ namespace components
 		{
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar(1);
-			ADD_TAB("General", tab_general);
+
+			bool show_dev = flags::has_flag("dev");
+//#ifdef DEBUG
+			show_dev = true; // always show for now
+//#endif
+			if (show_dev) {
+				ADD_TAB("Dev", tab_general);
+			}
+
 			ADD_TAB("Map Settings", tab_map_settings);
 			ADD_TAB("Game Settings", tab_game_settings);
 			ImGui::EndTabBar();

@@ -39,6 +39,9 @@ namespace game
 	inline worldbrushdata_t* get_hoststate_worldbrush_data() { return reinterpret_cast<worldbrushdata_t*>(*(DWORD*)(ENGINE_BASE + 0x42FFB8)); }
 	inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 
+	extern ConVar* find_cvar(const char* name);
+	extern const ConVar* find_cvar_const(const char* name);
+
 	inline Vector* get_current_view_origin() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x501344); }
 	inline Vector* get_current_view_forward() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A30); }
 	inline Vector* get_current_view_right() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A3C); }

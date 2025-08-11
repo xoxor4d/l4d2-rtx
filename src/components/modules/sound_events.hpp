@@ -2,6 +2,11 @@
 
 namespace components
 {
+	namespace cmd
+	{
+		extern bool sound_debug_printing;
+	}
+
 	class sound_events : public component
 	{
 	public:

@@ -206,6 +206,18 @@ namespace ImGui
 		}
 	}
 
+	void SeparatorTextLarge(const char* text, bool pre_spacing)
+	{
+		if (pre_spacing) {
+			Spacing(0, 12);
+		}
+
+		PushFont(common::imgui::font::BOLD_LARGE);
+		SeparatorText(text);
+		PopFont();
+		Spacing(0, 4);
+	}
+
 	// Draw wrapped text containing all unsigned integers from the provided unordered_set
 	void TextWrapped_IntegersFromUnorderedSet(const std::unordered_set<std::uint32_t>& set)
 	{

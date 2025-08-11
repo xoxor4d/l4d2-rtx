@@ -22,6 +22,9 @@ namespace components
 
 		void style_xo();
 
+		static bool cvar_toggle_button_bool(const char* cvar_str, const char* btn_text, ImVec2 btn_size = ImVec2(0, 0), const char* tt_text = nullptr);
+		static bool toggle_button_bool(bool* bool_ptr, const char* btn_text, ImVec2 btn_size, const char* tt_text);
+
 		ImVec4 ImGuiCol_ButtonGreen = ImVec4(0.3f, 0.4f, 0.05f, 0.7f);
 		ImVec4 ImGuiCol_ButtonYellow = ImVec4(0.4f, 0.3f, 0.1f, 0.8f);
 		ImVec4 ImGuiCol_ButtonRed = ImVec4(0.48f, 0.15f, 0.15f, 1.00f);

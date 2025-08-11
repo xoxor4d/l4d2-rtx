@@ -42,6 +42,22 @@ namespace game
 		0.5f, 0.5f, 0.0f, 1.0f,	// translate back to the top left corner
 	};
 
+	ConVar* find_cvar(const char* name)
+	{
+		if (const auto icvar = game::get_icvar(); icvar) {
+			return icvar->vftable->FindVar(icvar, name);
+		}
+		return nullptr;
+	}
+
+	const ConVar* find_cvar_const(const char* name)
+	{
+		if (const auto icvar = game::get_icvar(); icvar) {
+			return icvar->vftable->FindVar(icvar, name);
+		}
+		return nullptr;
+	}
+
 	// adds a simple console command
 	void con_add_command(ConCommand* cmd, const char* name, void(__cdecl* callback)(), const char* desc)
 	{
