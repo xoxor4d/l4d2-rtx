@@ -66,6 +66,7 @@ namespace ImGui
 	void Spacing(const float& x, const float& y);
 	void PushFont(common::imgui::font::FONTS font);
 	void SeparatorTextLarge(const char* text, bool pre_spacing = false);
+	float CalcButtonWidthSameRow(std::uint8_t btn_count);
 	void TextWrapped_IntegersFromUnorderedSet(const std::unordered_set<std::uint32_t>& set);
 
 	enum Widget_UnorderedSetModifierFlags : std::uint8_t

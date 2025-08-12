@@ -218,6 +218,13 @@ namespace ImGui
 		Spacing(0, 4);
 	}
 
+	// Calculates the width for each buttons to fit in a single row, accounting for ImGui's content region and inter-button spacing
+	float CalcButtonWidthSameRow(std::uint8_t btn_count)
+	{
+		const auto b = static_cast<float>(btn_count);
+		return (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * std::max(b, 0.0f)) / std::max(b, 1.0f);
+	}
+
 	// Draw wrapped text containing all unsigned integers from the provided unordered_set
 	void TextWrapped_IntegersFromUnorderedSet(const std::unordered_set<std::uint32_t>& set)
 	{

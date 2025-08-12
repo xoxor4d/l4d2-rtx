@@ -148,7 +148,81 @@ namespace components
 
 	// ------
 
-	bool imgui::cvar_toggle_button_bool(const char* cvar_str, const char* btn_text, ImVec2 btn_size, const char* tt_text)
+	bool imgui::cvar_toggle_button_bool(const char* cvar_str, const char* btn_text, ImVec2 btn_size, const char* tt_text, bool invert)
+	{
+		bool return_val = false;
+
+		if (const auto& var = game::find_cvar_const(cvar_str); var)
+		{
+			const bool color_active = invert ? !var->m_Value.m_nValue : var->m_Value.m_nValue;
+			if (color_active)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_TabHovered));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+			}
+
+			if (ImGui::Button(btn_text, btn_size)) 
+			{
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("sv_cheats 1; %s %s", cvar_str, var->m_Value.m_nValue ? "0" : "1"));
+				return_val = true;
+			}
+
+			if (tt_text) {
+				TT(tt_text);
+			}
+
+			if (color_active) {
+				ImGui::PopStyleColor(3);
+			}
+		}
+		else {
+			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "BAD CVAR");
+			ImGui::PopFont();
+		}
+
+		return return_val;
+	}
+
+	bool imgui::toggle_button_bool(bool* bool_ptr, const char* btn_text, ImVec2 btn_size, const char* tt_text, bool invert)
+	{
+		bool return_val = false;
+
+		if (bool_ptr)
+		{
+			const bool color_active = invert ? !*bool_ptr : *bool_ptr;
+			if (color_active)
+			{
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_TabHovered));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+			}
+
+			if (ImGui::Button(btn_text, btn_size))
+			{
+				*bool_ptr = !*bool_ptr;
+				return_val = true;
+			}
+
+			if (tt_text) {
+				TT(tt_text);
+			}
+
+			if (color_active) {
+				ImGui::PopStyleColor(3);
+			}
+		}
+		else {
+			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "BAD CVAR");
+			ImGui::PopFont();
+		}
+
+		return return_val;
+	}
+
+	bool imgui::cvar_toggle_button_int(const char* cvar_str, const char* btn_text, ImVec2 btn_size, const char* tt_text, int off_override, int on_override)
 	{
 		bool return_val = false;
 
@@ -163,47 +237,13 @@ namespace components
 				styled = true;
 			}
 
-			if (ImGui::Button(btn_text, btn_size)) 
-			{
-				interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("sv_cheats 1; %s %s", cvar_str, var->m_Value.m_nValue ? "0" : "1"));
-				return_val = true;
-			}
-
-			if (tt_text) {
-				TT(tt_text);
-			}
-
-			if (styled) {
-				ImGui::PopStyleColor(3);
-			}
-		}
-		else {
-			ImGui::PushFont(common::imgui::font::BOLD_LARGE);
-			ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "BAD CVAR");
-			ImGui::PopFont();
-		}
-
-		return return_val;
-	}
-
-	bool imgui::toggle_button_bool(bool* bool_ptr, const char* btn_text, ImVec2 btn_size, const char* tt_text)
-	{
-		bool return_val = false;
-
-		if (bool_ptr)
-		{
-			bool styled = false;
-			if (*bool_ptr)
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_TabHovered));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
-				styled = true;
-			}
-
 			if (ImGui::Button(btn_text, btn_size))
 			{
-				*bool_ptr = !*bool_ptr;
+				int toggle_val = var->m_Value.m_nValue
+								 ? off_override ? off_override : 0
+								 : on_override  ? on_override  : 1;
+
+				interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("sv_cheats 1; %s %d", cvar_str, toggle_val));
 				return_val = true;
 			}
 
@@ -289,6 +329,7 @@ namespace components
 	void cont_general_quickcommands()
 	{
 		const auto four_row_button_size = ImVec2((ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 3) / 4.0f, 0);
+		const auto three_row_button_size = ImVec2(ImGui::CalcButtonWidthSameRow(3), 0);
 
 		ImGui::SeparatorTextLarge(" Director / Bots ", false);
 
@@ -321,6 +362,42 @@ namespace components
 		ImGui::SameLine();
 		imgui::cvar_toggle_button_bool("nb_vision_ignore_survivors", "Infected Ignore Player", four_row_button_size, "nb_vision_ignore_survivors :: Enables and disable infinite ammo");
 
+		ImGui::Spacing(0, 6);
+
+		{
+			// button toggling both options
+			const auto r_drawviewmodel = game::find_cvar_const("r_drawviewmodel");
+			const auto r_drawvgui = game::find_cvar_const("r_drawvgui");
+			if (r_drawviewmodel && r_drawvgui)
+			{
+				const bool is_active = !(r_drawviewmodel->m_Value.m_nValue && r_drawvgui->m_Value.m_nValue);
+				if (is_active)
+				{
+					ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+					ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_TabHovered));
+					ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyleColorVec4(ImGuiCol_TabSelected));
+				}
+
+				if (ImGui::Button("Toggle Screenshot Mode", ImVec2(ImGui::GetContentRegionAvail().x, 38)))
+				{
+					const char* screenshot_mode_str = is_active ? "1" : "0";
+					interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("sv_cheats 1; r_drawviewmodel %s; r_drawvgui %s", screenshot_mode_str, screenshot_mode_str));
+				}
+
+				if (is_active) {
+					ImGui::PopStyleColor(3);
+				}
+			}
+
+			// single options
+			imgui::cvar_toggle_button_bool("r_drawviewmodel", "Hide Viewmodel", three_row_button_size, "r_drawviewmodel :: Toggle viewmodel drawing", true);
+
+			ImGui::SameLine();
+			imgui::cvar_toggle_button_int("hidehud", "Hide HUD", three_row_button_size, "hidehud :: Toggle In-Game HUD drawing", 0, 4);
+
+			ImGui::SameLine();
+			imgui::cvar_toggle_button_bool("r_drawvgui", "Hide VGui", three_row_button_size, "r_drawvgui :: Toggle UI drawing", true);
+		}
 
 		ImGui::Spacing(0, 4);
 		ImGui::SeparatorTextLarge(" Cheats ");
