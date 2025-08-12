@@ -4087,6 +4087,13 @@ namespace components
 
 				if (im->m_initialized_device)
 				{
+					// fix imgui colors / background if no hud elem is visible
+					DWORD og_srgb_samp, og_srgb_write;
+					dev->GetSamplerState(0, D3DSAMP_SRGBTEXTURE, &og_srgb_samp);
+					dev->GetRenderState(D3DRS_SRGBWRITEENABLE, &og_srgb_write);
+					dev->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, 1);
+					dev->SetRenderState(D3DRS_SRGBWRITEENABLE, 1);
+
 					ImGui_ImplDX9_NewFrame();
 					ImGui_ImplWin32_NewFrame();
 					ImGui::NewFrame();
@@ -4098,6 +4105,10 @@ namespace components
 					ImGui::EndFrame();
 					ImGui::Render();
 					ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+
+					// restore
+					dev->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, og_srgb_samp);
+					dev->SetRenderState(D3DRS_SRGBWRITEENABLE, og_srgb_write);
 				}
 			}
 		}
