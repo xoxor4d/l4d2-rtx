@@ -1,3 +1,5 @@
+#include <random>
+
 #define ARR_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 namespace utils
@@ -181,5 +183,26 @@ namespace utils
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 		float m_last_ms;
+	};
+
+	class random_float_generator
+	{
+	public:
+		// get the singleton instance
+		static random_float_generator& get();
+
+		// generate a random float in the range min - max
+		float random_float(float min, float max);
+
+		// generate a random float in the range min - max using a hash as seed
+		float random_float_from_hash(std::uint32_t hash, float min, float max);
+
+		// delete copy constructor and assignment operator
+		random_float_generator(const random_float_generator&) = delete;
+		random_float_generator& operator=(const random_float_generator&) = delete;
+
+	private:
+		random_float_generator();
+		std::mt19937 gen;
 	};
 }

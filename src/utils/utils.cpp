@@ -413,5 +413,33 @@ namespace utils
 		const auto u16_2 = static_cast<uint16_t>(std::round(f2 * 65535.0f));
 		return (static_cast<uint32_t>(u16_1) << 16) | u16_2;
 	}
+
+	// -----------------------------
+
+	random_float_generator::random_float_generator()
+	{
+		std::random_device rd;
+		gen = std::mt19937(rd());
+	}
+
+	random_float_generator& random_float_generator::get()
+	{
+		static random_float_generator instance;
+		return instance;
+	}
+
+	float random_float_generator::random_float(const float min, const float max)
+	{
+		std::uniform_real_distribution<float> dis(min, max);
+		return dis(gen);
+	}
+
+	float random_float_generator::random_float_from_hash(const std::uint32_t hash, const float min, const float max)
+	{
+		// create a new generator seeded with the hash
+		std::mt19937 hash_gen(hash);
+		std::uniform_real_distribution<float> dis(min, max);
+		return dis(hash_gen);
+	}
 }
 
