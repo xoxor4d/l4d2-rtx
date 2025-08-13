@@ -1,9 +1,12 @@
-# Fog Settings ---------------------------------------------------------------------------------------------------------------------------------
-# ~~ Parameters: 
+# ##########################################################################################################################################
+# >> Fog Settings (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#tweakable-fog)
 #
-# distance  ]     THIS:    use linear fog; larger -> less fog       [float] (priority)
-# density   ]  OR THAT:    use exponential fog; larger -> more fog  [float 0-1]
-# color:                   R G B transmission                       [3D Vector - 0-255]
+# ~~ Parameters: 
+# <map name> = {
+#   distance =          ]     THIS:     use linear fog; larger -> less fog          [float] (priority)
+#   density =           ]  OR THAT:     use exponential fog; larger -> more fog     [float 0-1]
+#   color = []                          R G B transmission                          [3D Vector - 0-255]
+# }
 
 [FOG]
     c1m1_hotel = { density = 0.000130, color = [220, 200, 181] }
@@ -15,13 +18,17 @@
 
 
 
-# Water Settings -------------------------------------------------------------------------------------------------------------------------------
+# ##########################################################################################################################################
+# >> Water Settings (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#tweakable-water-settings)
+#
 # :: Adjust various water related settings per map
+#    The compatibility mod always spawns a secondary surface with the same size as the original water surface.
+#
 # ~~ Parameters: 
 # <map name> = {
-#   scale:                uv scale - small values reduce repetition while larger values will increase tiling    [float] << defaults to 1.0
-#   top_layer_offset:     can offset the dual rendered water mesh along the Z-Axis (usually the animated surface)
-#   bottom_layer_offset:  can offset the original water mesh along the Z-Axis (usually the surface defining water color)
+#   scale =                 uv scale - small values reduce repetition while larger values will increase tiling    [float] << defaults to 1.0
+#   top_layer_offset =      can offset the dual rendered water mesh along the Z-Axis (usually the animated surface)
+#   bottom_layer_offset =   can offset the original water mesh along the Z-Axis (usually the surface defining water color)
 # }
 
 [WATER]
@@ -33,10 +40,13 @@
 
 
 
-# Override culling per game area ---------------------------------------------------------------------------------------------------------------
-# :: Useful console command: 'xo_debug_toggle_node_vis'
-# ~~ Parameters:
+# ##########################################################################################################################################
+# >> Override culling per game area (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#tweakable-culling)
 #
+# :: Useful console commands:
+# :: 'xo_debug_toggle_node_vis' to visualize current node/leaf and area
+#
+# ~~ Parameters:
 # <map name> = [
 #   {
 #       in_area =       the area the player has to be in                        [int]
@@ -184,14 +194,16 @@
     ]
 
 
-
-# Hide Models ---------------------------------------------------------------------------------------------------------------------------------
+# ##########################################################################################################################################
+# >> Hide Models (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#hide-models)
+# 
 # :: Can be used to hide models. When a certain model is used a lot, it can make sense to hide them and 
 #    manually re-add the models by adding them as references to map markers (toolkit) - will help with cpu bottlenecks)
 #
-# :: Useful console command: 'xo_debug_toggle_model_info'
-# ~~ Parameters:
+# :: Useful console commands:
+#    > 'xo_debug_toggle_model_info' to show required prop info (name, radius)
 #
+# ~~ Parameters:
 # <map name> = {
 #   name = []             force hide models containing the specified substring                                                                [string array]
 #   radius = []           force hide models with this radius (checking for radii is generally faster and the preferred way to filter models)  [float array]
@@ -204,19 +216,21 @@
 
 
 
-# #####################################################################################
-#
-# Unbake Model Transforms
-# :: If a "static prop" has many unique hashes (remix) then it's likely that it's vertices contain world position data. This will prevent proper mesh-replacements in remix.
+# ##########################################################################################################################################
+# >> Unbake Model Transforms (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#unbake-models)
+# 
+# :: If a prop has many unique or unstable hashes (remix) then it's likely that it's vertices contain world position data.
 # :: Specifying the checksum of the model you want to replace here will prevent position/rotation/normal information
 #    from being backed into the model vertices and then use the fixed function world transform to transform it into the game world. 
 # :: Use entry 'ALL' if it's a model used throughout the game. 
 # :: This might cause issues with some models (mainly ones with sub-meshes)
 # :: Do not specify models if you do not intend to replace them. There is no benefit.
 # 
-# :: Useful console command: 'xo_mapsettings_get_unbake_info' to log all currently visible model names to '/logs/mapsettings_unbake_info.log' and 'xo_debug_toggle_unbake_model_info' for visualizations
-# ~~ Parameters:
+# :: Useful console command:
+#    > 'xo_mapsettings_get_unbake_info' to log all currently visible model names to '/logs/mapsettings_unbake_info.log' 
+#    > 'xo_debug_toggle_unbake_model_info' for visualizations
 #
+# ~~ Parameters:
 # <map name> = {    per map
 #   checksum = []   using the mdl checksum                      [int array - hex format]
 # }
@@ -229,28 +243,30 @@
 
     ALL = { checksum = [
         # examples
-        0x6f769ab6, # chair_cafeteria.smd
-        0xc18d886e, # styrofoam_cups.smd
-        0x26fa7caa, # styrofoam_cups_p1.smd
-        0x6fe3a6a6, # styrofoam_cups_p2.smd
-        0xa6a03504, # styrofoam_cups_p3.smd
-        0xfa58eac3, # styrofoam_cups_p4.smd
+        # 0x6f769ab6, # chair_cafeteria.smd
     ]}
 
-    c8m4 = { checksum = [
+    c8m4_interior = { checksum = [
         # examples
-        0xc18d886e, # styrofoam_cups.smd
-        0x26fa7caa, # styrofoam_cups_p1.smd
-        0x6fe3a6a6, # styrofoam_cups_p2.smd
-        0xa6a03504, # styrofoam_cups_p3.smd
-        0xfa58eac3, # styrofoam_cups_p4.smd
+        # 0xc18d886e, # styrofoam_cups.smd
+        # 0x26fa7caa, # styrofoam_cups_p1.smd
+        # 0x6fe3a6a6, # styrofoam_cups_p2.smd
+        # 0xa6a03504, # styrofoam_cups_p3.smd
+        # 0xfa58eac3, # styrofoam_cups_p4.smd
     ]}
 
-# Spawn unique markers meshes ---------------------------------------------------------------------------------------------------------------------------------
-# :: Can be used as anchor mesh (same one can be spawned multiple times)
-# :: Useful console command: 'xo_debug_scene_print' (choreo trigger/kill) && 'xo_debug_toggle_sound_print' (sound trigger/kill)
-# ~~ Parameters:
+
+
+# ##########################################################################################################################################
+# >> Spawn unique markers meshes (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#map-marker-spawning)
 #
+# :: Can be used as anchor mesh (same one can be spawned multiple times)
+#
+# :: Useful console commands:
+#    > 'xo_debug_scene_print' to print info about all choreographies to the console
+#    > 'xo_debug_sound_print' to print info about running sounds to the console
+#
+# ~~ Parameters:
 # <map name> = [        [array of structure below]
 #   {                   
 #       marker    ]     THIS:   num of marker - (deprecated - no show/hide support)                                             [int 0-100]
@@ -336,10 +352,17 @@
 
 
 
-# Remix variable configs ---------------------------------------------------------------------------------------------------------------------------------
-# :: Useful console command: 'xo_scene_print' && 'xo_debug_toggle_node_vis' && 'xo_debug_toggle_sound_print'
-# ~~ Parameters:
+# ##########################################################################################################################################
+# >> Remix variable configs (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#remix-config-loading--transitions)
 #
+# :: Can be used to adjust remix config options per map or set certain settings on certain game events such as playing sounds or choreographies.
+#    The system supports various options and can smoothly transition between remix option values.
+#
+# :: Useful console commands:  
+#    > 'xo_debug_scene_print' to print info about all choreographies to the console
+#    > 'xo_debug_sound_print' to print info about running sounds to the console
+#
+# ~~ Parameters:
 # <map name> = {
 #       startup =       configs that will be loaded on map-load, conf matching the map name will be loaded automatically and does not need to be specified              [array of strings]
 #
@@ -393,10 +416,15 @@
 
 
 
-# Spawn lights using the remix api ---------------------------------------------------------------------------------------------------------------------------------
-# :: Useful console command: 'xo_debug_scene_print' (choreo trigger/kill) && 'xo_debug_toggle_sound_print' (sound trigger/kill) && 'xo_debug_toggle_model_info' (attach)
-# ~~ Parameters:
+# ##########################################################################################################################################
+# >> Spawn lights using the remix api (https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings#spawning--animating-of-lights)
 #
+# :: Useful console commands:  
+#    > 'xo_debug_scene_print' to print info about all choreographies to the console (choreo trigger/kill)
+#    > 'xo_debug_sound_print' to print info about running sounds to the console (sound trigger/kill)
+#    > 'xo_debug_toggle_model_info' to show required prop info (name, radius) for the 'attach' functionality
+#
+# ~~ Parameters:
 # <map name> = [
 #   {                   [array of structure below]
 #       trigger = {     (optional) trigger light creation via choreography (.vcd) or sound :: not defining this will create the light on map load 
