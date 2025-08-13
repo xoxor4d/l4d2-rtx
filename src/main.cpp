@@ -119,13 +119,7 @@ DWORD WINAPI find_window_loop(LPVOID)
 	GET_MODULE_HANDLE(game::server_module, "server.dll", T);
 	GET_MODULE_HANDLE(game::vstdlib_module, "vstdlib.dll", T);
 
-	if (const auto MH_INIT_STATUS = MH_Initialize(); MH_INIT_STATUS != MH_STATUS::MH_OK) 
-	{
-		init_fail_msg_setup();
-		std::cout << "---------------> MinHook failed to initialize with code: " << MH_INIT_STATUS << std::endl;
-		init_fail_msg_post();
-		return TRUE;
-	}
+	
 
 #undef GET_MODULE_HANDLE
 	
@@ -145,7 +139,20 @@ DWORD WINAPI find_window_loop(LPVOID)
 
 BOOL APIENTRY DllMain(HMODULE, const DWORD ul_reason_for_call, LPVOID)
 {
-	if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+	if (ul_reason_for_call == DLL_PROCESS_ATTACH) 
+	{
+#if DEBUG
+		game::console();
+#endif
+
+		if (const auto MH_INIT_STATUS = MH_Initialize(); MH_INIT_STATUS != MH_STATUS::MH_OK)
+		{
+			init_fail_msg_setup();
+			std::cout << "[!][INIT FAILED] MinHook failed to initialize with code: " << MH_INIT_STATUS << std::endl;
+			init_fail_msg_post();
+			return TRUE;
+		}
+
 		CreateThread(nullptr, 0, find_window_loop, nullptr, 0, nullptr);
 	}
 

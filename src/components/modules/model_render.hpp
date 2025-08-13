@@ -5,7 +5,6 @@ namespace components
 	namespace cmd
 	{
 		extern bool model_info_vis;
-
 		extern bool unbake_model_info_vis;
 		extern std::uint32_t ms_unbake_info;
 	}

@@ -5,7 +5,6 @@ namespace components
 	namespace cmd
 	{
 		bool model_info_vis = false;
-
 		bool unbake_model_info_vis = false;
 		std::uint32_t ms_unbake_info = 0u;
 		std::unordered_set<std::string> ms_unbake_info_logged_strings;
@@ -19,7 +18,6 @@ namespace components
 		LPDIRECT3DTEXTURE9 white;
 	}
 
-	//bool g_sunoverlay_frame_flag[4] = { false, false, false, false };
 	std::vector<Vector> g_sunoverlay_color = {};
 
 	void model_render::init_texture_addons(bool release)
@@ -108,7 +106,7 @@ namespace components
 		dev->SetRenderState((D3DRENDERSTATETYPE)164, *reinterpret_cast<DWORD*>(&intensity));
 	}
 
-	// set remix texture categories - RemixInstanceCategories
+	// uses unused Renderstate 42 to set remix texture categories - RemixInstanceCategories
 	// ~ currently req. runtime changes
 	void set_remix_texture_categories(IDirect3DDevice9* dev, prim_fvf_context& ctx, const std::uint32_t& cat)
 	{
@@ -116,7 +114,7 @@ namespace components
 		dev->SetRenderState((D3DRENDERSTATETYPE)42, cat);
 	}
 
-	// set custom remix hash
+	// uses unused Renderstate 150 to set custom remix hash
 	// ~ currently req. runtime changes
 	void set_remix_texture_hash(IDirect3DDevice9* dev, prim_fvf_context& ctx, const std::uint32_t& hash)
 	{
@@ -266,16 +264,11 @@ namespace components
 	void cmeshdx8_renderpass_pre_draw(CMeshDX8* mesh, [[maybe_unused]] /*CPrimList**/ std::uint32_t primlist)
 	{
 		const auto dev = game::get_d3d_device();
-
 		IDirect3DVertexBuffer9* buffer9 = nullptr;
 		UINT stride = 0;
 		{
 			UINT ofs = 0; dev->GetStreamSource(0, &buffer9, &ofs, &stride);
 		}
-
-		//DWORD bufferedstateaddr = RENDERER_BASE + 0x19530;
-		//auto x = reinterpret_cast<components::IShaderAPIDX8*>(*(DWORD*)(RENDERER_BASE + 0xC9C50));
-		//auto y = reinterpret_cast<components::IShaderAPIDX8*>((RENDERER_BASE + 0xC9C54));
 
 		prim_fvf_context& ctx = model_render::primctx;
 		const auto shaderapi = game::get_shaderapi();
@@ -352,13 +345,6 @@ namespace components
 		dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 		dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 
-		// hack for runtime hack: https://github.com/xoxor4d/dxvk-remix/commit/3867843a68db7ec8a5ab603a250689cca1505970
-		/*if (static bool runtime_hack_once = false; !runtime_hack_once)
-		{
-			runtime_hack_once = true;
-			set_remix_emissive_intensity(dev, ctx, 0.0f);
-		}*/
-
 		// shader: VertexLitGeneric (infected - player model - viewmodel - dynamic props)
 		// > models/weapons/melee/crowbar
 		// > models/props_junk/wood_palletcrate001a
@@ -377,15 +363,6 @@ namespace components
 				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 			}
-			//else if (ctx.info.material_name.contains("models/props_destruction/glass_")) 
-			//{
-			//	//ctx.modifiers.do_not_render = true;
-			//	if (tex_addons::glass_shards)
-			//	{
-			//		ctx.save_texture(dev, 0);
-			//		dev->SetTexture(0, tex_addons::glass_shards);
-			//	}
-			//}
 			// models/player/chell/gambler_eyeball_ l/r
 			else if (ctx.info.material_name.contains("_eyeball_"))
 			{
@@ -412,8 +389,14 @@ namespace components
 				//	}
 
 				//	auto asd = var->vftable->GetStringValue(var); 
-				//	int xas = 0;
+				//	int break_me = 0;
 				//}
+
+				// References:
+				// https://developer.valvesoftware.com/wiki/Infected_(shader)
+				// https://steamcommunity.com/sharedfiles/filedetails/?id=1567031703&preview=true
+				// https://cdn.fastly.steamstatic.com/apps/valve/2010/GDC10_ShaderTechniquesL4D2.pdf
+				// https://steamcdn-a.akamaihd.net/apps/valve/2010/gdc2010_vlachos_l4d2wounds.pdf
 
 				// gradient
 				if (const auto tex = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[5]); tex)
@@ -428,8 +411,6 @@ namespace components
 					//ctx.save_texture(dev, 0);
 					dev->SetTexture(2, tex);
 				}
-
-				
 
 				ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
 				dev->SetRenderState((D3DRENDERSTATETYPE)149, INFECTED);
@@ -566,24 +547,6 @@ namespace components
 		{
 			//ctx.modifiers.do_not_render = true;
 
-			// FIRST "UI/HUD" elem (remix injection triggers here)
-			// -> fullscreen color transitions (damage etc.) and also "enables" the crosshair
-			// -> takes ~ 0.8ms on a debug build
-
-			//ctx.save_view_transform(dev);
-			//ctx.save_projection_transform(dev);
-			//
-			/*dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-			dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-			dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);*/
-
-			/*if (!ctx.info.shader_name.contains("Sky"))
-			{
-				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-				dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-			}*/
-
 			// causes some weird flickering artifacts from time to time?
 			if (ctx.info.shader_name.starts_with("Black")) {
 				ctx.modifiers.do_not_render = true;
@@ -601,6 +564,8 @@ namespace components
 				//set_remix_texture_categories(dev, ctx, WorldMatte);
 			}
 
+			// FIRST "UI/HUD" elem (remix injection triggers here)
+			// -> fullscreen color transitions (damage etc.) and also "enables" the crosshair
 			else if (ctx.info.shader_name.starts_with("Engine_")) // Engine_Post
 			{
 				// do not fog HUD elements :D
@@ -705,26 +670,6 @@ namespace components
 				dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
 				ctx.modifiers.do_not_render = false;
 			}
-			/*else
-			{
-				ctx.modifiers.do_not_render = true;
-			}*/
-			//ctx.modifiers.do_not_render = true;
-
-			// sky ff "works" but visuals are messed up
-			// setting view/proj here would render 3d sky?
-			//else
-			//{
-			//	//int x = 1;
-			//	//ctx.save_vs(dev);
-			//	//dev->SetVertexShader(nullptr);
-			//	//dev->SetFVF(D3DFVF_XYZ | D3DFVF_TEX1);
-			//	dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-			//	dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-			//	dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-			//}
-
-			//lookat_vertex_decl(dev);
 		}
 
 		// shader: VertexLitGeneric, UnlitGeneric (stride 0x20)
@@ -734,14 +679,13 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x80003)
 		{
 			//ctx.modifiers.do_not_render = true;
+			//lookat_vertex_decl(dev);
 
 			// TODO - HACK: see r_DispWalkable note in main_module
 			if (ctx.info.material_name.starts_with("debug/")) {
 				ctx.modifiers.do_not_render = true;
 			}
-			//ctx.modifiers.do_not_render = true;
-			//lookat_vertex_decl(dev);
-
+	
 			ctx.save_vs(dev);
 			dev->SetVertexShader(nullptr);
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1);
@@ -783,37 +727,9 @@ namespace components
 					float vcol_b = 0.0f;
 					float vcol_a = 1.0f;
 
-					// cant get vertex color to work here? -> grab vertex color and use tfactor instead
-					//{
-					//	IDirect3DVertexBuffer9* vb = nullptr; UINT t_stride = 0u, t_offset = 0u;
-					//	dev->GetStreamSource(0, &vb, &t_offset, &t_stride);
-
-					//	IDirect3DIndexBuffer9* ib = nullptr;
-					//	if (SUCCEEDED(dev->GetIndices(&ib)))
-					//	{
-					//		void* ib_data; // retrieve a single vertex index (*2 because WORD)
-					//		if (SUCCEEDED(ib->Lock(primlist->m_FirstIndex * 2, 2, &ib_data, D3DLOCK_READONLY)))
-					//		{
-					//			const auto first_index = *static_cast<std::uint16_t*>(ib_data);
-					//			ib->Unlock();
-
-					//			void* src_buffer_data; // retrieve single indexed vertex
-					//			if (SUCCEEDED(vb->Lock(first_index * t_stride, t_stride, &src_buffer_data, D3DLOCK_READONLY)))
-					//			{
-					//				struct src_vert { Vector pos; Vector normal;  D3DCOLOR color; Vector2D tc0; };
-					//				const auto src = reinterpret_cast<src_vert*>(((DWORD)src_buffer_data));
-
-					//				// unpack color
-					//				vcol_r = static_cast<float>((src->color >> 16) & 0xFF) / 255.0f * 1.0f;
-					//				vcol_g = static_cast<float>((src->color >> 8) & 0xFF) / 255.0f * 1.0f;
-					//				vcol_b = static_cast<float>((src->color >> 0) & 0xFF) / 255.0f * 1.0f;
-					//				vcol_a = static_cast<float>((src->color >> 24) & 0xFF) / 255.0f * 1.0f;
-					//				vb->Unlock();
-					//			}
-					//		}
-					//	}
-					//}
-
+					// is this still needed?
+					// cant get vertex color to work here -> grab vertex color and use tfactor instead
+					
 					ctx.save_vs(dev);
 					dev->SetVertexShader(nullptr);
 					dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX1);
@@ -926,8 +842,6 @@ namespace components
 			dev->SetVertexShader(nullptr);
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_DIFFUSE | D3DFVF_TEX2);
 			dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
-			//dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 		}
 
 		// shader: DecalModulate_dx9, Sprite_DX9, Bik
@@ -977,19 +891,6 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x24900005)
 		{
 			//ctx.modifiers.do_not_render = true;
-
-			// this fixes shader lag .. which means we do not set a valid camera for the sky/cable/effects
-			//dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]); 
-			//dev->SetTransform(D3DTS_VIEW, &ctx.info.buffer_state.m_Transform[1]);
-			//dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
-
-			/*D3DMATRIX view, proj;
-			dev->GetTransform(D3DTS_VIEW, &view);
-			dev->GetTransform(D3DTS_PROJECTION, &proj);*/
-
-			//ctx.save_texture(dev, 0);  
-			//dev->SetTexture(0, tex_addons::black);
-
 			ctx.save_vs(dev);
 			dev->SetVertexShader(nullptr);
 			dev->SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE | D3DFVF_TEX1);
@@ -1171,7 +1072,10 @@ namespace components
 		// To make culling of these structures less noticable, some 3d skyboxes include a very simplified world model that includes these large structures.
 		// It is using the black material shader and gets colored by the map fog. So when the actual area gets culled and with it the large structure, a vista object with a single color will stay in its place.
 		// We do not render that vista mesh as it's causing visual artifacts because we have no way to properly fade it using colormode ADD (with the fog color) as we A. have no fog color and B. no per pixel depth.
-		// We cant use per object dist to the skycamera because it's a single mesh .
+		// We cant use per object dist to the skycamera because it's a single mesh.
+
+		// Idea: Split up largest and most noticable structures, make them slightly smaller so that they fit inside the original mesh (eg building) so that they are not visible with the original mesh is visible.
+		// ^ via map marker + remix?
 
 		if (game_settings::get()->enable_3d_sky.get_as<bool>())
 		{
@@ -1780,9 +1684,7 @@ namespace components
 			eyePos = Vector(v[0], v[1], v[2]);
 		}
 
-		// m_pCurr... are at the very last vert - get the first one
-		//float* firstPos = (float*)((char*)builder->m_VertexBuilder.m_pCurrPosition - (builder->m_VertexBuilder.m_VertexSize_Position));
-
+		// m_pCurr... is set to the next free, unused vert after the current rope so we start at (current - 1) - the total vert count
 		for (auto v = 1; v <= builder->m_VertexBuilder.m_nVertexCount; v++)
 		{
 			const auto v_pos_in_src_buffer = v * builder->m_VertexBuilder.m_VertexSize_Position;
