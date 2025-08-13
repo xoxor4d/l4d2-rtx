@@ -36,6 +36,8 @@ namespace components
 		bool m_disable_cullnode = false;
 		bool m_enable_area_forcing = true;
 		bool m_light_edit_mode = false;
+		bool m_debug_disable_unbake = false;
+		bool m_debug_unbake_all_single_bones = false;
 
 		bool m_debugvis_live = false;
 		bool m_debugvis_radius = true;
@@ -43,6 +45,9 @@ namespace components
 		bool m_debugvis_attach_bounds = true;
 		float m_debugvis_cone_height = 60.0f;
 		int m_debugvis_cone_steps = 3u;
+
+		float m_debug_float_vec4[4] = {};
+		int m_debug_int_vec4[4] = {};
 
 	private:
 		void tab_general();

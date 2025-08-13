@@ -157,6 +157,7 @@ namespace components
 	void remix_api::on_present_callback()
 	{
 		main_module::hud_draw_area_info();
+		model_render::on_present();
 	}
 
 	// #

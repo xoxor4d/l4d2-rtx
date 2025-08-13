@@ -580,10 +580,62 @@ namespace components
 								}
 							}
 						}
-						
 					}
 				}
 			} // end 'HIDEMODEL'
+
+
+			// ####################
+			// parse 'UNBAKE' table
+			if (config.contains("UNBAKE"))
+			{
+				auto& unbake_table = config["UNBAKE"];
+
+				// try to find the loaded map
+				if (unbake_table.contains(m_map_settings.mapname))
+				{
+					if (const auto map = unbake_table[m_map_settings.mapname];
+						!map.is_empty())
+					{
+						if (map.contains("checksum"))
+						{
+							if (auto& checksum = map.at("checksum");
+								!checksum.is_empty())
+							{
+								if (const auto& arr = checksum.as_array();
+									!arr.empty())
+								{
+									for (auto& sum : arr) {
+										m_map_settings.unbake_models.checksums.insert(to_int(sum, 0u));
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (unbake_table.contains("ALL"))
+				{
+					if (auto& all = unbake_table.at("ALL");
+						!all.is_empty())
+					{
+						if (all.contains("checksum"))
+						{
+							if (auto& checksum = all.at("checksum");
+								!checksum.is_empty())
+							{
+								if (const auto& arr = checksum.as_array();
+									!arr.empty())
+								{
+									for (auto& sum : arr) {
+										m_map_settings.unbake_models.checksums.insert(to_uint(sum, 0u));
+									}
+								}
+							}
+						}
+					}
+				}
+			} // end 'UNBAKE'
 
 
 			// ####################
@@ -1467,7 +1519,11 @@ namespace components
 		m_map_settings.using_any_transition_sound_hash = false;
 		m_map_settings.using_any_transition_sound_name = false;
 
+
 		m_map_settings.area_settings.clear();
+		m_map_settings.hide_models.substrings.clear();
+		m_map_settings.hide_models.radii.clear();
+		m_map_settings.unbake_models.checksums.clear();
 		m_map_settings.remix_transitions.clear();
 
 		destroy_markers();

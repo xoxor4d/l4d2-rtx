@@ -362,7 +362,8 @@ namespace components
 		ImGui::SameLine();
 		imgui::cvar_toggle_button_bool("nb_vision_ignore_survivors", "Infected Ignore Player", four_row_button_size, "nb_vision_ignore_survivors :: Enables and disable infinite ammo");
 
-		ImGui::Spacing(0, 6);
+		ImGui::Spacing(0, 8);
+		ImGui::SeparatorTextLarge(" Screenshot / HUD Settings ");
 
 		{
 			// button toggling both options
@@ -399,7 +400,7 @@ namespace components
 			imgui::cvar_toggle_button_bool("r_drawvgui", "Hide VGui", three_row_button_size, "r_drawvgui :: Toggle UI drawing", true);
 		}
 
-		ImGui::Spacing(0, 4);
+		ImGui::Spacing(0, 8);
 		ImGui::SeparatorTextLarge(" Cheats ");
 
 		imgui::cvar_toggle_button_bool("god", "God", four_row_button_size, "god :: This cheat enables and disables god mode for your entire team. In god mode, you and your team are invincible and will not take any damage");
@@ -963,31 +964,23 @@ namespace components
 
 		ImGui::SeparatorTextLarge(" Debug Views / Info ", true);
 
-		imgui::toggle_button_bool(&cmd::debug_node_vis, "Area/Leaf Info", two_row_button_size, "Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
-
+		imgui::toggle_button_bool(&cmd::debug_node_vis, "Area / Leaf Info", two_row_button_size, "Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
 		ImGui::SameLine();
 		imgui::toggle_button_bool(&cmd::model_info_vis, "Static Prop Info", two_row_button_size, "Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
 
-		imgui::toggle_button_bool(&cmd::scene_print, "Print Choreo Info to Console", two_row_button_size, "This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
 
+		imgui::toggle_button_bool(&cmd::scene_print, "Choreo: Print Info to Console", two_row_button_size, "This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
 		ImGui::SameLine();
-		imgui::toggle_button_bool(&cmd::sound_debug_printing, "Print Sound Info to Console", two_row_button_size, "This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_sound_print");
+		imgui::toggle_button_bool(&cmd::sound_debug_printing, "Sound: Print Info to Console", two_row_button_size, "This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_sound_print");
 
-		//ImGui::Checkbox("Show Area Debug Info", &cmd::debug_node_vis);
-		//TT("Toggle bsp node/leaf debug visualization using the remix api\n~~ cmd: xo_debug_toggle_node_vis");
-
-		//ImGui::Checkbox("Show Static Prop Debug Info", &cmd::model_info_vis);
-		//TT("Toggle model name and radius visualizations\nUseful for HIDEMODEL (MapSettings)\n~~ cmd: xo_debug_toggle_model_info");
-
-		// cmd::scene_print
-		//if (ImGui::Button("Print Choreo/Scene Debug Info to Console")) {
-		//	interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_scene_print");
-		//} TT("This will print info about all choreographies to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_scene_print");
-
-		// cmd::sound_debug_printing
-		//if (ImGui::Button("Print Sound Debug Info to Console")) {
-		//	interfaces::get()->m_engine->execute_client_cmd_unrestricted("xo_debug_sound_print");
-		//} TT("This will print info about running sounds to the console\nUseful for MARKER/LIGHTS (MapSettings)\n~~ cmd: xo_debug_sound_print");
+		imgui::toggle_button_bool(&cmd::unbake_model_info_vis, "Unbake: Prop Info Visualization", two_row_button_size, "Toggle model unbake info showing checksums, names and bone number visualizations\nUseful for UNBAKE (MapSettings)\n~~ cmd: xo_debug_toggle_unbake_model_info");
+		ImGui::SameLine();
+		{
+			bool temp_unbake = false;
+			if (imgui::toggle_button_bool(&temp_unbake, "Unbake: Log Info to File", two_row_button_size, "Log unbake info for all loaded meshes to \"l4d2-rtx\\logs\\mapsettings_unbake_info.log\"\nUseful for UNBAKE (MapSettings)\n~~ cmd: xo_mapsettings_get_unbake_info")) {
+				cmd::ms_unbake_info = temp_unbake;
+			}
+		}
 
 		ImGui::Spacing(0, 4);
 
@@ -1025,6 +1018,11 @@ namespace components
 			{
 				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Disable R_CullNode", &im->m_disable_cullnode);
 				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Enable Area Forcing", &im->m_enable_area_forcing);
+				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Disable Unbaking", &im->m_debug_disable_unbake);
+				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Unbake All Single Bone Meshes", &im->m_debug_unbake_all_single_bones);
+
+				SET_CHILD_WIDGET_WIDTH; ImGui::DragFloat4("Debug Float Vec", im->m_debug_float_vec4, 0.05f);
+				SET_CHILD_WIDGET_WIDTH; ImGui::DragInt4("Debug Int Vec", im->m_debug_int_vec4, 0.05f);
 
 				const auto coloredit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Float;
 

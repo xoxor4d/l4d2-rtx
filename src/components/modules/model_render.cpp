@@ -5,6 +5,10 @@ namespace components
 	namespace cmd
 	{
 		bool model_info_vis = false;
+
+		bool unbake_model_info_vis = false;
+		std::uint32_t ms_unbake_info = 0u;
+		std::unordered_set<std::string> ms_unbake_info_logged_strings;
 	}
 
 	namespace tex_addons
@@ -389,6 +393,7 @@ namespace components
 				{
 					ctx.save_texture(dev, 0);
 					dev->SetTexture(0, basemap2);
+					ctx.modifiers.as_temp_unused = true;
 				}
 			}
 
@@ -1277,38 +1282,16 @@ namespace components
 				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 			}
 
-			// dirty hack to fix 1 oob point
-			//if (ctx.modifiers.as_portalgun_pickup_beam) {
-			//	prim_count -= 1;
-			//}
+			/*if (ctx.modifiers.as_temp_unused)
+			{
+				const auto& im = imgui::get();
+				ctx.save_world_transform(dev, &ctx.info.buffer_state.m_Transform[0]);
 
-			//DWORD og_texfactor = {}, og_colorarg2 = {}, og_colorop = {};
-			//if (ctx.modifiers.as_sky)
-			//{
-			//	// dev->SetRenderState(D3DRS_FOGENABLE, FALSE);
-
-			//	// HACK - as long as sky marking is broken, use WORLD SPACE UI (emissive)
-			//	// -> means that we can not use a distant light
-			//	// -> this reduces the emissive intensity
-			//	dev->GetRenderState(D3DRS_TEXTUREFACTOR, &og_texfactor);
-			//	dev->GetTextureStageState(0, D3DTSS_COLORARG2, &og_colorarg2);
-			//	dev->GetTextureStageState(0, D3DTSS_COLOROP, &og_colorop);
-			//	
-			//	dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_RGBA(25, 25, 25, 255));
-			//	dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
-			//	dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-			//}
-			//else if (ctx.modifiers.as_transport_beam)
-			//{
-			//	dev->GetRenderState(D3DRS_TEXTUREFACTOR, &og_texfactor);
-			//	dev->GetTextureStageState(0, D3DTSS_ALPHAARG2, &og_colorarg2);
-			//	dev->GetTextureStageState(0, D3DTSS_ALPHAOP, &og_colorop);
-
-			//	// slightly increase the alpha so that the 'fog' becomes visible
-			//	dev->SetRenderState(D3DRS_TEXTUREFACTOR, D3DCOLOR_RGBA(0, 0, 0, 40));
-			//	dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
-			//	dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_ADD);
-			//}
+				ctx.info.buffer_state.m_Transform[0].m[2][0] *= im->m_debug_float_vec4[0];
+				ctx.info.buffer_state.m_Transform[0].m[2][1] *= im->m_debug_float_vec4[1];
+				ctx.info.buffer_state.m_Transform[0].m[2][2] *= im->m_debug_float_vec4[2];
+				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+			}*/
 
 			dev->DrawIndexedPrimitive(type, base_vert_index, min_vert_index, num_verts, start_index, prim_count);
 
@@ -1319,18 +1302,8 @@ namespace components
 				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 			}
 
-			// restore emissive sky settings
-			/*if (ctx.modifiers.as_sky)
-			{
-				dev->SetRenderState(D3DRS_TEXTUREFACTOR, og_texfactor);
-				dev->SetTextureStageState(0, D3DTSS_COLORARG2, og_colorarg2);
-				dev->SetTextureStageState(0, D3DTSS_COLOROP, og_colorop);
-			}
-			else if (ctx.modifiers.as_transport_beam)
-			{
-				dev->SetRenderState(D3DRS_TEXTUREFACTOR, og_texfactor);
-				dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, og_colorarg2);
-				dev->SetTextureStageState(0, D3DTSS_ALPHAOP, og_colorop);
+			/*if (ctx.modifiers.as_temp_unused) {
+				ctx.restore_world_transform(dev);
 			}*/
 		}
 
@@ -1920,6 +1893,162 @@ namespace components
 		}
 	}
 
+	namespace unbake_transform
+	{
+		struct mstudio_modelvertexdata_t
+		{
+			const void* pVertexData;
+			const void* pTangentData;
+		};
+
+		struct mstudiomodel_t
+		{
+			char name[64];
+			int type;
+			float boundingradius;
+			int nummeshes;
+			int meshindex;
+			int numvertices;
+			int vertexindex;
+			int tangentsindex;
+			int numattachments;
+			int attachmentindex;
+			int numeyeballs;
+			int eyeballindex;
+			mstudio_modelvertexdata_t vertexdata;
+			int unused[8];
+		};
+
+		struct CStudioRender
+		{
+			char pad[0x6C];
+			matrix3x4_t m_StaticPropRootToWorld;
+			matrix3x4_t* m_pBoneToWorld;
+			matrix3x4_t* m_PoseToWorld;
+			int pad2[3];
+			studiohdr_t* m_pStudioHdr;
+			mstudiomodel_t* sub_model;
+		}; STATIC_ASSERT_OFFSET(CStudioRender, m_pStudioHdr, 0xB0);
+
+		int R_StudioDrawStaticMesh_hk(const CStudioRender* studio)
+		{
+			if (imgui::get()->m_debug_disable_unbake) {
+				return 0;
+			}
+
+			if (imgui::get()->m_debug_unbake_all_single_bones && studio->m_pStudioHdr->numbones <= 1) {
+				return 1;
+			}
+
+			const auto model_str = std::string_view(studio->sub_model->name);
+
+			bool requires_unbake = false;
+			const auto& unbake_model_names = map_settings::get_map_settings().unbake_models;
+
+			// check for unbake checksums
+			if (!unbake_model_names.checksums.empty())
+			{
+				for (const auto& unbake_mdl_checksum : unbake_model_names.checksums)
+				{
+					if (unbake_mdl_checksum == studio->m_pStudioHdr->checksum)
+					{
+						requires_unbake = true;
+						break;
+					}
+				}
+			}
+
+			if (cmd::ms_unbake_info)
+			{
+				std::string str = utils::to_hex_string(studio->m_pStudioHdr->checksum) + ", # " + std::string(model_str);
+				cmd::ms_unbake_info_logged_strings.insert(str);
+			}
+
+			if (cmd::unbake_model_info_vis)
+			{
+				const bool ends_with_dmx = std::string_view(studio->sub_model->name).ends_with("dmx");
+				const auto name_hash = utils::string_hash32(studio->sub_model->name);
+				const float rnd_z = utils::random_float_generator::get().random_float_from_hash(name_hash, -10.0f, ends_with_dmx ? 20 : 10.0f);
+
+				const Vector org = { studio->m_PoseToWorld->m_flMatVal[0][3], studio->m_PoseToWorld->m_flMatVal[1][3], studio->m_PoseToWorld->m_flMatVal[2][3] + rnd_z };
+				if (game::get_current_view_origin()->DistToSqr(org) < 1000.0f * 1000.0f)
+				{
+					if (requires_unbake) {
+						game::debug_add_text_overlay(&org.x, "#UNBAKED#", 0, 1.0f, 0.6f, 0.6f, 0.6f);
+					}
+
+					game::debug_add_text_overlay(&org.x, studio->sub_model->name, 1, 1.0f, 1.0f, 1.0f, 1.0f);
+					game::debug_add_text_overlay(&org.x, utils::va("Checksum: %sf", utils::to_hex_string(studio->m_pStudioHdr->checksum).c_str()), 2, 1.0f, 1.0f, 1.0f, 1.0f);
+					game::debug_add_text_overlay(&org.x, utils::va("NumBones: %d", studio->m_pStudioHdr->numbones), 3, 0.6f, 0.6f, 0.6f, 0.7f);
+				}
+			}
+
+			/*if (studio->m_pStudioHdr->numbones <= 1)
+			{
+				return 0;
+			}*/
+
+			return requires_unbake;
+		}
+
+		HOOK_RETN_PLACE_DEF(R_StudioDrawStaticMesh_og_retn_addr);
+		HOOK_RETN_PLACE_DEF(R_StudioDrawStaticMesh_nop_retn_addr);
+		void __declspec(naked) R_StudioDrawStaticMesh_stub()
+		{
+			__asm
+			{
+				pushad;
+				push	ebx; // CStudioRender
+				call	R_StudioDrawStaticMesh_hk;
+				add		esp, 4;
+
+				cmp		eax, 1;
+				je		SKIP_CHECK;	// jmp if eax = 1
+				popad;
+
+				// og
+				mov     eax, [ebx + 4];
+				test    byte ptr[eax + 0x24], 2;
+				jmp		R_StudioDrawStaticMesh_og_retn_addr;
+
+			SKIP_CHECK:
+				popad;
+
+				mov     eax, [ebx + 4]; // og
+				jmp		R_StudioDrawStaticMesh_nop_retn_addr;
+			}
+		}
+	}
+
+	// called from remix_api::on_present_callback()
+	void model_render::on_present()
+	{
+		// capture 1 frame
+		if (cmd::ms_unbake_info == 2)
+		{
+			cmd::ms_unbake_info = 0u;
+			std::filesystem::create_directories(game::root_path + "\\l4d2-rtx\\logs\\");
+
+			std::ofstream file;
+			file.open((game::root_path + "\\l4d2-rtx\\logs\\mapsettings_unbake_info.log").c_str());
+
+			file << "# MapSettings [UNBAKE] : Logfile containing names of models that were drawn in the captured frame." << "\n";
+			file << "# checksum, # model name" << "\n\n";
+
+			for (const auto& str : cmd::ms_unbake_info_logged_strings) {
+				file << str << "\n";
+			}
+
+			file.close();
+			cmd::ms_unbake_info_logged_strings.clear();
+		}
+
+		// inc. when not 0
+		if (cmd::ms_unbake_info) {
+			cmd::ms_unbake_info++;
+		}
+	}
+
 	// #
 	// Commands
 
@@ -1927,6 +2056,18 @@ namespace components
 	void model_render::xo_debug_toggle_model_info_fn()
 	{
 		cmd::model_info_vis = !cmd::model_info_vis;
+	}
+
+	ConCommand xo_debug_toggle_unbake_model_info_cmd{};
+	void xo_debug_toggle_unbake_model_info_fn()
+	{
+		cmd::unbake_model_info_vis = !cmd::unbake_model_info_vis;
+	}
+
+	ConCommand xo_mapsettings_get_unbake_info_cmd{};
+	void xo_mapsettings_get_unbake_info_fn()
+	{
+		cmd::ms_unbake_info = 1;
 	}
 
 	// #
@@ -1967,10 +2108,19 @@ namespace components
 		// C_FuncAreaPortalWindow::DrawModel :: disable drawing Area Portal Brushmodels
 		utils::hook::nop(CLIENT_BASE + 0x7690E, 2); // 2501
 
+
+		utils::hook::nop(STUDIORENDER_BASE + 0xEF7B, 7);
+		utils::hook(STUDIORENDER_BASE + 0xEF7B, unbake_transform::R_StudioDrawStaticMesh_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_og_retn_addr, STUDIORENDER_BASE + 0xEF82);
+		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_nop_retn_addr, STUDIORENDER_BASE + 0xEF84);
+
 		// #
 		// commands
 
 		game::con_add_command(&xo_debug_toggle_model_info_cmd, "xo_debug_toggle_model_info", xo_debug_toggle_model_info_fn, "Toggle model name and radius visualizations");
+
+		game::con_add_command(&xo_debug_toggle_unbake_model_info_cmd, "xo_debug_toggle_unbake_model_info", xo_debug_toggle_unbake_model_info_fn, "Draw model name checksums for [UNBAKE] (mapsettings)");
+		game::con_add_command(&xo_mapsettings_get_unbake_info_cmd, "xo_mapsettings_get_unbake_info", xo_mapsettings_get_unbake_info_fn, "This log names of drawn models in the current frame to a logfile in portal2-rtx/logs/. Useful for MapSettings : [UNBAKE]");
 	}
 }
 

@@ -87,6 +87,13 @@ namespace utils
 		std::ranges::transform(str.begin(), str.end(), str.begin(), [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
 	}
 
+	inline std::string to_hex_string(const int value)
+	{
+		std::stringstream ss;
+		ss << "0x" << std::setfill('0') << std::setw(8) << std::hex << value;
+		return ss.str();
+	}
+
 	std::string str_to_lower(std::string input);
 	std::string convert_wstring(const std::wstring& wstr);
 	std::string& ltrim(std::string& s);

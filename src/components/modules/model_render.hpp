@@ -5,6 +5,9 @@ namespace components
 	namespace cmd
 	{
 		extern bool model_info_vis;
+
+		extern bool unbake_model_info_vis;
+		extern std::uint32_t ms_unbake_info;
 	}
 
 	extern std::vector<Vector> g_sunoverlay_color;
@@ -125,6 +128,17 @@ namespace components
 			saved_texture_stage_state_[type] = temp;
 		}
 
+		// save D3DTS_WORLD
+		void save_world_transform(IDirect3DDevice9* device, D3DXMATRIX* other = nullptr)
+		{
+			if (other) {
+				memcpy_s(&world_transform_, sizeof(D3DXMATRIX), other, sizeof(D3DMATRIX));
+			} else {
+				device->GetTransform(D3DTS_WORLD, &world_transform_);
+			}
+			world_transform_set_ = true;
+		}
+
 		// save D3DTS_VIEW
 		void save_view_transform(IDirect3DDevice9* device)
 		{
@@ -209,6 +223,16 @@ namespace components
 			tex0_transform_set = false;
 		}
 
+		// restore saved D3DTS_WORLD
+		void restore_world_transform(IDirect3DDevice9* device)
+		{
+			if (world_transform_set_)
+			{
+				device->SetTransform(D3DTS_WORLD, &world_transform_);
+				world_transform_set_ = false;
+			}
+		}
+
 		// restore saved D3DTS_VIEW
 		void restore_view_transform(IDirect3DDevice9* device)
 		{
@@ -236,6 +260,7 @@ namespace components
 			restore_texture(device, 0);
 			restore_texture(device, 1);
 			restore_texture_transform(device);
+			restore_world_transform(device);
 			restore_view_transform(device);
 			restore_projection_transform(device);
 
@@ -259,6 +284,7 @@ namespace components
 			tex0_ = nullptr; tex0_set = false;
 			tex1_ = nullptr; tex1_set = false;
 			tex0_transform_set = false;
+			world_transform_set_ = false;
 			view_transform_set_ = false;
 			projection_transform_set_ = false;
 			saved_render_state_.clear();
@@ -277,6 +303,7 @@ namespace components
 
 			float og_mesh_z_offset = 0.0f;
 
+			bool as_temp_unused = false;
 			bool dual_render_with_basetexture2 = false; // render prim a second time with tex2 set as tex1
 			bool dual_render_with_specified_texture = false; // render prim a second time with tex defined in 'dual_render_texture'
 			bool dual_render_with_specified_texture_blend_add = false; // renders second prim using blend mode ADD
@@ -290,7 +317,8 @@ namespace components
 				as_sky = false;
 				as_water = false;
 				og_mesh_z_offset = 0.0f;
-				
+
+				as_temp_unused = false;
 				dual_render_with_basetexture2 = false;
 				dual_render_with_specified_texture = false;
 				dual_render_texture = nullptr;
@@ -333,8 +361,10 @@ namespace components
 		bool tex0_set = false;
 		bool tex1_set = false;
 		bool tex0_transform_set = false;
+		D3DMATRIX world_transform_ = {};
 		D3DMATRIX view_transform_ = {};
 		D3DMATRIX projection_transform_ = {};
+		bool world_transform_set_ = false;
 		bool view_transform_set_ = false;
 		bool projection_transform_set_ = false;
 
@@ -367,6 +397,7 @@ namespace components
 
 		static void xo_debug_toggle_model_info_fn();
 		//static void draw_nocull_markers();
+		static void on_present();
 
 		static void init_texture_addons(bool release = false);
 		static inline prim_fvf_context primctx {};
