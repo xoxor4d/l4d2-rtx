@@ -11,6 +11,9 @@ namespace components
 	extern int g_current_area;
 	extern map_settings::area_overrides_s* g_player_current_area_override;
 
+	extern bool g_use_playershadow;
+	extern int  g_is_rendering_our_thirdperson_mesh;
+
 	class main_module : public component
 	{
 	public:
@@ -34,6 +37,8 @@ namespace components
 		int m_sky3d_scale = 0;
 		Vector m_sky3d_origin = {};
 		Vector m_sky3d_camera_origin = {};
+		std::string m_playermodel_substr;
+		Vector m_player_eye_pos = {};
 
 		int  m_hud_debug_node_vis_pos[2] = { 250, 135 };
 		bool m_hud_debug_node_vis_has_forced_leafs = false;

@@ -234,6 +234,11 @@ namespace sdk
 		Vector get_absolute_origin();
 		c_client_class* client_class();
 		bool is_dormant();
+		const char* get_player_model_name();
+		bool is_player();
+		bool is_local_player();
+		std::int16_t get_model_index();
+		components::model_t* get_model();
 		Vector get_eye_pos();
 	};
 

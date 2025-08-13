@@ -3438,4 +3438,66 @@ namespace components
 		bool m_bUseAngles;
 		CSkyCamera* m_pNext;
 	};
+
+	struct IVModelInfo;
+	struct IVModelInfo_vtbl
+	{
+		void(__thiscall* IVModelInfo_destructor)(IVModelInfo*);
+		const model_t* (__thiscall* GetModel_A)(IVModelInfo*, int);
+		int(__thiscall* GetModelIndex)(IVModelInfo*, const char*);
+		const char* (__thiscall* GetModelName)(IVModelInfo*, const model_t*);
+		void* (__thiscall* GetVCollide1)(IVModelInfo*, int);
+		void* (__thiscall* GetVCollide2)(IVModelInfo*, const model_t*);
+		void(__thiscall* GetModelBounds)(IVModelInfo*, const model_t*, Vector*, Vector*);
+		void(__thiscall* GetModelRenderBounds)(IVModelInfo*, const model_t*, Vector*, Vector*);
+		int(__thiscall* GetModelFrameCount)(IVModelInfo*, const model_t*);
+		int(__thiscall* GetModelType)(IVModelInfo*, const model_t*);
+		void* (__thiscall* GetModelExtraData)(IVModelInfo*, const model_t*);
+		bool(__thiscall* ModelHasMaterialProxy)(IVModelInfo*, const model_t*);
+		bool(__thiscall* IsTranslucent)(IVModelInfo*, const model_t*);
+		bool(__thiscall* IsTranslucentTwoPass)(IVModelInfo*, const model_t*);
+		void(__thiscall* Padding01)(IVModelInfo*);
+		void(__thiscall* Unused0)(IVModelInfo*);
+		int(__thiscall* ComputeTranslucencyType)(IVModelInfo*, const model_t*, int, int);
+		int(__thiscall* GetModelMaterialCount)(IVModelInfo*, const model_t*);
+		void(__thiscall* GetModelMaterials)(IVModelInfo*, const model_t*, int, IMaterial**);
+		bool(__thiscall* IsModelVertexLit)(IVModelInfo*, const model_t*);
+		const char* (__thiscall* GetModelKeyValueText)(IVModelInfo*, const model_t*);
+		bool(__thiscall* GetModelKeyValue)(IVModelInfo*, const model_t*, void*);
+		float(__thiscall* GetModelRadius)(IVModelInfo*, const model_t*);
+		const studiohdr_t* (__thiscall* FindModel1)(IVModelInfo*, void*);
+		const studiohdr_t* (__thiscall* FindModel2)(IVModelInfo*, const studiohdr_t*, void**, const char*);
+		void* (__thiscall* GetVirtualModel)(IVModelInfo*, const studiohdr_t*);
+		unsigned __int8* (__thiscall* GetAnimBlock)(IVModelInfo*, const studiohdr_t*, int, bool);
+		bool(__thiscall* HasAnimBlockBeenPreloaded)(IVModelInfo*, const studiohdr_t*, int);
+		void(__thiscall* GetModelMaterialColorAndLighting)(IVModelInfo*, const model_t*, const Vector*, const QAngle*, void*, Vector*, Vector*);
+		void(__thiscall* GetIlluminationPoint)(IVModelInfo*, const model_t*, IClientRenderable*, const Vector*, const QAngle*, Vector*);
+		int(__thiscall* GetModelContents)(IVModelInfo*, int);
+		studiohdr_t* (__thiscall* GetStudiomodel)(IVModelInfo*, const model_t*);
+		int(__thiscall* GetModelSpriteWidth)(IVModelInfo*, const model_t*);
+		int(__thiscall* GetModelSpriteHeight)(IVModelInfo*, const model_t*);
+		void(__thiscall* SetLevelScreenFadeRange)(IVModelInfo*, float, float);
+		void(__thiscall* GetLevelScreenFadeRange)(IVModelInfo*, float*, float*);
+		void(__thiscall* SetViewScreenFadeRange)(IVModelInfo*, float, float);
+		unsigned __int8(__thiscall* ComputeLevelScreenFade)(IVModelInfo*, const Vector*, float, float);
+		unsigned __int8(__thiscall* ComputeViewScreenFade)(IVModelInfo*, const Vector*, float, float);
+		int(__thiscall* GetAutoplayList)(IVModelInfo*, const studiohdr_t*, unsigned __int16**);
+		struct CPhysCollide* (__thiscall* GetCollideForVirtualTerrain)(IVModelInfo*, int);
+		bool(__thiscall* IsUsingFBTexture)(IVModelInfo*, const model_t*, int, int, void*);
+		const model_t* (__thiscall* FindOrLoadModel)(IVModelInfo*, const char*);
+		unsigned __int16(__thiscall* GetCacheHandle)(IVModelInfo*, const model_t*);
+		int(__thiscall* RegisterDynamicModel)(IVModelInfo*, const char*, bool);
+		bool(__thiscall* IsDynamicModelLoading)(IVModelInfo*, int);
+		int(__thiscall* GetBrushModelPlaneCount)(IVModelInfo*, const model_t*);
+		void(__thiscall* GetBrushModelPlane)(IVModelInfo*, const model_t*, int, cplane_t*, Vector*);
+		int(__thiscall* GetSurfacepropsForVirtualTerrain)(IVModelInfo*, int);
+		bool(__thiscall* UsesEnvCubemap)(IVModelInfo*, const model_t*);
+		bool(__thiscall* UsesStaticLighting)(IVModelInfo*, const model_t*);
+		KeyValues* (__thiscall* GetModelKeyValues)(IVModelInfo*, const model_t*);
+	};
+
+	struct IVModelInfo
+	{
+		IVModelInfo_vtbl* vftable;
+	};
 }

@@ -14,6 +14,12 @@ namespace components
 	bool g_player_leaf_update = false;
 	map_settings::area_overrides_s* g_player_current_area_override = nullptr; // contains overrides for the current area, nullptr if no overrides exist
 
+	// true if playershadow flag is used during startup (commandline)
+	bool g_use_playershadow = false;
+
+	// true if the game is currently rendering our own thirdperson mesh (playershadow related)
+	int  g_is_rendering_our_thirdperson_mesh = false;
+
 	void on_renderview()
 	{
 		const auto dev = game::get_d3d_device();
@@ -190,11 +196,86 @@ namespace components
 							continue;
 						}
 
+						/*if (entity->is_local_player()) {
+							int break_me = 1;
+						}*/
+
 						if (const auto is_player = i == intf->m_engine->get_local_player();
 							is_player)
 						{
+							if (g_use_playershadow)
+							{
+								if (auto& playermodel_substr = main_module::get()->m_playermodel_substr;
+									playermodel_substr.empty())
+								{
+#if 0								// old hardcoded system
+									const std::string_view name = entity->get_player_model_name();
+
+									if (name == "Coach") {
+										playermodel_substr = "models/survivors/coach";
+									}
+									else if (name == "Mechanic" || name == "Ellis") {
+										playermodel_substr = "models/survivors/mechanic";
+									}
+									else if (name == "Gambler" || name == "Nick") {
+										playermodel_substr = "models/survivors/gambler";
+									}
+									else if (name == "Producer" || name == "Rochelle") {
+										playermodel_substr = "models/survivors/producer";
+									}
+									else if (name == "NamVet" || name == "Bill") {
+										playermodel_substr = "models/survivors/namvet";
+									}
+									else if (name == "TeenGirl" || name == "Zoey" || name == "TeenAngst") {
+										playermodel_substr = "models/survivors/teenangst";
+									}
+									else if (name == "Biker" || name == "Francis") {
+										playermodel_substr = "models/survivors/biker";
+									}
+									else if (name == "Manager" || name == "Louis") {
+										playermodel_substr = "models/survivors/manager";
+									}
+									else {
+										playermodel_substr = "INVALID";
+									}
+#endif
+
+									// new dynamic system - takes path of first material referenced within the model
+									// found a better way to do this so this is not really needed rn
+#if 0
+									bool found_valid_material = false;
+									if (const auto mdl = entity->get_model(); mdl)
+									{
+										IMaterial* pmat = nullptr;
+										const auto modelinfo = game::get_modelinfo();
+										modelinfo->vftable->GetModelMaterials(modelinfo, mdl, 1, &pmat);
+
+										if (pmat)
+										{
+											std::string str = pmat->vftable->GetName(pmat);
+											const size_t last_slash = str.find_last_of("/\\");
+
+											if (last_slash != std::string::npos) 
+											{
+												playermodel_substr = str.substr(0, last_slash + 1);
+												found_valid_material = true;
+											}
+										}
+									}
+
+									if (!found_valid_material) {
+										playermodel_substr = "INVALID";
+									}
+#endif
+								}
+							}
+
 							const auto& flashlight_enabled = entity->read<bool>(0x14D8);
-							const auto& eyepos = entity->read<Vector>(0x1110);
+
+							auto& eyepos = main_module::get()->m_player_eye_pos;
+							eyepos = entity->read<Vector>(0x1110);
+							//const auto& eyepos = entity->read<Vector>(0x1110);
+
 							const auto& fwd = entity->read<Vector>(0x111C);
 							const auto& rt = entity->read<Vector>(0x1134);
 							const auto& up = entity->read<Vector>(0x1128);
@@ -937,6 +1018,101 @@ namespace components
 		}
 	}
 
+
+	// #
+	// #
+
+	HOOK_RETN_PLACE_DEF(cbaseplayer_get_local_player_func);
+	HOOK_RETN_PLACE_DEF(draw_player_thirdperson_mesh_retn);
+	__declspec(naked) void draw_player_thirdperson_mesh_stub()
+	{
+		__asm
+		{
+			call	cbaseplayer_get_local_player_func;
+			lea     ecx, [esi - 4];
+			add     esp, 4;
+			cmp     eax, ecx;
+			jnz		NOT_PLAYER; // jump if not our mesh
+			mov		g_is_rendering_our_thirdperson_mesh, 1;
+			jmp		draw_player_thirdperson_mesh_retn;
+
+		NOT_PLAYER:
+			mov		g_is_rendering_our_thirdperson_mesh, 0;
+			jmp		draw_player_thirdperson_mesh_retn;
+		}
+	}
+
+	// retn after C_BasePlayer::Draw()
+	__declspec(naked) void post_draw_player_thirdperson_mesh_stub()
+	{
+		__asm
+		{
+			mov		g_is_rendering_our_thirdperson_mesh, 0;
+			retn	8; // og
+		}
+	}
+
+
+	// returning 0 skips the impact decal
+	int impact_mid_hk(C_BaseEntity* ent)
+	{
+		if (const auto entity = reinterpret_cast<sdk::c_base_player*>(ent);
+			entity)
+		{
+			if (const auto* m_classes = entity->client_class();
+				m_classes)
+			{
+				switch (m_classes->class_id)
+				{
+				default:
+					break;
+
+				case sdk::ET_CTERRORPLAYER:
+				{
+					if (entity->is_local_player()) {
+						return 0;
+					}
+					break;
+				}
+				case sdk::ET_SURVIVORBOT:
+					break;
+				}
+			}
+		}
+
+		return 1;
+	}
+
+	HOOK_RETN_PLACE_DEF(impact_og_retn);
+	HOOK_RETN_PLACE_DEF(impact_skip_retn);
+	__declspec(naked) void impact_stub()
+	{
+		__asm
+		{
+			pushad;
+			push	edi; // C_BaseEntity
+			call	impact_mid_hk;
+			add		esp, 4;
+			test	eax, eax;
+			jz		SKIP; // jump if eax = 0
+			popad;
+
+			// og
+			mov     cl, 1;
+			test	[ebx + 0x24], cl;
+			jmp		impact_og_retn;
+
+		SKIP:
+			popad;
+			mov     cl, 1;
+			jmp		impact_skip_retn;
+		}
+	}
+
+
+	// #
+	// #
+
 	/**
 	 * Called from CModelLoader::Map_LoadModel
 	 * @param map_name  Name of loading map
@@ -946,6 +1122,7 @@ namespace components
 		main_module::get()->m_sky3d_origin.Init();
 		main_module::get()->m_sky3d_camera_origin.Init();
 		main_module::get()->m_sky3d_scale = 0;
+		main_module::get()->m_playermodel_substr.clear();
 
 		imgui::on_map_load();
 		remix_vars::on_map_load();
@@ -1334,6 +1511,30 @@ namespace components
 		//utils::hook::set<BYTE>(CLIENT_BASE + 0x1CF471 + 6, 0x60); ...... not needed in l4d2?
 
 		// engine 0xB3383 - no cull overlay decals (no need)
+
+		// ---------------
+		// # player shadow
+
+		if (g_use_playershadow = flags::has_flag("playershadow"); g_use_playershadow)
+		{
+			// C_BasePlayer_Draw and prior function to always draw the player character
+			//utils::hook::nop(CLIENT_BASE + 0x223376, 6); // 0F85 A300 0000 to E9 A4 00 00 (00) + 1 nop
+			//utils::hook::set<DWORD>(CLIENT_BASE + 0x223376, 0x0000A4E9); // ^
+			//utils::hook::set<BYTE>(CLIENT_BASE + 0x223376 + 4, 0x00); // ^
+
+			utils::hook::set<BYTE>(ENGINE_BASE + 0x64020, 0xEB); // je to jmp 
+
+			// helper var around C_BasePlayer_Draw so we know when we are drawing our player mesh
+			utils::hook(CLIENT_BASE + 0x223369, draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(cbaseplayer_get_local_player_func, CLIENT_BASE + 0x634E0);
+			HOOK_RETN_PLACE(draw_player_thirdperson_mesh_retn, CLIENT_BASE + 0x22341F);
+			utils::hook(CLIENT_BASE + 0x223431, post_draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
+
+			// F890E disable impact marks on ourselfs
+			utils::hook(CLIENT_BASE + 0xF890E, impact_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(impact_og_retn, CLIENT_BASE + 0xF8913);
+			HOOK_RETN_PLACE(impact_skip_retn, CLIENT_BASE + 0xF89C0);
+		}
 
 		// #
 		// commands

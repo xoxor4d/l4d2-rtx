@@ -15,9 +15,10 @@ namespace sdk
 	
 	Vector c_base_entity::get_absolute_origin()
 	{
-		if (!this)
+		if (!this) {
 			return Vector(0, 0, 0);
-	
+		}
+
 		using original_fn = Vector & (__thiscall*)(c_base_entity*);
 		return (*(original_fn * *)this)[10](this);
 	}
@@ -33,7 +34,49 @@ namespace sdk
 		using original_fn = bool(__thiscall*)(void*);
 		return (*static_cast<original_fn**>(networkable()))[7](networkable());
 	}
-	
+
+	const char* c_base_entity::get_player_model_name()
+	{
+		if (!this) {
+			return "";
+		}
+
+		using original_fn = const char* (__thiscall*)(c_base_entity*);
+		return (*(original_fn**)this)[306](this);
+	}
+
+	bool c_base_entity::is_player()
+	{
+		if (!this) {
+			return false;
+		}
+
+		using original_fn = bool (__thiscall*)(c_base_entity*);
+		return (*(original_fn**)this)[143](this);
+	}
+
+	bool c_base_entity::is_local_player()
+	{
+		if (is_player())
+		{
+			auto e = reinterpret_cast<byte*>(this);
+			return e[0x1688];
+		}
+
+		return false;
+	}
+
+	std::int16_t c_base_entity::get_model_index()
+	{
+		auto e = reinterpret_cast<byte*>(this);
+		return e[0xA0];
+	}
+
+	model_t* c_base_entity::get_model()
+	{
+		return *((model_t**)this + 0x18);
+	}
+
 	Vector c_base_entity::get_eye_pos()
 	{
 		return origin() + view_offset();

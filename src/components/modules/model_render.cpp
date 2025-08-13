@@ -490,6 +490,17 @@ namespace components
 				use_shader = true;
 			}
 
+			if (g_use_playershadow && g_is_rendering_our_thirdperson_mesh)
+			{
+				//auto& playermodel_str = main_module::get()->m_playermodel_substr;
+				//if (!playermodel_str.empty() && playermodel_str != "INVALID")
+				//{
+				//	if (ctx.info.material_name.starts_with(playermodel_str)) {
+						set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_THIRD_PERSON_PLAYER_BODY | REMIXAPI_INSTANCE_CATEGORY_BIT_THIRD_PERSON_PLAYER_MODEL);
+				//	}
+				//}
+			}
+
 		//NOT_INFECTED_SHADER:
 			if (!use_shader)
 			{
