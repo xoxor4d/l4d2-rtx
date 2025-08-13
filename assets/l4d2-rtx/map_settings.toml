@@ -13,6 +13,8 @@
     c4m1_milltown_a = { distance = 3000, color = [100, 100, 100] }
     c6m1_riverbank = { density = 0.000200, color = [10, 9, 9] }
 
+
+
 # Water Settings -------------------------------------------------------------------------------------------------------------------------------
 # :: Adjust various water related settings per map
 # ~~ Parameters: 
@@ -28,6 +30,7 @@
     c5m1_waterfront = { scale = 3.50, top_layer_offset = 0.0, bottom_layer_offset = -20.0 }
     c5m3_cemetery = { scale = 10.0 }
     c10m5_houseboat = { scale = 0.16 }
+
 
 
 # Override culling per game area ---------------------------------------------------------------------------------------------------------------
@@ -181,6 +184,7 @@
     ]
 
 
+
 # Hide Models ---------------------------------------------------------------------------------------------------------------------------------
 # :: Can be used to hide models. When a certain model is used a lot, it can make sense to hide them and 
 #    manually re-add the models by adding them as references to map markers (toolkit) - will help with cpu bottlenecks)
@@ -199,6 +203,48 @@
     #    ]}
 
 
+
+# #####################################################################################
+#
+# Unbake Model Transforms
+# :: If a "static prop" has many unique hashes (remix) then it's likely that it's vertices contain world position data. This will prevent proper mesh-replacements in remix.
+# :: Specifying the checksum of the model you want to replace here will prevent position/rotation/normal information
+#    from being backed into the model vertices and then use the fixed function world transform to transform it into the game world. 
+# :: Use entry 'ALL' if it's a model used throughout the game. 
+# :: This might cause issues with some models (mainly ones with sub-meshes)
+# :: Do not specify models if you do not intend to replace them. There is no benefit.
+# 
+# :: Useful console command: 'xo_mapsettings_get_unbake_info' to log all currently visible model names to '/logs/mapsettings_unbake_info.log' and 'xo_debug_toggle_unbake_model_info' for visualizations
+# ~~ Parameters:
+#
+# <map name> = {    per map
+#   checksum = []   using the mdl checksum                      [int array - hex format]
+# }
+#
+# ALL = {           ^ on every map
+#   checksum = []   ^                                           [int array - hex format]
+# }                                                                                
+
+[UNBAKE]
+
+    ALL = { checksum = [
+        # examples
+        0x6f769ab6, # chair_cafeteria.smd
+        0xc18d886e, # styrofoam_cups.smd
+        0x26fa7caa, # styrofoam_cups_p1.smd
+        0x6fe3a6a6, # styrofoam_cups_p2.smd
+        0xa6a03504, # styrofoam_cups_p3.smd
+        0xfa58eac3, # styrofoam_cups_p4.smd
+    ]}
+
+    c8m4 = { checksum = [
+        # examples
+        0xc18d886e, # styrofoam_cups.smd
+        0x26fa7caa, # styrofoam_cups_p1.smd
+        0x6fe3a6a6, # styrofoam_cups_p2.smd
+        0xa6a03504, # styrofoam_cups_p3.smd
+        0xfa58eac3, # styrofoam_cups_p4.smd
+    ]}
 
 # Spawn unique markers meshes ---------------------------------------------------------------------------------------------------------------------------------
 # :: Can be used as anchor mesh (same one can be spawned multiple times)
@@ -219,7 +265,7 @@
 #                                   ]             |> param1 =  (opt.) name of the event within the .vcd (can be a substr)       [string]
 #                                   ] 
 #                       |> sound    ] OR THAT =   EITHER substring of sound name = "sound_substring"                            [string]
-#                                     OR hash = 0x133337 (cmd: see desc.)                                                       [integer] (hex format)
+#                                                 OR hash = 0x133337 (cmd: see desc.)                                           [integer] (hex format)
 #                                               
 #                       |> delay =    delay after trigger (in seconds)                                                          [float]
 #
@@ -264,7 +310,7 @@
         { nocull = 3, areas = [], N_leafs = [], position = [2241.26, 6028.03, 2668.20], rotation = [0.00, 0.00, 0.00], scale = [1.00, 1.00, 1.00] },
 
         # TEST
-        # { nocull = 0, trigger = { show = { sound = "weapons/pistol/", delay = 1.0 }, hide = { sound = "weapons/pistol/" }, always = true }, position = [537.72, 5652.03, 2909.78], rotation = [1.50, -66.60, 0.00], scale = [1.00, 1.00, 1.00] },
+        { nocull = 0, trigger = { show = { sound = "weapons/pistol/", delay = 1.0 }, hide = { sound = "weapons/pistol/" }, always = true }, position = [537.72, 5652.03, 2909.78], rotation = [1.50, -66.60, 0.00], scale = [1.00, 1.00, 1.00] },
     ]
 
     c1m2_streets = [
