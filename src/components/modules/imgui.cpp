@@ -3912,24 +3912,58 @@ namespace components
 
 		ImGui::Widget_PrettyDragVec3("Offsets Player", gs->flashlight_offset_player.get_as<float*>(), true, 80.0f, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
 		TT(gs->flashlight_offset_player.get_tooltip_string().c_str());
+		TT(gs->flashlight_offset_player.m_desc);
 
 		ImGui::Widget_PrettyDragVec3("Offsets Bot", gs->flashlight_offset_bot.get_as<float*>(), true, 80.0f, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
+		TT(gs->flashlight_offset_bot.get_tooltip_string().c_str());
 		TT(gs->flashlight_offset_bot.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Intensity", gs->flashlight_intensity.get_as<float*>(), 0.1f);
+		TT(gs->flashlight_intensity.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Radius", gs->flashlight_radius.get_as<float*>(), 0.005f);
+		TT(gs->flashlight_radius.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Spot Angle", gs->flashlight_angle.get_as<float*>(), 0.001f);
+		TT(gs->flashlight_angle.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Spot Softness", gs->flashlight_softness.get_as<float*>(), 0.001f);
+		TT(gs->flashlight_softness.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Spot Expo", gs->flashlight_expo.get_as<float*>(), 0.001f);
+		TT(gs->flashlight_expo.get_tooltip_string().c_str());
+
+		//
+
+		ImGui::SeparatorText("Inner Flashlight");
+		ImGui::PushID("inner");
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Intensity", gs->flashlight_inner_intensity.get_as<float*>(), 0.1f);
+		TT(gs->flashlight_inner_intensity.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Radius", gs->flashlight_inner_radius.get_as<float*>(), 0.005f);
+		TT(gs->flashlight_inner_radius.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Angle", gs->flashlight_inner_angle.get_as<float*>(), 0.001f);
+		TT(gs->flashlight_inner_angle.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Softness", gs->flashlight_inner_softness.get_as<float*>(), 0.001f);
+		TT(gs->flashlight_inner_softness.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Spot Expo", gs->flashlight_inner_expo.get_as<float*>(), 0.001f);
+		TT(gs->flashlight_inner_expo.get_tooltip_string().c_str());
+
+		ImGui::PopID();
 	}
 
 	void cont_gamesettings_quick_cmd()

@@ -334,11 +334,6 @@ namespace components
 			}
 		}
 
-		/*if (ctx.info.shader_name.starts_with("Black"))
-		{
-			int break_me = 0;
-		}*/
-
 		// no longer set cam transforms in 'main_module::on_renderview'
 		// setting them there causes meshes rendered with shaders to lag behind
 		dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
@@ -2021,7 +2016,8 @@ namespace components
 		// C_FuncAreaPortalWindow::DrawModel :: disable drawing Area Portal Brushmodels
 		utils::hook::nop(CLIENT_BASE + 0x7690E, 2); // 2501
 
-
+		// --
+		// Remove transforms from prop vertices (UNBAKE)
 		utils::hook::nop(STUDIORENDER_BASE + 0xEF7B, 7);
 		utils::hook(STUDIORENDER_BASE + 0xEF7B, unbake_transform::R_StudioDrawStaticMesh_stub, HOOK_JUMP).install()->quick();
 		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_og_retn_addr, STUDIORENDER_BASE + 0xEF82);

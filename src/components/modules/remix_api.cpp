@@ -82,6 +82,10 @@ namespace components
 			if (fl.handle) {
 				api->m_bridge.DrawLightInstance(fl.handle);
 			}
+
+			if (fl.handle_inner) {
+				api->m_bridge.DrawLightInstance(fl.handle_inner);
+			}
 		}
 	}
 
@@ -627,6 +631,12 @@ namespace components
 					fl.handle = nullptr;
 				}
 
+				if (fl.handle_inner)
+				{
+					api->m_bridge.DestroyLight(fl.handle_inner);
+					fl.handle_inner = nullptr;
+				}
+
 				if (fl.is_enabled)
 				{
 					const auto gs = game_settings::get();
@@ -634,25 +644,17 @@ namespace components
 					auto& info = fl.info;
 					auto& ext = fl.ext;
 
-					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-					ext.pNext = nullptr;
-
-					/*const Vector light_org = fl.def.pos + 
-						(fl.is_player ? gs->flashlight_offset_player.get_as<float*>() :
-										gs->flashlight_offset_bot.get_as<float*>());*/
-
 					Vector lpos = fl.def.pos;
 					const Vector offs = fl.is_player ? gs->flashlight_offset_player.get_as<float*>() : gs->flashlight_offset_bot.get_as<float*>();
 					lpos += (fl.def.fwd * offs.x) + (fl.def.rt * offs.z) + (fl.def.up * offs.y);
 
+					ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+					ext.pNext = nullptr;
 					ext.position = lpos.ToRemixFloat3D(); 
-
 					ext.radius = gs->flashlight_radius.get_as<float>();
 					ext.shaping_hasvalue = TRUE;
 					ext.shaping_value = {};
-
 					ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
-
 					ext.shaping_value.coneAngleDegrees = gs->flashlight_angle.get_as<float>();
 					ext.shaping_value.coneSoftness = gs->flashlight_softness.get_as<float>();
 					ext.shaping_value.focusExponent = gs->flashlight_expo.get_as<float>();
@@ -665,6 +667,31 @@ namespace components
 					info.radiance = remixapi_Float3D{ 20.0f * intensity, 20.0f * intensity, 20.0f * intensity };
 
 					api->m_bridge.CreateLight(&fl.info, &fl.handle);
+
+					// inner
+
+					auto& info_inner = fl.info_inner;
+					auto& ext_inner = fl.ext_inner;
+
+					ext_inner.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+					ext_inner.pNext = nullptr;
+					ext_inner.position = lpos.ToRemixFloat3D();
+					ext_inner.radius = gs->flashlight_inner_radius.get_as<float>();
+					ext_inner.shaping_hasvalue = TRUE;
+					ext_inner.shaping_value = {};
+					ext_inner.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
+					ext_inner.shaping_value.coneAngleDegrees = gs->flashlight_inner_angle.get_as<float>();
+					ext_inner.shaping_value.coneSoftness = gs->flashlight_inner_softness.get_as<float>();
+					ext_inner.shaping_value.focusExponent = gs->flashlight_inner_expo.get_as<float>();
+
+					info_inner.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+					info_inner.pNext = &fl.ext_inner;
+					info_inner.hash = utils::string_hash64(utils::va("flin%s", name.c_str()));
+
+					const float intensity_inner = gs->flashlight_inner_intensity.get_as<float>();
+					info_inner.radiance = remixapi_Float3D{ 20.0f * intensity_inner, 20.0f * intensity_inner, 20.0f * intensity_inner };
+
+					api->m_bridge.CreateLight(&fl.info_inner, &fl.handle_inner);
 				}
 			}
 		}

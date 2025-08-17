@@ -53,6 +53,11 @@ namespace components
 			remixapi_LightHandle handle = nullptr;
 			remixapi_LightInfoSphereEXT ext = {};
 			remixapi_LightInfo info = {};
+
+			remixapi_LightHandle handle_inner = nullptr;
+			remixapi_LightInfoSphereEXT ext_inner = {};
+			remixapi_LightInfo info_inner = {};
+
 			flashlight_def_s def = {};
 			bool is_player = false;
 			bool is_enabled = false;

@@ -310,7 +310,7 @@ namespace components
 			{
 				"flashlight_offset_player",
 				"Offset (along forward vector) that will be applied to the remixApi flashlight of the player. ~~ F: Forward || H: Horizontal || V: Vertical",
-				-15.5f, -3.5f, -5.0f
+				-1.5f, -3.9f, -4.8f
 			};
 
 			variable flashlight_offset_bot =
@@ -331,30 +331,64 @@ namespace components
 			{
 				"flashlight_radius",
 				"Radius of the remixApi flashlights.",
-				0.4f
+				0.5f
 			};
 
 			variable flashlight_angle =
 			{
 				"flashlight_angle",
 				"Angle of the remixApi flashlights. (0-180)",
-				24.0f
+				25.0f
 			};
 
 			variable flashlight_softness =
 			{
 				"flashlight_softness",
 				"Softness of the remixApi flashlights. (0-1)",
-				0.3f
+				0.34f
 			};
 
 			variable flashlight_expo =
 			{
 				"flashlight_expo",
 				"Exponent of the remixApi flashlights. (0-1)",
-				0.8f
+				0.7f
 			};
 
+			variable flashlight_inner_intensity =
+			{
+				"flashlight_inner_intensity",
+				"Intensity of the inner remixApi flashlight (player).",
+				50000.0f
+			};
+
+			variable flashlight_inner_radius =
+			{
+				"flashlight_inner_radius",
+				"Radius of the inner remixApi flashlight (player).",
+				0.6f
+			};
+
+			variable flashlight_inner_angle =
+			{
+				"flashlight_inner_angle",
+				"Angle of the inner remixApi flashlight. (0-180) (player)",
+				14.0f
+			};
+
+			variable flashlight_inner_softness =
+			{
+				"flashlight_inner_softness",
+				"Softness of the inner remixApi flashlight. (0-1) (player)",
+				0.06f
+			};
+
+			variable flashlight_inner_expo =
+			{
+				"flashlight_inner_expo",
+				"Exponent of the inner remixApi flashlight. (0-1) (player)",
+				0.8f
+			};
 		};
 
 		static inline var_definitions vars = {};
