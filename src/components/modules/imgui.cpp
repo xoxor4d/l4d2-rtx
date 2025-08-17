@@ -2256,7 +2256,7 @@ namespace components
 		}
 
 		{
-			auto default_nocull_dist = map_settings::get_map_settings().default_nocull_dist;
+			auto& default_nocull_dist = map_settings::get_map_settings().default_nocull_dist;
 			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 			if (ImGui::DragFloat("Def. NoCull Dist", &default_nocull_dist, 0.5f, 0.0f)) {
 				default_nocull_dist = default_nocull_dist < 0.0f ? 0.0f : default_nocull_dist;
