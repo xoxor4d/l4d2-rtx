@@ -193,6 +193,8 @@ namespace components
 				ASSIGN(flashlight_inner_softness);
 				ASSIGN(flashlight_inner_expo);
 
+				ASSIGN(player_backwards_offset);
+
 			#undef ASSIGN
 			}
 

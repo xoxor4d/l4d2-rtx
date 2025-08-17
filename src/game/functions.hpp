@@ -48,6 +48,8 @@ namespace game
 	inline Vector* get_current_view_right() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A3C); }
 	inline Vector* get_current_view_up() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A48); }
 
+	inline Vector* get_camera_forward_vector() { return reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A2638); } // same as engine one above?
+
 	inline int get_visframecount() { return *reinterpret_cast<int*>(ENGINE_BASE + 0x6AFDD8); }
 	inline view_id get_viewid() { return *reinterpret_cast<view_id*>(CLIENT_BASE + 0x6DF6CC); }
 

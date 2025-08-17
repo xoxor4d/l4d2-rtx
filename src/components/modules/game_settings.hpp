@@ -389,6 +389,13 @@ namespace components
 				"Exponent of the inner remixApi flashlight. (0-1) (player)",
 				0.8f
 			};
+
+			variable player_backwards_offset =
+			{
+				"player_backwards_offset",
+				"Can be used to offset the shadow casting first person player body backwards. Same logic as found within remix but without the body mesh getting smeary.",
+				18.0f
+			};
 		};
 
 		static inline var_definitions vars = {};

@@ -485,8 +485,37 @@ namespace components
 				use_shader = true;
 			}
 
+			bool using_custom_transform = false;
+
 			if (g_use_playershadow && g_is_rendering_our_thirdperson_mesh)
 			{
+				// backwards offset similar to whats found in remix but without the body mesh getting smeary
+				const auto backward_offset = game_settings::get()->player_backwards_offset.get_as<float>();
+				if (!utils::float_equal(backward_offset, 0.0f))
+				{
+					const Vector forward = *game::get_current_view_forward();
+					Vector backward_offset_vector = forward;
+					backward_offset_vector.z = 0.0f;
+
+					backward_offset_vector.Normalize();
+					backward_offset_vector *= -backward_offset;
+
+					const D3DXMATRIX backward_offset_matrix
+					{
+						1.f, 0.f, 0.f, 0.f,
+						0.f, 1.f, 0.f, 0.f,
+						0.f, 0.f, 1.f, 0.f,
+						backward_offset_vector.x, backward_offset_vector.y, backward_offset_vector.z, 1.f
+					};
+
+					D3DXMATRIX final_world_matrix;
+					D3DXMatrixMultiply(&final_world_matrix, &backward_offset_matrix, &ctx.info.buffer_state.m_Transform[0]);
+
+					ctx.save_world_transform(dev);
+					dev->SetTransform(D3DTS_WORLD, &final_world_matrix);
+					using_custom_transform = true;
+				}
+
 				//auto& playermodel_str = main_module::get()->m_playermodel_substr;
 				//if (!playermodel_str.empty() && playermodel_str != "INVALID")
 				//{
@@ -501,8 +530,11 @@ namespace components
 			{
 				ctx.save_vs(dev);
 				dev->SetVertexShader(nullptr);
-				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 				dev->SetFVF(D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX6);
+
+				if (!using_custom_transform) {
+					dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
+				}
 			}
 		}
 

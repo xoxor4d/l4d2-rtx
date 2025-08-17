@@ -4041,6 +4041,10 @@ namespace components
 			map_settings::get_map_settings().default_nocull_dist = *gs_nocull_dist_ptr;
 		}
 		TT(gs->default_nocull_distance.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+		ImGui::DragFloat("Player Backward Offset", gs->player_backwards_offset.get_as<float*>(), 0.01f);
+		TT(gs->player_backwards_offset.get_tooltip_string().c_str());
 	}
 
 	void imgui::tab_game_settings()
