@@ -1,5 +1,5 @@
 #include "std_include.hpp"
-#define USE_BUILD_WORLD_LIST_NOCULL 1
+#define USE_BUILD_WORLD_LIST_NOCULL 0
 
 namespace components
 {
@@ -1458,7 +1458,7 @@ namespace components
 
 #if USE_BUILD_WORLD_LIST_NOCULL
 		// R_RecursiveWorldNodeNoCull:: use 'R_BuildWorldListNoCull' instead of 'R_RecursiveWorldNode'
-		utils::hook::nop(ENGINE_BASE + 0xD162D, 2);
+		utils::hook::nop(ENGINE_BASE + 0xD162D, 2); // THIS will not render bullet holes on bsp? 
 
 		// stub before calling 'R_RecursiveWorldNode' to override node/leaf vis
 		utils::hook::nop(ENGINE_BASE + 0xD1635, 9);
