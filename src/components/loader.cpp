@@ -36,7 +36,7 @@ namespace components
 	}
 
 
-	utils::memory::allocator* loader::get_alloctor() {
+	utils::memory::allocator* loader::get_allocator() {
 		return &loader::mem_allocator_;
 	}
 }

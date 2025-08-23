@@ -16,7 +16,7 @@ namespace components
 		static void initialize();
 		static void uninitialize();
 
-		static utils::memory::allocator* get_alloctor();
+		static utils::memory::allocator* get_allocator();
 
 	private:
 		static std::vector<std::unique_ptr<component>> components_;
