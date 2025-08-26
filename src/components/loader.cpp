@@ -2,34 +2,32 @@
 
 namespace components
 {
-	std::vector<component*> loader::components_;
 	utils::memory::allocator loader::mem_allocator_;
+	std::vector<std::unique_ptr<component>> loader::components_;
 
 	void loader::initialize()
 	{
 		mem_allocator_.clear();
-		_register(new interfaces());
-		_register(new flags());
-		_register(new game_settings());
-		_register(new remix_api());
-		_register(new choreo_events());
-		_register(new sound_events());
-		_register(new main_module());
-		_register(new model_render());
-		_register(new imgui());
-		_register(new remix_vars());
-		_register(new remix_markers());
-		_register(new map_settings());
-		_register(new remix_lights());
+		register_component<interfaces>();
+		register_component<flags>();
+		register_component<game_settings>();
+		register_component<remix_api>();
+		register_component<choreo_events>();
+		register_component<sound_events>();
+		register_component<main_module>();
+		register_component<model_render>();
+		register_component<imgui>();
+		register_component<remix_vars>();
+		register_component<remix_markers>();
+		register_component<map_settings>();
+		register_component<remix_lights>();
+
+
 		XASSERT(MH_EnableHook(MH_ALL_HOOKS) != MH_STATUS::MH_OK);
 	}
 
 	void loader::uninitialize()
 	{
-		std::ranges::reverse(components_.begin(), components_.end());
-		for (const auto component : components_) {
-			delete component;
-		}
 
 		components_.clear();
 		mem_allocator_.clear();
@@ -37,14 +35,8 @@ namespace components
 		fflush(stderr);
 	}
 
-	void loader::_register(component* component)
-	{
-		if (component) {
-			components_.push_back(component);
-		}
-	}
 
-	utils::memory::allocator* loader::get_alloctor() {
+	utils::memory::allocator* loader::get_allocator() {
 		return &loader::mem_allocator_;
 	}
 }

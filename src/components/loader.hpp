@@ -1,4 +1,5 @@
 #pragma once
+#include<memory>
 
 namespace components
 {
@@ -14,13 +15,19 @@ namespace components
 	public:
 		static void initialize();
 		static void uninitialize();
-		static void _register(component* component);
 
-		static utils::memory::allocator* get_alloctor();
+		static utils::memory::allocator* get_allocator();
 
 	private:
-		static std::vector<component*> components_;
+		static std::vector<std::unique_ptr<component>> components_;
 		static utils::memory::allocator mem_allocator_;
+
+		template<class ComponentType>
+		static void register_component()
+		{
+			components_.emplace_back(std::make_unique<ComponentType>());
+		}
+
 	};
 }
 
