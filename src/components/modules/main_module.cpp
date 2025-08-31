@@ -934,14 +934,14 @@ namespace components
 					bool can_add_transition = true;
 
 					// do not allow the same transition twice
-					for (const auto& ip : remix_vars::interpolate_stack)
+					/*for (const auto& ip : remix_vars::interpolate_stack)
 					{
 						if (ip.identifier == t->hash)
 						{
 							can_add_transition = false;
 							break;
 						}
-					}
+					}*/
 
 					if (can_add_transition)
 					{

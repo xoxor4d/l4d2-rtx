@@ -378,34 +378,95 @@ namespace components
 			if (duration == 0.0f && delay == 0.0f) {
 				set_option(handle, goal);
 			}
+
 			// interpolate over time or set after delay
 			else
 			{
 				// check if we are already interpolating the value
 				bool exists = false;
+				bool has_entry = false;
 
-				for (auto& ip : interpolate_stack)
+				option_value prev_original = {};
+				interpolate_entry_s* last_ip = nullptr;
+
+				for (auto it = interpolate_stack.rbegin(); it != interpolate_stack.rend(); ++it)
 				{
+					auto& ip = *it;
 					if (ip.option == h)
 					{
-						// update
-						ip.identifier = identifier;
-						ip.start = h->second.current;
-						ip.goal = goal;
-						ip.style = ease;
-						ip.time_duration = duration;
-						ip.time_delay_transition_back = delay_transition_back;
-						ip._time_elapsed = -delay;
+						has_entry = true;
+						last_ip = &ip;
 
-						exists = true;
-						break;
+						// Calculate current_remaining
+						float current_remaining = 0.0f;
+						if (ip._time_elapsed < 0.0f) {
+							current_remaining = -ip._time_elapsed + ip.time_duration;
+						}
+						else {
+							current_remaining = ip.time_duration - ip._time_elapsed;
+						}
+
+						// Calculate additional for pending back transition
+						float additional = 0.0f;
+						if (ip.time_delay_transition_back > 0.0f && !ip._in_backwards_transition) {
+							additional = ip.time_delay_transition_back + ip.time_duration;
+						}
+
+						if (delay <= current_remaining + additional)
+						{
+							// update
+							ip.identifier = identifier;
+							ip._in_backwards_transition = false;
+							ip.start = h->second.current;
+							ip.goal = goal;
+							ip.style = ease;
+							ip.time_duration = duration;
+							ip.time_delay_transition_back = delay_transition_back;
+							ip._time_elapsed = -delay;
+
+							exists = true;
+						}
+
+						prev_original = ip.original_start;
+						break;  // stop after processing most recent entry
 					}
 				}
 
 				if (!exists)
 				{
-					interpolate_stack.emplace_back(interpolate_entry_s
-						{ identifier, h, h->second.current, goal, h->second.type, ease, duration, delay_transition_back, -delay });
+					interpolate_entry_s new_entry = {};
+					new_entry.identifier = identifier;
+					new_entry.option = h;
+					new_entry.type = h->second.type;
+					new_entry.style = ease;
+					new_entry.time_duration = duration;
+					new_entry.time_delay_transition_back = delay_transition_back;
+					new_entry._time_elapsed = -delay;
+
+					if (has_entry)
+					{
+						option_value expected_final = {};
+
+						// expected final of previous (last) entry
+						if (last_ip->time_delay_transition_back > 0.0f) {
+							expected_final = last_ip->original_start;
+						}
+						else {
+							expected_final = last_ip->goal;
+						}
+
+						new_entry.start = expected_final;
+						new_entry.original_start = prev_original; // propagate from previous
+						new_entry.goal = goal;
+					}
+					else
+					{
+						new_entry.start = h->second.current;
+						new_entry.original_start = h->second.current;  // First ever
+						new_entry.goal = goal;
+					}
+
+					interpolate_stack.emplace_back(new_entry);
 				}
 			}
 
@@ -636,8 +697,8 @@ namespace components
 					// detect completion of first transition - check / setup backwards transition
 					if (ip._complete && !ip._in_backwards_transition && ip.time_delay_transition_back > 0.0f)
 					{
-						// swap start/goal
-						std::swap(ip.start, ip.goal);
+						ip.start = ip.goal;  // current reached goal
+						ip.goal = ip.original_start;  // back to first-ever original
 
 						ip._time_elapsed = -ip.time_delay_transition_back;
 						ip._in_backwards_transition = true;

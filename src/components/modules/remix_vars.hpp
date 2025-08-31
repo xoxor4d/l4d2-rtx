@@ -53,6 +53,10 @@ namespace components
 
 		union option_value
 		{
+			bool operator!=(const option_value& o) const {
+				return std::memcmp(this, &o, sizeof(option_value)) != 0;
+			}
+
 			bool enabled;
 			int integer;
 			float value;
@@ -118,6 +122,7 @@ namespace components
 			option_handle option;
 			option_value start;
 			option_value goal;
+			option_value original_start;
 			OPTION_TYPE type;
 			EASE_TYPE style;
 			float time_duration;
