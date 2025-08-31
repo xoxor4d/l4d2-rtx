@@ -162,4 +162,25 @@ namespace game
 		va_end(list);
 		fn(buffer, list);
 	}
+
+	C_BaseAnimating* get_base_animating_for_client_renderable(IClientRenderable* pRenderable)
+	{
+		if (pRenderable)
+		{
+			if (const auto unkown = pRenderable->vftable_iclientrenderable->GetIClientUnknown(pRenderable);
+				unkown)
+			{
+				if (const auto base_handle = unkown->vftable_ihandleent->GetRefEHandle(unkown);
+					base_handle)
+				{
+					if (const auto base_entity = interfaces::get()->m_entity_list->get_client_entity_from_handle(*base_handle);
+						base_entity) {
+						return base_entity->vtbl->GetBaseAnimating(base_entity);
+					}
+				}
+			}
+		}
+
+		return nullptr;
+	}
 }

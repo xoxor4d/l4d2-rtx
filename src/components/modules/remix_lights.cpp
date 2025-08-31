@@ -6,6 +6,8 @@ namespace components
 	{
 		bool debug_pos_time = false;
 		bool show_api_lights = false;
+		bool show_mesh_bone_info_attached = false;
+		bool show_mesh_bone_info = false;
 	}
 
 	/**
@@ -13,9 +15,9 @@ namespace components
 	 * @param points			Reference to point-list
 	 * @param looping			Light is looping
 	 * @param loop_smoothing	Add additional segment between last and first point
-	 * @return 
+	 * @return
 	 */
-	bool light_interpolator::init(const std::vector<map_settings::remix_light_settings_s::point_s>& points, const bool looping, const bool loop_smoothing)
+	bool remix_lights::light::interpolator::init(const std::vector<map_settings::remix_light_settings_s::point_s>& points, const bool looping, const bool loop_smoothing)
 	{
 		if (points.size() == 1) {
 			return false;
@@ -41,7 +43,7 @@ namespace components
 			m_total_duration = (m_points)[m_points.size() - 2].timepoint + 1.0f;
 
 			// write the placeholder value into the last point
-			m_points.back().timepoint = m_total_duration; 
+			m_points.back().timepoint = m_total_duration;
 		}
 
 		// calculate time for points with no defined timepoint
@@ -78,16 +80,16 @@ namespace components
 	 * @param frametime		Time of the last frame
 	 * @return				True if move is done (also true for looping lights)
 	 */
-	bool light_interpolator::advance_time(const float frametime)
+	bool remix_lights::light::interpolator::advance_time(const float frametime)
 	{
 		m_elapsed_time += frametime;
 
-		if (m_elapsed_time >= m_total_duration) 
+		if (m_elapsed_time >= m_total_duration)
 		{
-			if (m_looping)  {
+			if (m_looping) {
 				m_elapsed_time -= m_total_duration;
 			}
-			else  {
+			else {
 				m_elapsed_time = m_total_duration;
 			}
 
@@ -97,38 +99,76 @@ namespace components
 		return false;
 	}
 
+	Vector remix_lights::light::calculate_direction_for_point(const map_settings::remix_light_settings_s::point_s* point) const
+	{
+		if (is_attached())
+		{
+			// get direction vector for angles
+			Vector offset_dir;
+			utils::vector::AngleVectors(point->angle_offset_attached, &offset_dir);
+
+			// apply offset in bone's local coordinate system
+			Vector world_offset = offset_dir.x * m_attached_bone_forward + offset_dir.y * m_attached_bone_right + offset_dir.z * m_attached_bone_up;
+
+			world_offset.NormalizeInPlace();
+			return world_offset;
+		}
+
+		return point->direction;
+	}
+
+	Vector remix_lights::light::calculate_position_for_point(const map_settings::remix_light_settings_s::point_s* point) const
+	{
+		if (is_attached())
+		{
+			// apply local position offset using bone's original basis
+			const Vector world_pos_offset = point->position.x * m_attached_bone_forward + point->position.y * m_attached_bone_right + point->position.z * m_attached_bone_up;
+			return m_attached_position + world_pos_offset;
+		}
+
+		return point->position;
+	}
+
 	/**
 	 * Calculate light properties for the current tick \n
-	 * All arguments are optional - use nullptr to not update a specific property
-	 * @param position			(LightInfoEXT)
-	 * @param radiance			(LightInfo)
-	 * @param radius			(LightInfo)
-	 * @param direction			(LightInfoEXT)
-	 * @param degrees			(LightInfoEXT)
-	 * @param softness			(LightInfoEXT)
-	 * @param exponent			(LightInfoEXT)
+	 * All arguments besides 'parent' are optional - use nullptr to not update a specific property
+	 * @param parent			(pointer to owning light)
+	 * @param position			(remixapi_LightInfoSphereEXT)
+	 * @param radiance			(remixapi_LightInfo)
+	 * @param radius			(remixapi_LightInfo)
+	 * @param direction			(remixapi_LightInfoSphereEXT)
+	 * @param degrees			(remixapi_LightInfoSphereEXT)
+	 * @param softness			(remixapi_LightInfoSphereEXT)
+	 * @param exponent			(remixapi_LightInfoSphereEXT)
+	 * @param volumetric_scale	(remixapi_LightInfoSphereEXT)
 	 */
-	void light_interpolator::interpolate(remixapi_Float3D* position, remixapi_Float3D* radiance, float* radius, 
-										 remixapi_Float3D* direction, float* degrees, float* softness, float* exponent, float* volumetric)
+	void remix_lights::light::interpolator::interpolate(light* parent, remixapi_Float3D* position, remixapi_Float3D* radiance, float* radius,
+		remixapi_Float3D* direction, float* degrees, float* softness, float* exponent, float* volumetric_scale, bool is_attached)
 	{
+		assert(parent != nullptr && "m_parent must not be null");
+		if (!parent) {
+			return;
+		}
+
 		{
 			map_settings::remix_light_settings_s::point_s* temp_pt = nullptr;
 			if (m_elapsed_time <= 0.0f) {
 				temp_pt = &m_points.front();
-			} else if (m_elapsed_time >= m_total_duration) {
+			}
+			else if (m_elapsed_time >= m_total_duration) {
 				temp_pt = &m_points.back();
 			}
 
 			if (temp_pt)
 			{
-				if (position) { *position = (temp_pt->position + m_position_offset).ToRemixFloat3D(); }
+				if (position) { *position = parent->calculate_position_for_point(temp_pt).ToRemixFloat3D(); }//(temp_pt->position + m_parent->m_attached_position).ToRemixFloat3D(); }
 				if (radiance) { *radiance = (temp_pt->radiance * temp_pt->radiance_scalar).ToRemixFloat3D(); }
 				if (radius) { *radius = temp_pt->radius; }
-				if (direction) { *direction = temp_pt->direction.ToRemixFloat3D(); }
+				if (direction) { *direction = parent->calculate_direction_for_point(temp_pt).ToRemixFloat3D(); }
 				if (degrees) { *degrees = temp_pt->degrees; }
 				if (softness) { *softness = temp_pt->softness; }
 				if (exponent) { *exponent = temp_pt->exponent; }
-				if (volumetric) { *volumetric = temp_pt->volumetric; }
+				if (volumetric_scale) { *volumetric_scale = temp_pt->volumetric_scale; }
 				return;
 			}
 		}
@@ -136,7 +176,7 @@ namespace components
 		float time = m_elapsed_time;
 		for (size_t i = 0; i < m_segment_durations.size(); ++i)
 		{
-			if (time <= m_segment_durations[i]) 
+			if (time <= m_segment_durations[i])
 			{
 				const auto t = time / m_segment_durations[i];
 				const auto& p0 = (m_points)[((i - 1) + m_points.size()) % m_points.size()];
@@ -150,25 +190,98 @@ namespace components
 				// hermite interpolation
 				if (position)
 				{
-					*position = (
-						  p1.position * (2.0f * t3 - 3.0f * t2 + 1.0f) 
-						+ p2.position * (-2.0f * t3 + 3.0f * t2) 
-						+ (p2.position - p0.position) * p1.smoothness * (t3 - 2.0f * t2 + t) 
-						+ (p3.position - p1.position) * p2.smoothness * (t3 - t2)
-						+ m_position_offset).ToRemixFloat3D();
+					if (is_attached)
+					{
+						if (position)
+						{
+							Vector p0_world_offset = p0.position.x * parent->m_attached_bone_forward + p0.position.y * parent->m_attached_bone_right + p0.position.z * parent->m_attached_bone_up;
+							Vector p1_world_offset = p1.position.x * parent->m_attached_bone_forward + p1.position.y * parent->m_attached_bone_right + p1.position.z * parent->m_attached_bone_up;
+							Vector p2_world_offset = p2.position.x * parent->m_attached_bone_forward + p2.position.y * parent->m_attached_bone_right + p2.position.z * parent->m_attached_bone_up;
+							Vector p3_world_offset = p3.position.x * parent->m_attached_bone_forward + p3.position.y * parent->m_attached_bone_right + p3.position.z * parent->m_attached_bone_up;
+
+							Vector world_pos_offset =
+								p1_world_offset * (2.0f * t3 - 3.0f * t2 + 1.0f)
+								+ p2_world_offset * (-2.0f * t3 + 3.0f * t2)
+								+ (p2_world_offset - p0_world_offset) * p1.smoothness * (t3 - 2.0f * t2 + t)
+								+ (p3_world_offset - p1_world_offset) * p2.smoothness * (t3 - t2);
+
+							*position = (parent->m_attached_position + world_pos_offset).ToRemixFloat3D();
+
+
+							//Vector finalPos = m_parent->m_attached_position + position_offset * final_dir;
+							//*position = finalPos.ToRemixFloat3D();
+						}
+					}
+					else
+					{
+						*position = (
+							p1.position * (2.0f * t3 - 3.0f * t2 + 1.0f)
+							+ p2.position * (-2.0f * t3 + 3.0f * t2)
+							+ (p2.position - p0.position) * p1.smoothness * (t3 - 2.0f * t2 + t)
+							+ (p3.position - p1.position) * p2.smoothness * (t3 - t2)
+							).ToRemixFloat3D();
+					}
 				}
 
 				if (direction)
 				{
-					Vector dir = (
-						  p1.direction * (2.0f * t3 - 3.0f * t2 + 1.0f)
-						+ p2.direction * (-2.0f * t3 + 3.0f * t2)
-						+ (p2.direction - p0.direction) * p1.smoothness * (t3 - 2.0f * t2 + t)
-						+ (p3.direction - p1.direction) * p2.smoothness * (t3 - t2)
-						);
+					if (is_attached)
+					{
+						// convert offsets to direction vectors
+						Vector p0_offset, p1_offset, p2_offset, p3_offset;
+						utils::vector::AngleVectors(p0.angle_offset_attached, &p0_offset);
+						utils::vector::AngleVectors(p1.angle_offset_attached, &p1_offset);
+						utils::vector::AngleVectors(p2.angle_offset_attached, &p2_offset);
+						utils::vector::AngleVectors(p3.angle_offset_attached, &p3_offset);
 
-					dir.Normalize();
-					*direction = dir.ToRemixFloat3D();
+						// transform offsets to bone's local coordinate system
+						Vector p0_world_offset = p0_offset.x * parent->m_attached_bone_forward + p0_offset.y * parent->m_attached_bone_right + p0_offset.z * parent->m_attached_bone_up;
+						Vector p1_world_offset = p1_offset.x * parent->m_attached_bone_forward + p1_offset.y * parent->m_attached_bone_right + p1_offset.z * parent->m_attached_bone_up;
+						Vector p2_world_offset = p2_offset.x * parent->m_attached_bone_forward + p2_offset.y * parent->m_attached_bone_right + p2_offset.z * parent->m_attached_bone_up;
+						Vector p3_world_offset = p3_offset.x * parent->m_attached_bone_forward + p3_offset.y * parent->m_attached_bone_right + p3_offset.z * parent->m_attached_bone_up;
+
+						Vector interpolated_offset = (
+							p1_world_offset * (2.0f * t3 - 3.0f * t2 + 1.0f)
+							+ p2_world_offset * (-2.0f * t3 + 3.0f * t2)
+							+ (p2_world_offset - p0_world_offset) * p1.smoothness * (t3 - 2.0f * t2 + t)
+							+ (p3_world_offset - p1_world_offset) * p2.smoothness * (t3 - t2)
+							);
+
+						// combine with bone's forward (scale to achieve full offset)
+						float offset_scale = std::numbers::sqrt2_v<float>; // ca. 90deg max offset
+
+						Vector final_dir = parent->m_attached_bone_forward + offset_scale * interpolated_offset;
+						final_dir.NormalizeInPlace();
+
+						*direction = final_dir.ToRemixFloat3D();
+
+						//if (position)
+						//{
+
+						//	// apply local position offset using bone's original basis
+						//	const Vector world_pos_offset = point->position.x * m_attached_bone_forward + point->position.y * m_attached_bone_right + point->position.z * m_attached_bone_up;
+						//	//return m_attached_position + world_pos_offset;
+
+
+						//	// already up to date
+						//	Vector position_offset { position->x, position->y, position->z };
+
+						//	Vector finalPos = m_parent->m_attached_position + position_offset * final_dir;
+						//	*position = finalPos.ToRemixFloat3D();
+						//}
+					}
+					else
+					{
+						Vector dir = (
+							p1.direction * (2.0f * t3 - 3.0f * t2 + 1.0f)
+							+ p2.direction * (-2.0f * t3 + 3.0f * t2)
+							+ (p2.direction - p0.direction) * p1.smoothness * (t3 - 2.0f * t2 + t)
+							+ (p3.direction - p1.direction) * p2.smoothness * (t3 - t2)
+							);
+
+						dir.Normalize();
+						*direction = dir.ToRemixFloat3D();
+					}
 				}
 
 				// linear interpolations
@@ -193,8 +306,8 @@ namespace components
 					*exponent = lerp(p1.exponent, p2.exponent, t);
 				}
 
-				if (volumetric) {
-					*volumetric = lerp(p1.volumetric, p2.volumetric, t);
+				if (volumetric_scale) {
+					*volumetric_scale = lerp(p1.volumetric_scale, p2.volumetric_scale, t);
 				}
 
 				return;
@@ -204,53 +317,54 @@ namespace components
 		}
 
 		// should not happen if durations are correct
-		if (position) { *position = (m_points.back().position + m_position_offset).ToRemixFloat3D(); }
-		if (radiance) { *radiance = (m_points.back().radiance * m_points.back().radiance_scalar).ToRemixFloat3D(); }
-		if (radius) { *radius = m_points.back().radius; }
-		if (direction) { *direction = m_points.back().direction.ToRemixFloat3D(); }
-		if (degrees) { *degrees = m_points.back().degrees; }
-		if (softness) { *softness = m_points.back().softness; }
-		if (exponent) { *exponent = m_points.back().exponent; }
-		if (volumetric) { *volumetric = m_points.back().volumetric; }
+		const auto last_pt = m_points.back();
+		if (position) { *position = parent->calculate_position_for_point(&last_pt).ToRemixFloat3D(); } //(last_pt.position + m_parent->m_attached_position).ToRemixFloat3D(); }
+		if (radiance) { *radiance = (last_pt.radiance * last_pt.radiance_scalar).ToRemixFloat3D(); }
+		if (radius) { *radius = last_pt.radius; }
+		if (direction) { *direction = parent->calculate_direction_for_point(&last_pt).ToRemixFloat3D(); }
+		if (degrees) { *degrees = last_pt.degrees; }
+		if (softness) { *softness = last_pt.softness; }
+		if (exponent) { *exponent = last_pt.exponent; }
+		if (volumetric_scale) { *volumetric_scale = last_pt.volumetric_scale; }
 	}
 
 	// ----
 
 	/**
 	 * Update a remixApi light using an "external" point
-	 * @param light		Light handle
+	 * @param l			Light handle
 	 * @param pt		External point handle
 	 * @return			True if successfull
 	 */
-	bool remix_lights::update_static_remix_light(remix_light_s* light, const map_settings::remix_light_settings_s::point_s* pt)
+	bool remix_lights::update_static_remix_light(light* l, const map_settings::remix_light_settings_s::point_s* pt)
 	{
-		if (!light || !pt) {
+		if (!l || !pt) {
 			return false;
 		}
 
-		if (light->handle) {
-			destroy_map_light(light);
+		if (l->m_handle) {
+			destroy_map_light(l);
 		}
 
-		if (light)
+		if (l)
 		{
-			light->ext.position = (pt->position + light->attached_offset).ToRemixFloat3D();
-			light->info.radiance = (pt->radiance * pt->radiance_scalar).ToRemixFloat3D();
-			light->ext.radius = pt->radius;
-			light->ext.shaping_hasvalue = pt->use_shaping;
-			light->ext.shaping_value.direction = pt->direction.ToRemixFloat3D();
-			light->ext.shaping_value.coneAngleDegrees = pt->degrees;
-			light->ext.shaping_value.coneSoftness = pt->softness;
-			light->ext.shaping_value.focusExponent = pt->exponent;
-			light->ext.volumetricRadianceScale = pt->volumetric;
+			l->m_ext.position = l->calculate_position_for_point(pt).ToRemixFloat3D(); //(pt->position + l->m_attached_position).ToRemixFloat3D();
+			l->m_info.radiance = (pt->radiance * pt->radiance_scalar).ToRemixFloat3D();
+			l->m_ext.radius = pt->radius;
+			l->m_ext.shaping_hasvalue = pt->use_shaping;
+			l->m_ext.shaping_value.direction = l->calculate_direction_for_point(pt).ToRemixFloat3D();
+			l->m_ext.shaping_value.coneAngleDegrees = pt->degrees;
+			l->m_ext.shaping_value.coneSoftness = pt->softness;
+			l->m_ext.shaping_value.focusExponent = pt->exponent;
+			l->m_ext.volumetricRadianceScale = pt->volumetric_scale;
 
 			// not updating these can result in a crash in bridge::remix_api?
-			light->ext.pNext = nullptr;
-			light->ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-			light->info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
-			light->info.pNext = &light->ext;
+			l->m_ext.pNext = nullptr;
+			l->m_ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+			l->m_info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+			l->m_info.pNext = &l->m_ext;
 
-			return remix_api::get()->m_bridge.CreateLight(&light->info, &light->handle) == REMIXAPI_ERROR_CODE_SUCCESS;
+			return remix_api::get()->m_bridge.CreateLight(&l->m_info, &l->m_handle) == REMIXAPI_ERROR_CODE_SUCCESS;
 		}
 
 		return false;
@@ -258,42 +372,42 @@ namespace components
 
 	/**
 	 * Calculate and update remixApi light for the current tick
-	 * @param light		The light
+	 * @param l			The light
 	 * @return			True if successfull
 	 */
-	bool remix_lights::update_remix_light(remix_light_s* light)
+	bool remix_lights::update_remix_light(light* l)
 	{
-		if (!light || (light && !light->mover.is_initialized())) {
+		if (!l || (l && !l->m_mover.is_initialized())) {
 			return false;
 		}
 
-		if (light->handle) {
-			destroy_map_light(light);
+		if (l->m_handle) {
+			destroy_map_light(l);
 		}
 
-		if (light)
+		if (l)
 		{
-			light->mover.set_position_offset(light->attached_offset);
+			l->m_mover.interpolate(
+				l,
+				&l->m_ext.position,
+				&l->m_info.radiance,
+				&l->m_ext.radius,
+				&l->m_ext.shaping_value.direction,
+				&l->m_ext.shaping_value.coneAngleDegrees,
+				&l->m_ext.shaping_value.coneSoftness,
+				&l->m_ext.shaping_value.focusExponent,
+				&l->m_ext.volumetricRadianceScale,
+				l->is_attached());
 
-			light->mover.interpolate(
-				&light->ext.position, 
-				&light->info.radiance, 
-				&light->ext.radius,
-				&light->ext.shaping_value.direction,
-				&light->ext.shaping_value.coneAngleDegrees,
-				&light->ext.shaping_value.coneSoftness,
-				&light->ext.shaping_value.focusExponent,
-				&light->ext.volumetricRadianceScale);
-
-			light->ext.shaping_hasvalue = light->ext.shaping_value.coneAngleDegrees != 180.0f;
+			l->m_ext.shaping_hasvalue = l->m_ext.shaping_value.coneAngleDegrees != 180.0f;
 
 			// not updating these can result in a crash in bridge::remix_api?
-			light->ext.pNext = nullptr;
-			light->ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-			light->info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
-			light->info.pNext = &light->ext;
+			l->m_ext.pNext = nullptr;
+			l->m_ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+			l->m_info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+			l->m_info.pNext = &l->m_ext;
 
-			return remix_api::get()->m_bridge.CreateLight(&light->info, &light->handle) == REMIXAPI_ERROR_CODE_SUCCESS;
+			return remix_api::get()->m_bridge.CreateLight(&l->m_info, &l->m_handle) == REMIXAPI_ERROR_CODE_SUCCESS;
 		}
 
 		return false;
@@ -301,42 +415,42 @@ namespace components
 
 	/**
 	 * Spawns a remixApi light
-	 * @param light		The light
+	 * @param l			The light
 	 * @return			True if successfull
 	 */
-	bool remix_lights::spawn_remix_light(remix_light_s* light)
+	bool remix_lights::spawn_remix_light(light* l)
 	{
-		if (!light) {
+		if (!l) {
 			return false;
 		}
 
-		if (light->handle) {
-			destroy_map_light(light);
+		if (l->m_handle) {
+			destroy_map_light(l);
 		}
 
-		if (light)
+		if (l)
 		{
-			const auto& pt = light->def.points[0];
-			light->ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
-			light->ext.pNext = nullptr;
-			light->ext.position = pt.position.ToRemixFloat3D();
+			const auto& pt = l->m_def.points[0];
+			l->m_ext.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO_SPHERE_EXT;
+			l->m_ext.pNext = nullptr;
+			l->m_ext.position = pt.position.ToRemixFloat3D();
 			// disable single point lights with attach params until they get attached later down the line
-			light->ext.radius = light->def.points.size() == 1u && light->has_attach_parms() ? 0.0f : pt.radius;
-			light->ext.shaping_hasvalue = pt.use_shaping;
-			light->ext.shaping_value = {};
-			light->ext.shaping_value.direction = pt.direction.ToRemixFloat3D();
-			light->ext.shaping_value.coneAngleDegrees = pt.degrees;
-			light->ext.shaping_value.coneSoftness = pt.softness;
-			light->ext.shaping_value.focusExponent = pt.exponent;
-			light->ext.volumetricRadianceScale = pt.volumetric;
+			l->m_ext.radius = l->m_def.points.size() == 1u && l->has_attach_parms() ? 0.0f : pt.radius;
+			l->m_ext.shaping_hasvalue = pt.use_shaping;
+			l->m_ext.shaping_value = {};
+			l->m_ext.shaping_value.direction = pt.direction.ToRemixFloat3D();
+			l->m_ext.shaping_value.coneAngleDegrees = pt.degrees;
+			l->m_ext.shaping_value.coneSoftness = pt.softness;
+			l->m_ext.shaping_value.focusExponent = pt.exponent;
+			l->m_ext.volumetricRadianceScale = pt.volumetric_scale;
 
-			light->info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
-			light->info.pNext = &light->ext;
-			light->info.hash = utils::string_hash64(utils::va("api-light%d", light->light_num));
-			light->info.radiance = (pt.radiance * pt.radiance_scalar).ToRemixFloat3D();
+			l->m_info.sType = REMIXAPI_STRUCT_TYPE_LIGHT_INFO;
+			l->m_info.pNext = &l->m_ext;
+			l->m_info.hash = utils::string_hash64(utils::va("api-light%d", l->m_light_num));
+			l->m_info.radiance = (pt.radiance * pt.radiance_scalar).ToRemixFloat3D();
 
 			const auto api = remix_api::get();
-			return api->m_bridge.CreateLight(&light->info, &light->handle) == REMIXAPI_ERROR_CODE_SUCCESS;
+			return api->m_bridge.CreateLight(&l->m_info, &l->m_handle) == REMIXAPI_ERROR_CODE_SUCCESS;
 		}
 
 		return false;
@@ -355,12 +469,11 @@ namespace components
 		{
 			if (it->trigger_choreo_name.empty() && !it->trigger_sound_hash) // add lights without a trigger
 			{
-				m_active_lights.push_back(
-					remix_light_s
-					{
-						*it, //std::move(*it),
-						m_active_light_spawn_tracker++,
-						it->kill_delay
+				m_active_lights.emplace_back(
+					light{
+						.m_def = *it, // do not move the light if it can be triggered multiple times
+						.m_light_num = m_active_light_spawn_tracker++,
+						.m_timer = it->kill_delay
 					});
 
 				// erase element from the mapsettings vector
@@ -368,8 +481,8 @@ namespace components
 
 				auto* light = &m_active_lights.back();
 
-				if (light->def.points.size() > 1) {
-					light->mover.init(light->def.points, light->def.loop, light->def.loop_smoothing);
+				if (light->m_def.points.size() > 1) {
+					light->m_mover.init(light->m_def.points, light->m_def.loop, light->m_def.loop_smoothing);
 				}
 
 				// spawn it
@@ -382,16 +495,16 @@ namespace components
 
 	void remix_lights::add_single_map_setting_light_for_editing(map_settings::remix_light_settings_s* def)
 	{
-		m_active_lights.push_back(
-			remix_light_s(
-				*def,
-				m_active_light_spawn_tracker++
-			));
+		m_active_lights.emplace_back(
+			light{
+				.m_def = *def, // do not move the light if it can be triggered multiple times
+				.m_light_num = m_active_light_spawn_tracker++
+			});
 
 		auto* light = &m_active_lights.back();
 
-		if (light->def.points.size() > 1) {
-			light->mover.init(light->def.points, true /* always loop*/, light->def.loop_smoothing);
+		if (light->m_def.points.size() > 1) {
+			light->m_mover.init(light->m_def.points, true /* always loop*/, light->m_def.loop_smoothing);
 		}
 
 		// spawn it
@@ -404,19 +517,18 @@ namespace components
 	 */
 	void remix_lights::add_single_map_setting_light(map_settings::remix_light_settings_s* def)
 	{
-		m_active_lights.push_back(
-			remix_light_s(
-				*def, //def->trigger_always ? *def : std::move(*def), // do not move the light if it can be triggered multiple times
-				m_active_light_spawn_tracker++
-			));
-
-		auto* light = &m_active_lights.back();
+		m_active_lights.emplace_back(
+			light{
+				.m_def = *def, // do not move the light if it can be triggered multiple times
+				.m_light_num = m_active_light_spawn_tracker++
+			});
 
 		// spawn light if it does not use a trigger - triggered spawning is handled elsewhere
-		if (light->def.trigger_choreo_name.empty() && !light->def.trigger_sound_hash)
+		if (auto* light = &m_active_lights.back();
+			light && light->m_def.trigger_choreo_name.empty() && !light->m_def.trigger_sound_hash)
 		{
-			if (light->def.points.size() > 1) {
-				light->mover.init(light->def.points, light->def.loop, light->def.loop_smoothing);
+			if (light->m_def.points.size() > 1) {
+				light->m_mover.init(light->m_def.points, light->m_def.loop, light->m_def.loop_smoothing);
 			}
 
 			// spawn it
@@ -426,14 +538,14 @@ namespace components
 
 	/**
 	 * Destroys a light (remixApi light)
-	 * @param light		The light to destroy
+	 * @param l		The light to destroy
 	 */
-	void remix_lights::destroy_map_light(remix_light_s* light)
+	void remix_lights::destroy_map_light(light* l)
 	{
-		if (light->handle)
+		if (l->m_handle)
 		{
-			remix_api::get()->m_bridge.DestroyLight(light->handle);
-			light->handle = nullptr;
+			remix_api::get()->m_bridge.DestroyLight(l->m_handle);
+			l->m_handle = nullptr;
 		}
 	}
 
@@ -448,7 +560,7 @@ namespace components
 	}
 
 	/**
-	 * Destroys all lights in 'm_map_lights' (remixApi lights) and clears 'm_map_lights' 
+	 * Destroys all lights in 'm_map_lights' (remixApi lights) and clears 'm_map_lights'
 	 */
 	void remix_lights::destroy_and_clear_all_active_lights()
 	{
@@ -462,17 +574,18 @@ namespace components
 	 */
 	void remix_lights::update_all_active_lights()
 	{
+		const auto glob = interfaces::get()->m_globals;
 		const auto edit_mode = imgui::get()->m_light_edit_mode;
 
 		// destroy lights that are marked for destruction
 		for (auto it = m_active_lights.begin(); it != m_active_lights.end();)
 		{
-			if (it->is_marked_for_destruction)
+			if (it->m_is_marked_for_destruction)
 			{
 				// kill delay timer
-				if (it->timer > 0.0f) 
+				if (it->m_timer > 0.0f)
 				{
-					it->timer -= interfaces::get()->m_globals->absoluteframetime;
+					it->m_timer -= glob->absoluteframetime;
 					++it;
 				}
 				else
@@ -487,15 +600,15 @@ namespace components
 		// iterate all map lights
 		for (auto& l : m_active_lights)
 		{
-			if (l.mover.is_initialized())
+			if (l.m_mover.is_initialized())
 			{
-				const auto finished = l.mover.advance_time(interfaces::get()->m_globals->absoluteframetime);
+				const auto finished = l.m_mover.advance_time(glob->absoluteframetime);
 				update_remix_light(&l);
 
 				if (!edit_mode)
 				{
-					if (finished && l.def.run_once) { // destroy light on next frame
-						l.is_marked_for_destruction = true;
+					if (finished && l.m_def.run_once) { // destroy light on next frame
+						l.m_is_marked_for_destruction = true;
 					}
 				}
 			}
@@ -504,11 +617,11 @@ namespace components
 				if (l.has_attach_parms())
 				{
 					if (l.is_attached()) { // update every frame when attached
-						update_static_remix_light(&l, &l.def.points.front());
+						update_static_remix_light(&l, &l.m_def.points.front());
 					}
-					else if (l.ext.radius > 0.0f) // "disable" light when it gets unattached
+					else if (l.m_ext.radius > 0.0f) // "disable" light when it gets unattached
 					{
-						auto temp_pt = l.def.points.front();
+						auto temp_pt = l.m_def.points.front();
 						temp_pt.radius = 0.0f;
 						update_static_remix_light(&l, &temp_pt);
 					}
@@ -516,23 +629,23 @@ namespace components
 			}
 
 			// if light is not yet spawned
-			if (!l.handle)
+			if (!l.m_handle)
 			{
 				// handle delayed triggering
-				if (l.timer < l.def.trigger_delay) {
-					l.timer += interfaces::get()->m_globals->absoluteframetime;
+				if (l.m_timer < l.m_def.trigger_delay) {
+					l.m_timer += glob->absoluteframetime;
 				}
 				else
 				{
-					if (l.def.points.size() > 1) {
-						l.mover.init(l.def.points, l.def.loop, l.def.loop_smoothing);
+					if (l.m_def.points.size() > 1) {
+						l.m_mover.init(l.m_def.points, l.m_def.loop, l.m_def.loop_smoothing);
 					}
 
 					// spawn it
 					get()->spawn_remix_light(&l);
 
 					// set timer to kill delay
-					l.timer = l.def.kill_delay;
+					l.m_timer = l.m_def.kill_delay;
 				}
 			}
 		}
@@ -543,8 +656,8 @@ namespace components
 	{
 		for (auto& l : m_active_lights)
 		{
-			if (l.handle) {
-				remix_api::get()->m_bridge.DrawLightInstance(l.handle);
+			if (l.m_handle) {
+				remix_api::get()->m_bridge.DrawLightInstance(l.m_handle);
 			}
 		}
 	}
@@ -552,30 +665,48 @@ namespace components
 	// #
 	// #
 
-	bool light_attachment_is_matching_model(const remix_lights::remix_light_s& light, const ModelRenderInfo_t& info)
+	bool light_attachment_is_matching_model(const remix_lights::light& light, const ModelRenderInfo_t& info)
 	{
-		const bool has_radius = light.def.attach_prop_radius != 0.0f;
-		const bool has_name = !light.def.attach_prop_name.empty();
+		const bool has_radius = light.m_def.attach_prop_radius != 0.0f;
+		const bool has_name = !light.m_def.attach_prop_name.empty();
 
 		if (!has_radius && !has_name) {
 			return false;
 		}
 
-		// bounds check
-		if (!light.def.attach_prop_mins.IsZero() || !light.def.attach_prop_maxs.IsZero())
+		// light is tracked via entity index if not -1
+		if (light.m_entity_index >= 0)
 		{
-			if (!utils::vector::is_point_in_aabb(info.origin, light.def.attach_prop_mins, light.def.attach_prop_maxs)) {
+			if (light.m_entity_index == info.entity_index)
+			{
+				// sanity check - making sure the entity is still valid
+				if (has_radius && utils::float_equal(info.pModel->radius, light.m_def.attach_prop_radius)) {
+					return true;
+				}
+
+				if (has_name && std::string_view(info.pModel->szPathName).contains(light.m_def.attach_prop_name)) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		// radius check if specified
+		if (has_radius && !utils::float_equal(info.pModel->radius, light.m_def.attach_prop_radius)) {
+			return false;
+		}
+
+		// bounds check
+		if (!light.m_def.attach_prop_mins.IsZero() || !light.m_def.attach_prop_maxs.IsZero())
+		{
+			if (!utils::vector::is_point_in_aabb(info.origin, light.m_def.attach_prop_mins, light.m_def.attach_prop_maxs)) {
 				return false;
 			}
 		}
 
-		// radius check if specified
-		if (has_radius && !utils::float_equal(info.pModel->radius, light.def.attach_prop_radius)) {
-			return false;
-		}
-
 		// name substring check if specified
-		if (has_name && !std::string_view(info.pModel->szPathName).contains(light.def.attach_prop_name)) {
+		if (has_name && !std::string_view(info.pModel->szPathName).contains(light.m_def.attach_prop_name)) {
 			return false;
 		}
 
@@ -585,18 +716,130 @@ namespace components
 	// called from model_renderer::DrawModelExecute::Detour
 	void remix_lights::on_draw_model_exec(const ModelRenderInfo_t& info)
 	{
+		if (cmd::show_mesh_bone_info)
+		{
+			const auto cutoff_dist = game_settings::get()->debug_info_distance.get_as<float>();
+			if (game::get_current_view_origin()->DistToSqr(info.origin) < cutoff_dist * cutoff_dist)
+			{
+				if (const auto base_animating = game::get_base_animating_for_client_renderable(info.pRenderable);
+					base_animating)
+				{
+					if (const auto studio = game::namespaces::C_BaseAnimating::GetModelPtr(base_animating);
+						studio)
+					{
+						auto studio_mdl = studio->m_pStudioHdr;
+						Vector bonePos;
+						Vector boneAngles;
+						matrix3x4_t bone = {};
+
+						// vis all bones
+						for (int i = 0; i < studio_mdl->numbones; i++)
+						{
+							game::namespaces::C_BaseAnimating::GetBoneTransform(base_animating, i, &bone);
+
+							// C_BaseAnimating::GetBonePosition
+							utils::matrix_angles(bone, &boneAngles);
+							bonePos.x = bone.m_flMatVal[0][3];
+							bonePos.y = bone.m_flMatVal[1][3];
+							bonePos.z = bone.m_flMatVal[2][3];
+
+							const auto pBone = studio_mdl->pBone(i);
+							const auto bname = pBone->pszName();
+							game::debug_add_text_overlay(&bonePos.x, utils::va("Bone: '%d' -- '%s'", i, bname), 0);
+							game::debug_add_text_overlay(&bonePos.x, utils::va("Ent Index: '%d'", info.entity_index), 1);
+						}
+					}
+				}
+			}
+		}
+
 		if (map_settings::get_map_settings().using_any_light_attached_to_prop || imgui::get()->m_light_edit_mode)
 		{
 			for (auto& light : m_active_lights)
 			{
-				if (light.attachframe != m_attachframe_counter)
+				if (light.has_attach_parms() && light.m_attachframe != m_attachframe_counter)
 				{
 					if (light_attachment_is_matching_model(light, info))
 					{
-						light.attachframe = m_attachframe_counter; // mark as processed this frame
-						light.attached_offset = info.origin;
-						//break; // we might have other lights attached to this model
+						light.m_attachframe = m_attachframe_counter; // mark as processed this frame
+						light.m_attached_position = info.origin;
+						light.m_attached_angle = info.angles;
+						light.m_entity_index = info.entity_index; // track entity_index so that the light stays attached even when the ent moves outside
+
+						// logic if light should attach to a bone
+						if (cmd::show_mesh_bone_info_attached || light.m_def.attach_bone_index >= 0 || !light.m_def.attach_bone_name.empty())
+						{
+							if (const auto base_animating = game::get_base_animating_for_client_renderable(info.pRenderable);
+								base_animating)
+							{
+								if (const auto studio = game::namespaces::C_BaseAnimating::GetModelPtr(base_animating);
+									studio)
+								{
+									matrix3x4_t bone = {};
+									Vector bonePos;
+
+									// do not redraw info if showing info for every mesh
+									if (!cmd::show_mesh_bone_info && cmd::show_mesh_bone_info_attached)
+									{
+										auto studio_mdl = studio->m_pStudioHdr;
+										Vector boneAngles;
+
+										// vis all bones
+										for (int i = 0; i < studio_mdl->numbones; i++)
+										{
+											game::namespaces::C_BaseAnimating::GetBoneTransform(base_animating, i, &bone);
+
+											// C_BaseAnimating::GetBonePosition
+											utils::matrix_angles(bone, &boneAngles);
+											bonePos.x = bone.m_flMatVal[0][3];
+											bonePos.y = bone.m_flMatVal[1][3];
+											bonePos.z = bone.m_flMatVal[2][3];
+
+											const auto pBone = studio_mdl->pBone(i);
+											const auto bname = pBone->pszName();
+											game::debug_add_text_overlay(&bonePos.x, utils::va("Bone: '%d' -- '%s'", i, bname), 0);
+											game::debug_add_text_overlay(&bonePos.x, utils::va("Ent Index: '%d'", info.entity_index), 1);
+										}
+									}
+
+									int bone_idx = light.m_def.attach_bone_index;
+									if (bone_idx < 0 && !light.m_def.attach_bone_name.empty()) {
+										bone_idx = game::namespaces::C_BaseAnimating::LookupBone(base_animating, light.m_def.attach_bone_name.c_str());
+									}
+
+									if (bone_idx >= 0)
+									{
+										game::namespaces::C_BaseAnimating::GetBoneTransform(base_animating, bone_idx, &bone);
+
+										light.m_attached_bone_forward = {
+											bone.m_flMatVal[0][0], bone.m_flMatVal[1][0], bone.m_flMatVal[2][0]
+										};
+
+										light.m_attached_bone_right = {
+											bone.m_flMatVal[0][1], bone.m_flMatVal[1][1], bone.m_flMatVal[2][1]
+										};
+
+										light.m_attached_bone_up = {
+											bone.m_flMatVal[0][2], bone.m_flMatVal[1][2], bone.m_flMatVal[2][2]
+										};
+
+										// GetBonePosition(i, bonePos, boneAngles);
+										utils::matrix_angles(bone, &light.m_attached_angle);
+										bonePos.x = bone.m_flMatVal[0][3];
+										bonePos.y = bone.m_flMatVal[1][3];
+										bonePos.z = bone.m_flMatVal[2][3];
+
+										light.m_attached_position = bonePos;
+									}
+								}
+							}
+						}
 					}
+				}
+
+				// reset tracked entity when the entity could not be found for 5 frames
+				if (!light.is_attached() && m_attachframe_counter > light.m_attachframe + 5) {
+					light.m_entity_index = -1;
 				}
 			}
 		}
@@ -653,10 +896,10 @@ namespace components
 		for (auto& l : m_active_lights)
 		{
 			// only check active lights with a kill trigger not yet marked to be destroyed
-			if (l.handle && !l.def.kill_choreo_name.empty() && !l.is_marked_for_destruction)
+			if (l.m_handle && !l.m_def.kill_choreo_name.empty() && !l.m_is_marked_for_destruction)
 			{
-				if (name.contains(l.def.kill_choreo_name)) {
-					l.is_marked_for_destruction = true;
+				if (name.contains(l.m_def.kill_choreo_name)) {
+					l.m_is_marked_for_destruction = true;
 				}
 			}
 		}
@@ -673,10 +916,10 @@ namespace components
 		for (auto& l : m_active_lights)
 		{
 			// only check active lights with a kill trigger not yet marked to be destroyed
-			if (l.handle && l.def.kill_sound_hash && !l.is_marked_for_destruction)
+			if (l.m_handle && l.m_def.kill_sound_hash && !l.m_is_marked_for_destruction)
 			{
-				if (l.def.kill_sound_hash == hash) {
-					l.is_marked_for_destruction = true;
+				if (l.m_def.kill_sound_hash == hash) {
+					l.m_is_marked_for_destruction = true;
 				}
 			}
 		}
@@ -722,8 +965,8 @@ namespace components
 			bool first_done = false;
 			for (const auto& l : m_active_lights)
 			{
-				const Vector circle_pos = &l.ext.position.x;
-				const float radius = l.ext.radius;
+				const Vector circle_pos = &l.m_ext.position.x;
+				const float radius = l.m_ext.radius;
 				const Vector color = { 1.0f, 1.0f, 1.0f };
 
 				const auto remixapi = remix_api::get();
@@ -817,6 +1060,28 @@ namespace components
 		cmd::show_api_lights = !cmd::show_api_lights;
 	}
 
+	ConCommand xo_debug_show_mesh_bone_info_attached_cmd{};
+	void xo_debug_show_mesh_bone_info_attached_fn()
+	{
+		cmd::show_mesh_bone_info_attached = !cmd::show_mesh_bone_info_attached;
+
+		// disable vis for ALL 
+		if (cmd::show_mesh_bone_info_attached) {
+			cmd::show_mesh_bone_info = false;
+		}
+	}
+
+	ConCommand xo_debug_show_mesh_bone_info_cmd{};
+	void xo_debug_show_mesh_bone_info_fn()
+	{
+		cmd::show_mesh_bone_info = !cmd::show_mesh_bone_info;
+
+		// disable specific vis if still active
+		if (!cmd::show_mesh_bone_info) {
+			cmd::show_mesh_bone_info_attached = false;
+		}
+	}
+
 	remix_lights::remix_lights()
 	{
 		p_this = this;
@@ -826,5 +1091,7 @@ namespace components
 
 		game::con_add_command(&xo_debug_toggle_pos_time_cmd, "xo_debug_toggle_pos_time", xo_debug_toggle_pos_time_fn, "Toggle debug prints about player position and time (useful for animated lights)");
 		game::con_add_command(&xo_debug_toggle_show_api_lights_cmd, "xo_debug_toggle_show_api_lights", xo_debug_toggle_show_api_lights_fn, "Toggle debug vis for lights added via the remixapi");
+		game::con_add_command(&xo_debug_show_mesh_bone_info_attached_cmd, "xo_debug_show_mesh_bone_info_attached", xo_debug_show_mesh_bone_info_attached_fn, "Edit Mode + Attached to mesh only: Show bone information of mesh with an attached remixApi light (names/indices)");
+		game::con_add_command(&xo_debug_show_mesh_bone_info_cmd, "xo_debug_show_mesh_bone_info", xo_debug_show_mesh_bone_info_fn, "Show bone information for all nearby meshes (names/indices + entity indices)");
 	}
 }

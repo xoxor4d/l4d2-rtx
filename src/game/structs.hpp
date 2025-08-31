@@ -222,6 +222,13 @@ namespace components
 		VIEW_ID_COUNT = 0x8,
 	};
 
+	struct RadianEuler
+	{
+		float x;
+		float y;
+		float z;
+	};
+
 	struct matrix3x4_t
 	{
 		float m_flMatVal[3][4];
@@ -300,11 +307,8 @@ namespace components
 	// ------------------------------
 	// ------------------------------
 
-	struct QAngle
+	struct QAngle : Vector
 	{
-		float x;
-		float y;
-		float z;
 	};
 
 	struct Color
@@ -654,8 +658,34 @@ namespace components
 		ShaderStencilState_t* m_pStencilState;
 	};
 
+	struct mstudiobone_t
+	{
+		int sznameindex;
+		char* const pszName() const { return ((char*)this) + sznameindex; }
+
+		int parent;
+		int bonecontroller[6];
+		Vector pos;
+		Quaternion quat;
+		RadianEuler rot;
+		Vector posscale;
+		Vector rotscale;
+		matrix3x4_t poseToBone;
+		Quaternion qAlignment;
+		int flags;
+		int proctype;
+		int procindex;
+		int physicsbone;
+		int surfacepropidx;
+		int contents;
+		int surfacepropLookup;
+		int unused[7];
+	};
+
 	struct studiohdr_t
 	{
+		mstudiobone_t* pBone(int i) const { return (mstudiobone_t*)(((const byte*)this) + boneindex) + i; }
+
 		int id;
 		int version;
 		int checksum;
@@ -1135,7 +1165,7 @@ namespace components
 	struct IClientRenderable_vtbl;
 	struct IClientRenderable
 	{
-		IClientRenderable_vtbl* vftable;
+		IClientRenderable_vtbl* vftable_iclientrenderable;
 	};
 
 	const struct RenderableInstance_t
@@ -1143,9 +1173,10 @@ namespace components
 		unsigned __int8 m_nAlpha;
 	};
 
+	struct IClientUnknown;
 	struct IClientRenderable_vtbl
 	{
-		void* (__thiscall* GetIClientUnknown)(IClientRenderable*); // IClientUnknown
+		IClientUnknown* (__thiscall* GetIClientUnknown)(IClientRenderable*);
 		const Vector* (__thiscall* GetRenderOrigin)(IClientRenderable*);
 		const QAngle* (__thiscall* GetRenderAngles)(IClientRenderable*);
 		bool(__thiscall* ShouldDraw)(IClientRenderable*);
@@ -1729,7 +1760,7 @@ namespace components
 	struct IHandleEntity_vtbl;
 	struct IHandleEntity
 	{
-		IHandleEntity_vtbl* vftable;
+		IHandleEntity_vtbl* vftable_ihandleent;
 	};
 
 	struct IHandleEntity_vtbl
@@ -1737,6 +1768,25 @@ namespace components
 		void(__thiscall * IHandleEntity_destructor)(IHandleEntity*);
 		void(__thiscall* SetRefEHandle)(IHandleEntity*, const CBaseHandle*);
 		const CBaseHandle* (__thiscall* GetRefEHandle)(IHandleEntity*);
+	};
+
+	struct ICollideable;
+	struct IClientNetworkable;
+	struct IClientEntity;
+	struct C_BaseEntity;
+	struct IClientUnknown;
+	struct IClientUnknown_vtbl
+	{
+		void(__thiscall* IClientUnknown_destructor)(struct IClientUnknown*);
+		void(__thiscall* SetRefEHandle)(struct IClientUnknown*, const CBaseHandle*);
+		const CBaseHandle* (__thiscall* GetRefEHandle)(struct IClientUnknown*);
+		ICollideable* (__thiscall* GetCollideable)(IClientUnknown*);
+		IClientNetworkable* (__thiscall* GetClientNetworkable)(IClientUnknown*);
+		IClientRenderable* (__thiscall* GetClientRenderable)(IClientUnknown*);
+		IClientEntity* (__thiscall* GetIClientEntity)(IClientUnknown*);
+		C_BaseEntity* (__thiscall* GetBaseEntity)(IClientUnknown*);
+		void* (__thiscall* GetClientThinkable)(IClientUnknown*); // IClientThinkable
+		void* (__thiscall* GetClientAlphaProperty)(IClientUnknown*); // IClientAlphaProperty
 	};
 
 	struct IClientUnknown : IHandleEntity
@@ -1833,20 +1883,258 @@ namespace components
 		bool(__thiscall* GetRenderData)(IClientModelRenderable*, void*, ModelDataCategory_t);
 	};
 
+	enum Class_T : __int32
+	{
+		CLASS_NONE = 0x0,
+		CLASS_PLAYER = 0x1,
+		CLASS_PLAYER_ALLY = 0x2,
+		CLASS_PLAYER_ALLY_VITAL = 0x3,
+		CLASS_ANTLION = 0x4,
+		CLASS_BARNACLE = 0x5,
+		CLASS_BLOB = 0x6,
+		CLASS_BULLSEYE = 0x7,
+		CLASS_CITIZEN_PASSIVE = 0x8,
+		CLASS_CITIZEN_REBEL = 0x9,
+		CLASS_COMBINE = 0xA,
+		CLASS_COMBINE_GUNSHIP = 0xB,
+		CLASS_CONSCRIPT = 0xC,
+		CLASS_HEADCRAB = 0xD,
+		CLASS_MANHACK = 0xE,
+		CLASS_METROPOLICE = 0xF,
+		CLASS_MILITARY = 0x10,
+		CLASS_SCANNER = 0x11,
+		CLASS_STALKER = 0x12,
+		CLASS_VORTIGAUNT = 0x13,
+		CLASS_ZOMBIE = 0x14,
+		CLASS_PROTOSNIPER = 0x15,
+		CLASS_MISSILE = 0x16,
+		CLASS_FLARE = 0x17,
+		CLASS_EARTH_FAUNA = 0x18,
+		CLASS_HACKED_ROLLERMINE = 0x19,
+		CLASS_COMBINE_HUNTER = 0x1A,
+		LAST_SHARED_ENTITY_CLASS = 0x1B,
+	};
+
+	enum SolidType_t : __int32
+	{
+		SOLID_NONE = 0x0,
+		SOLID_BSP = 0x1,
+		SOLID_BBOX = 0x2,
+		SOLID_OBB = 0x3,
+		SOLID_OBB_YAW = 0x4,
+		SOLID_CUSTOM = 0x5,
+		SOLID_VPHYSICS = 0x6,
+		SOLID_LAST = 0x7,
+	};
+
+	enum RenderableTranslucencyType_t : __int32
+	{
+		RENDERABLE_IS_OPAQUE = 0x0,
+		RENDERABLE_IS_TRANSLUCENT = 0x1,
+		RENDERABLE_IS_TWO_PASS = 0x2,
+	};
+
+	enum CollideType_t : __int32
+	{
+		ENTITY_SHOULD_NOT_COLLIDE = 0x0,
+		ENTITY_SHOULD_COLLIDE = 0x1,
+		ENTITY_SHOULD_RESPOND = 0x2,
+	};
+
+	struct  ICollideable
+	{
+		void* vftable;
+	};
+
+	struct C_BaseAnimating;
+	struct C_BaseEntity_vtbl
+	{
+		void(__thiscall* IClientUnknown_destructor)(struct IClientUnknown*);
+		void(__thiscall* SetRefEHandle)(struct IClientUnknown*, const CBaseHandle*);
+		const CBaseHandle* (__thiscall* GetRefEHandle)(struct IClientUnknown*);
+		ICollideable* (__thiscall* GetCollideable)(IClientUnknown*);
+		IClientNetworkable* (__thiscall* GetClientNetworkable)(IClientUnknown*);
+		IClientRenderable* (__thiscall* GetClientRenderable)(IClientUnknown*);
+		IClientEntity* (__thiscall* GetIClientEntity)(IClientUnknown*);
+		C_BaseEntity* (__thiscall* GetBaseEntity)(IClientUnknown*);
+		IClientThinkable* (__thiscall* GetClientThinkable)(IClientUnknown*);
+		void* (__thiscall* GetClientAlphaProperty)(IClientUnknown*); // IClientAlphaProperty
+		const Vector* (__thiscall* GetAbsOrigin)(IClientEntity*);
+		const QAngle* (__thiscall* GetAbsAngles)(IClientEntity*);
+		void* (__thiscall* GetMouth)(IClientEntity*); // CMouthInfo
+		bool(__thiscall* GetSoundSpatialization)(IClientEntity*, void*); // SpatializationInfo_t
+		bool(__thiscall* IsBlurred)(IClientEntity*);
+		void* (__thiscall* GetDataDescMap)(C_BaseEntity*); // datamap_t
+		int(__thiscall* YouForgotToImplementOrDeclareClientClass)(C_BaseEntity*);
+		void* (__thiscall* GetPredDescMap)(C_BaseEntity*); // datamap_t
+		void* (__thiscall* GetScriptDesc)(C_BaseEntity*); // ScriptClassDesc_t
+		void(__thiscall* FireBullets)(C_BaseEntity*, const void*); // FireBulletsInfo_t
+		bool(__thiscall* ShouldDrawUnderwaterBulletBubbles)(C_BaseEntity*);
+		bool(__thiscall* ShouldDrawWaterImpacts)(C_BaseEntity*);
+		bool(__thiscall* HandleShotImpactingWater)(C_BaseEntity*, const void*, const Vector*, void*, Vector*); // FireBulletsInfo_t, ITraceFilter
+		void* (__thiscall* GetBeamTraceFilter)(C_BaseEntity*); // ITraceFilter
+		void(__thiscall* DispatchTraceAttack)(C_BaseEntity*, const void*, const Vector*, void*); // CTakeDamageInfo, CGameTrace
+		void(__thiscall* TraceAttack)(C_BaseEntity*, const void*, const Vector*, void*); // CTakeDamageInfo, CGameTrace
+		void(__thiscall* DoImpactEffect)(C_BaseEntity*, void*, int); // CGameTrace
+		void(__thiscall* MakeTracer)(C_BaseEntity*, const Vector*, const void*, int); // CGameTrace
+		int(__thiscall* GetTracerAttachment)(C_BaseEntity*);
+		int(__thiscall* BloodColor)(C_BaseEntity*);
+		const char* (__thiscall* GetTracerType)(C_BaseEntity*);
+		void(__thiscall* TakeDamage)(C_BaseEntity*, const void*); // CTakeDamageInfo
+		void(__thiscall* Spawn)(C_BaseEntity*);
+		void(__thiscall* SpawnClientEntity)(C_BaseEntity*);
+		void(__thiscall* Precache)(C_BaseEntity*);
+		void(__thiscall* Activate)(C_BaseEntity*);
+		void(__thiscall* OnParseMapDataFinished)(C_BaseEntity*);
+		bool(__thiscall* KeyValue1)(C_BaseEntity*, const char*, const Vector*);
+		bool(__thiscall* KeyValue2)(C_BaseEntity*, const char*, int);
+		bool(__thiscall* KeyValue3)(C_BaseEntity*, const char*, float);
+		bool(__thiscall* KeyValue4)(C_BaseEntity*, const char*, const char*);
+		bool(__thiscall* GetKeyValue)(C_BaseEntity*, const char*, char*, int);
+		//void(__thiscall* InitSharedVars)(C_BaseEntity*);
+		//bool(__thiscall* Init)(C_BaseEntity*, int, int);
+		C_BaseAnimating* (__thiscall* GetBaseAnimating)(C_BaseEntity*); // C_BaseAnimating
+		void(__thiscall* SetClassname)(C_BaseEntity*, const char*);
+		Class_T(__thiscall* Classify)(C_BaseEntity*);
+		void(__thiscall* OnToolStartRecording)(C_BaseEntity*);
+		Vector* (__thiscall* GetObserverCamOrigin)(C_BaseEntity*, Vector* result);
+		bool(__thiscall* IsTransparent)(C_BaseEntity*);
+		bool(__thiscall* TestCollision)(C_BaseEntity*, const Ray_t*, unsigned int, void*);
+		bool(__thiscall* TestHitboxes)(C_BaseEntity*, const Ray_t*, unsigned int, void*);
+		float(__thiscall* GetAttackDamageScale)(C_BaseEntity*);
+		void(__thiscall* ValidateModelIndex)(C_BaseEntity*);
+		void(__thiscall* SetDormant)(C_BaseEntity*, bool);
+		void(__thiscall* OnSetDormant)(C_BaseEntity*, bool);
+		int(__thiscall* GetEFlags)(C_BaseEntity*);
+		void(__thiscall* SetEFlags)(C_BaseEntity*, int);
+		bool(__thiscall* ShouldSavePhysics)(C_BaseEntity*);
+		void(__thiscall* OnSave)(C_BaseEntity*);
+		void(__thiscall* OnRestore)(C_BaseEntity*);
+		int(__thiscall* ObjectCaps)(C_BaseEntity*);
+		int(__thiscall* Save)(C_BaseEntity*, void*);
+		int(__thiscall* Restore)(C_BaseEntity*, void*);
+		bool(__thiscall* CreateVPhysics)(C_BaseEntity*);
+		void(__thiscall* VPhysicsDestroyObject)(C_BaseEntity*);
+		void(__thiscall* VPhysicsUpdate)(C_BaseEntity*, void*);
+		void(__thiscall* VPhysicsShadowUpdate)(C_BaseEntity*, void*);
+		int(__thiscall* VPhysicsGetObjectList)(C_BaseEntity*, void**, int);
+		bool(__thiscall* VPhysicsIsFlesh)(C_BaseEntity*);
+		void(__thiscall* VPhysicsCompensateForPredictionErrors)(C_BaseEntity*, const unsigned __int8*);
+		const Vector* (__thiscall* GetPrevLocalOrigin)(C_BaseEntity*);
+		const QAngle* (__thiscall* GetPrevLocalAngles)(C_BaseEntity*);
+		void(__thiscall* Teleport)(C_BaseEntity*, const Vector*, const QAngle*, const Vector*);
+		const Vector* (__thiscall* WorldAlignMins)(C_BaseEntity*);
+		const Vector* (__thiscall* WorldAlignMaxs)(C_BaseEntity*);
+		const Vector* (__thiscall* WorldSpaceCenter)(C_BaseEntity*);
+		void(__thiscall* ComputeWorldSpaceSurroundingBox)(C_BaseEntity*, Vector*, Vector*);
+		void(__thiscall* GetVectors)(C_BaseEntity*, Vector*, Vector*, Vector*);
+		SolidType_t(__thiscall* GetSolid)(C_BaseEntity*);
+		int(__thiscall* GetSolidFlags)(C_BaseEntity*);
+		bool(__thiscall* GetAttachment)(C_BaseEntity*, int, Vector*);
+		bool(__thiscall* GetAttachmentVelocity)(C_BaseEntity*, int, Vector*, void*);
+		void(__thiscall* InvalidateAttachments)(C_BaseEntity*);
+		void* (__thiscall* GetTeam)(C_BaseEntity*);
+		int(__thiscall* GetTeamNumber)(C_BaseEntity*);
+		void(__thiscall* ChangeTeam)(C_BaseEntity*, int);
+		int(__thiscall* GetRenderTeamNumber)(C_BaseEntity*);
+		bool(__thiscall* InSameTeam)(C_BaseEntity*, C_BaseEntity*);
+		bool(__thiscall* InLocalTeam)(C_BaseEntity*);
+		bool(__thiscall* IsValidIDTarget)(C_BaseEntity*);
+		char* (__thiscall* GetIDString)(C_BaseEntity*);
+		void(__thiscall* UpdatePartitionListEntry)(C_BaseEntity*);
+		bool(__thiscall* InitializeAsClientEntity)(C_BaseEntity*, const char*, bool);
+		bool(__thiscall* Simulate)(C_BaseEntity*);
+		void* (__thiscall* GetClientVehicle)(C_BaseEntity*);
+		void(__thiscall* GetAimEntOrigin)(C_BaseEntity*, IClientEntity*, Vector*, QAngle*);
+		const Vector* (__thiscall* GetOldOrigin)(C_BaseEntity*);
+		RenderableTranslucencyType_t(__thiscall* ComputeTranslucencyType)(C_BaseEntity*);
+		void(__thiscall* GetToolRecordingState)(C_BaseEntity*, KeyValues*);
+		void(__thiscall* CleanupToolRecordingState)(C_BaseEntity*, KeyValues*);
+		CollideType_t(__thiscall* GetCollideType)(C_BaseEntity*);
+		bool(__thiscall* ShouldSuppressForSplitScreenPlayer)(C_BaseEntity*, int);
+		bool(__thiscall* IsSelfAnimating)(C_BaseEntity*);
+		void(__thiscall* OnLatchInterpolatedVariables)(C_BaseEntity*, int);
+		CStudioHdr* (__thiscall* OnNewModel)(C_BaseEntity*);
+		void(__thiscall* OnNewParticleEffect)(C_BaseEntity*, const char*, void*);
+		void(__thiscall* OnParticleEffectDeleted)(C_BaseEntity*, void*);
+		void(__thiscall* ResetLatched)(C_BaseEntity*);
+		bool(__thiscall* Interpolate)(C_BaseEntity*, float);
+		bool(__thiscall* IsSubModel)(C_BaseEntity*);
+		bool(__thiscall* CreateLightEffects)(C_BaseEntity*);
+		void(__thiscall* Clear)(C_BaseEntity*);
+		int(__thiscall* DrawBrushModel)(C_BaseEntity*, bool, bool, bool);
+		float(__thiscall* GetTextureAnimationStartTime)(C_BaseEntity*);
+		void(__thiscall* TextureAnimationWrapped)(C_BaseEntity*);
+		void(__thiscall* SetNextClientThink)(C_BaseEntity*, float);
+		void(__thiscall* SetHealth)(C_BaseEntity*, int);
+		int(__thiscall* GetHealth)(C_BaseEntity*);
+		int(__thiscall* GetMaxHealth)(C_BaseEntity*);
+		void(__thiscall* AddDecal)(C_BaseEntity*, const Vector*, const Vector*, const Vector*, int, int, bool, void*, int);
+		bool(__thiscall* IsClientCreated)(C_BaseEntity*);
+		void(__thiscall* UpdateOnRemove)(C_BaseEntity*);
+		void(__thiscall* SUB_Remove)(C_BaseEntity*);
+		void* (__thiscall* GetPredictionOwner)(C_BaseEntity*); // C_BasePlayer
+		void(__thiscall* InitPredictable)(C_BaseEntity*, void*); // C_BasePlayer
+		void(__thiscall* SetPredictable)(C_BaseEntity*, bool);
+		void(__thiscall* HandlePredictionError)(C_BaseEntity*, bool);
+		bool(__thiscall* PredictionErrorShouldResetLatchedForAllPredictables)(C_BaseEntity*);
+		bool(__thiscall* PredictionIsPhysicallySimulated)(C_BaseEntity*);
+		const char* (__thiscall* DamageDecal)(C_BaseEntity*, int, int);
+		void(__thiscall* DecalTrace)(C_BaseEntity*, void*, const char*);
+		void(__thiscall* ImpactTrace)(C_BaseEntity*, void*, int, char*);
+		bool(__thiscall* ShouldPredict)(C_BaseEntity*);
+		void(__thiscall* Think)(C_BaseEntity*);
+		bool(__thiscall* PreRender)(C_BaseEntity*, int);
+		const char* (__thiscall* GetClassname)(C_BaseEntity*);
+		const char* (__thiscall* GetPlayerName)(C_BaseEntity*);
+		void(__thiscall* EstimateAbsVelocity)(C_BaseEntity*, Vector*);
+		bool(__thiscall* CanBePoweredUp)(C_BaseEntity*);
+		bool(__thiscall* AttemptToPowerup)(C_BaseEntity*, int, float, float, C_BaseEntity*, struct CDamageModifier*);
+		bool(__thiscall* IsCurrentlyTouching)(C_BaseEntity*);
+		void(__thiscall* StartTouch)(C_BaseEntity*, C_BaseEntity*);
+		void(__thiscall* Touch)(C_BaseEntity*, C_BaseEntity*);
+		void(__thiscall* EndTouch)(C_BaseEntity*, C_BaseEntity*);
+		unsigned int(__thiscall* PhysicsSolidMaskForEntity)(C_BaseEntity*);
+		void(__thiscall* PhysicsSimulate)(C_BaseEntity*);
+		bool(__thiscall* IsAlive)(C_BaseEntity*);
+		bool(__thiscall* ShouldRegenerateOriginFromCellBits)(C_BaseEntity*);
+		bool(__thiscall* IsPlayer)(C_BaseEntity*);
+		bool(__thiscall* IsBaseCombatCharacter)(C_BaseEntity*);
+		void* (__thiscall* MyCombatCharacterPointer)(C_BaseEntity*); // C_BaseCombatCharacter
+		bool(__thiscall* IsNPC)(C_BaseEntity*);
+		bool(__thiscall* IsSprite)(C_BaseEntity*);
+		bool(__thiscall* IsProp)(C_BaseEntity*);
+		bool(__thiscall* IsBaseObject)(C_BaseEntity*);
+		bool(__thiscall* IsBaseCombatWeapon)(C_BaseEntity*);
+		void* (__thiscall* MyCombatWeaponPointer)(C_BaseEntity*); // C_BaseCombatWeapon
+		bool(__thiscall* IsBaseTrain)(C_BaseEntity*);
+		Vector* (__thiscall* EyePosition)(C_BaseEntity*, Vector* result);
+		const QAngle* (__thiscall* EyeAngles)(C_BaseEntity*);
+		const QAngle* (__thiscall* LocalEyeAngles)(C_BaseEntity*);
+		Vector* (__thiscall* EarPosition)(C_BaseEntity*, Vector* result);
+		bool(__thiscall* ShouldCollide)(C_BaseEntity*, int, int);
+		const Vector* (__thiscall* GetViewOffset)(C_BaseEntity*);
+		void(__thiscall* SetViewOffset)(C_BaseEntity*, const Vector*);
+		void(__thiscall* GetGroundVelocityToApply)(C_BaseEntity*, Vector*);
+		bool(__thiscall* ShouldInterpolate)(C_BaseEntity*);
+		void(__thiscall* BoneMergeFastCullBloat)(C_BaseEntity*, Vector*, Vector*, const Vector*, const Vector*);
+		bool(__thiscall* OnPredictedEntityRemove)(C_BaseEntity*, bool, C_BaseEntity*);
+		C_BaseEntity* (__thiscall* GetShadowUseOtherEntity)(C_BaseEntity*);
+		void(__thiscall* SetShadowUseOtherEntity)(C_BaseEntity*, C_BaseEntity*);
+		bool(__thiscall* AddRagdollToFadeQueue)(C_BaseEntity*);
+		int(__thiscall* GetStudioBody)(C_BaseEntity*);
+		void(__thiscall* PerformCustomPhysics)(C_BaseEntity*, Vector*, Vector*, QAngle*, QAngle*);
+	};
+
 	struct __declspec(align(4)) C_BaseEntity /*: IClientEntity, IClientModelRenderable*/
 	{
-		char pad_vtbls[0x14];
-		const char* m_iClassname;
-		void* m_hScriptInstance; // HSCRIPT__
-		const char* m_iszScriptId;
-		char pad_varmap[0x20];//VarMapping_t m_VarMap;
-		char pad_think[0x10]; //__int128 m_pfnThink;
-		char pad_touch[0x10]; //__int128 m_pfnTouch;
+		C_BaseEntity_vtbl* vtbl;
+		char pad_0x0004[0x54]; //0x0004
 		int index;
-		unsigned __int16 m_EntClientFlags;
-		const struct model_t* model;
-		void* m_clrRender; //CNetworkColor32Base<color32_s, C_BaseEntity::NetworkVar_m_clrRender> m_clrRender;
-		int m_cellbits;
+		char pad_0x005C[0x4]; //0x005C
+		int model; //0x0060 
+		char pad_0x0064[0x4]; //0x0064
+		int m_cellbits; //0x0068
 		int m_cellwidth;
 		int m_cellX;
 		int m_cellY;
@@ -1980,8 +2268,14 @@ namespace components
 		CThreadFastMutex m_CalcAbsoluteVelocityMutex;
 		bool m_bIsBlurred;*/
 	};
-	STATIC_ASSERT_OFFSET(C_BaseEntity, m_vecAbsOrigin, 0x9C);
+	STATIC_ASSERT_OFFSET(C_BaseEntity, m_vecAbsOrigin, 0x94);
 
+	struct C_BaseAnimating : C_BaseEntity
+	{
+		void* m_pRagdoll; // CRagdoll
+		C_BaseAnimating* m_pClientsideRagdoll;
+		int m_nHitboxSet;
+	};
 
 	struct MeshBoneRemap_t
 	{
@@ -3244,11 +3538,6 @@ namespace components
 		StaticPropDict_t_Mem m_Memory;
 		std::uint32_t m_Size;
 		StaticPropDict_t* m_pElements;
-	};
-
-	struct  ICollideable
-	{
-		void* vftable;
 	};
 
 	struct CStaticProp : IClientUnknown, IClientRenderable, ICollideable, IClientModelRenderable

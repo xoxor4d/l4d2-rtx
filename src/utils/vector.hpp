@@ -598,6 +598,99 @@ struct Vertex_t
 	Vector2D m_TexCoord;
 };
 
+class Quaternion
+{
+public:
+	Quaternion(void) {
+		x = y = z = w = 0.0f;
+	}
+
+	Quaternion(const Vector& angles)
+	{
+		const float sp = sin(DEG2RAD(angles.x * 0.5f));
+		const float cp = cos(DEG2RAD(angles.x * 0.5f));
+		const float sy = sin(DEG2RAD(angles.y * 0.5f));
+		const float cy = cos(DEG2RAD(angles.y * 0.5f));
+		const float sr = sin(DEG2RAD(angles.z * 0.5f));
+		const float cr = cos(DEG2RAD(angles.z * 0.5f));
+		w = cr * cp * cy + sr * sp * sy;
+		x = sr * cp * cy - cr * sp * sy;
+		y = cr * sp * cy + sr * cp * sy;
+		z = cr * cp * sy - sr * sp * cy;
+	}
+
+	Quaternion& operator=(const Quaternion& q) {
+		x = q.x; y = q.y; z = q.z; w = q.w; return *this;
+	}
+
+	float x, y, z, w;
+};
+
+inline void AngleQuaternion(const Vector& angles, Quaternion& q)
+{
+	float sp = sin(DEG2RAD(angles.x * 0.5f));
+	float cp = cos(DEG2RAD(angles.x * 0.5f));
+	float sy = sin(DEG2RAD(angles.y * 0.5f));
+	float cy = cos(DEG2RAD(angles.y * 0.5f));
+	float sr = sin(DEG2RAD(angles.z * 0.5f));
+	float cr = cos(DEG2RAD(angles.z * 0.5f));
+	q.w = cr * cp * cy + sr * sp * sy;
+	q.x = sr * cp * cy - cr * sp * sy;
+	q.y = cr * sp * cy + sr * cp * sy;
+	q.z = cr * cp * sy - sr * sp * cy;
+}
+
+inline void QuaternionSlerp(const Quaternion& q1, const Quaternion& q2, const float t, Quaternion& q)
+{
+	float dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w;
+	if (dot < 0.0f)
+	{
+		dot = -dot;
+		q.x = -q2.x; q.y = -q2.y; q.z = -q2.z; q.w = -q2.w;
+	}
+	else {
+		q = q2;
+	}
+	if (dot > 0.9995f) {
+		q.x = q1.x + t * (q2.x - q1.x);
+		q.y = q1.y + t * (q2.y - q1.y);
+		q.z = q1.z + t * (q2.z - q1.z);
+		q.w = q1.w + t * (q2.w - q1.w);
+	}
+	else
+	{
+		float theta = acos(dot);
+		float sinTheta = sin(theta);
+		float s1 = sin((1.0f - t) * theta) / sinTheta;
+		float s2 = sin(t * theta) / sinTheta;
+		q.x = s1 * q1.x + s2 * q2.x;
+		q.y = s1 * q1.y + s2 * q2.y;
+		q.z = s1 * q1.z + s2 * q2.z;
+		q.w = s1 * q1.w + s2 * q2.w;
+	}
+
+	float len = sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+	q.x /= len; q.y /= len; q.z /= len; q.w /= len;
+}
+
+inline void QuaternionMultiply(const Quaternion& q1, const Quaternion& q2, Quaternion& q) {
+	q.w = q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z;
+	q.x = q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y;
+	q.y = q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x;
+	q.z = q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w;
+}
+
+inline void QuaternionAngles(const Quaternion& q, Vector& angles)
+{
+	//float sqw = q.w * q.w;
+	float sqx = q.x * q.x;
+	float sqy = q.y * q.y;
+	float sqz = q.z * q.z;
+	angles.x = RAD2DEG(asin(2.0f * (q.w * q.z - q.x * q.y)));
+	angles.y = RAD2DEG(atan2(2.0f * (q.w * q.y + q.x * q.z), 1.0f - 2.0f * (sqy + sqz)));
+	angles.z = RAD2DEG(atan2(2.0f * (q.w * q.x + q.y * q.z), 1.0f - 2.0f * (sqx + sqz)));
+}
+
 namespace utils::vector
 {
 #define PITCH	0 // up / down
@@ -651,6 +744,14 @@ namespace utils::vector
 			up->y = (cr * sp * sy + -sr * cy);
 			up->z = cr * cp;
 		}
+	}
+
+	// normalize angles to [-180, 180]
+	inline void angle_normalize(Vector& angles)
+	{
+		angles.x = fmod(angles.x + 180.0f, 360.0f) - 180.0f;
+		angles.y = fmod(angles.y + 180.0f, 360.0f) - 180.0f;
+		angles.z = fmod(angles.z + 180.0f, 360.0f) - 180.0f;
 	}
 
 	inline vec_t dot_product(const Vector& a, const Vector& b)

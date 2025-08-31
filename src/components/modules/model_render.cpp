@@ -236,7 +236,8 @@ namespace components
 
 			if (cmd::model_info_vis)
 			{
-				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < 500.0f * 500.0f)
+				const auto cutoff_dist = game_settings::get()->debug_info_distance.get_as<float>();
+				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < cutoff_dist * cutoff_dist)
 				{
 					game::debug_add_text_overlay(&pInfo.origin.x, pInfo.pModel->szPathName, 0);
 					game::debug_add_text_overlay(&pInfo.origin.x, utils::va("Radius: %.7f", pInfo.pModel->radius), 1);
@@ -248,7 +249,8 @@ namespace components
 		{
 			if (cmd::model_info_vis)
 			{
-				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < 1000.0f * 1000.0f)
+				const auto cutoff_dist = game_settings::get()->debug_info_distance.get_as<float>();
+				if (game::get_current_view_origin()->DistToSqr(pInfo.origin) < cutoff_dist * cutoff_dist)
 				{
 					game::debug_add_text_overlay(&pInfo.origin.x, "#IGNORED#", 0, 1.0f, 0.6f, 0.6f, 0.6f);
 					game::debug_add_text_overlay(&pInfo.origin.x, pInfo.pModel->szPathName, 1, 1.0f, 0.6f, 0.6f, 0.6f);
@@ -1083,7 +1085,7 @@ namespace components
 		}
 
 		// shader: Spritecard
-		// > particle/string_light_beam
+		// > particle/string_light_beam (c2m3_coaster)
 		else if (mesh->m_VertexFormat == 0x3724900005)
 		{
 			// cant fix for now
@@ -1910,8 +1912,9 @@ namespace components
 				const auto name_hash = utils::string_hash32(studio->sub_model->name);
 				const float rnd_z = utils::random_float_generator::get().random_float_from_hash(name_hash, -10.0f, ends_with_dmx ? 20 : 10.0f);
 
+				const auto cutoff_dist = game_settings::get()->debug_info_distance.get_as<float>();
 				const Vector org = { studio->m_PoseToWorld->m_flMatVal[0][3], studio->m_PoseToWorld->m_flMatVal[1][3], studio->m_PoseToWorld->m_flMatVal[2][3] + rnd_z };
-				if (game::get_current_view_origin()->DistToSqr(org) < 1000.0f * 1000.0f)
+				if (game::get_current_view_origin()->DistToSqr(org) < cutoff_dist * cutoff_dist)
 				{
 					if (requires_unbake) {
 						game::debug_add_text_overlay(&org.x, "#UNBAKED#", 0, 1.0f, 0.6f, 0.6f, 0.6f);

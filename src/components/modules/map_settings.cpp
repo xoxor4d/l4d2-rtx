@@ -1113,7 +1113,7 @@ namespace components
 							bool temp_trigger_always = false;
 
 							std::string temp_comment;
-							if (!entry.comments().empty()) 
+							if (!entry.comments().empty())
 							{
 								temp_comment = entry.comments().at(0);
 								temp_comment.erase(0, 2); // rem '# '
@@ -1151,13 +1151,13 @@ namespace components
 									has_valid_trigger = true;
 								}
 								// sound trigger
-								else if (trigger.contains("sound")) 
+								else if (trigger.contains("sound"))
 								{
 									temp_trigger_sound = to_uint(trigger.at("sound"), 0u);
 									has_valid_trigger = true;
 								}
 
-								if (has_valid_trigger) 
+								if (has_valid_trigger)
 								{
 									if (trigger.contains("delay")) {
 										temp_trigger_delay = to_float(trigger.at("delay"), 0.0f);
@@ -1166,7 +1166,8 @@ namespace components
 									if (trigger.contains("always")) {
 										temp_trigger_always = to_bool(trigger.at("always"), false);
 									}
-								} else { TOML_ERROR("[LIGHTS] #trigger", trigger, "defined trigger with no choreo / sound hash"); }
+								}
+								else { TOML_ERROR("[LIGHTS] #trigger", trigger, "defined trigger with no choreo / sound hash"); }
 							}
 
 							// - parse kill
@@ -1200,7 +1201,8 @@ namespace components
 									if (kill.contains("delay")) {
 										temp_kill_delay = to_float(kill.at("delay"), 0.0f);
 									}
-								} else { TOML_ERROR("[LIGHTS] #trigger", kill, "defined kill trigger with no choreo / sound hash"); }
+								}
+								else { TOML_ERROR("[LIGHTS] #trigger", kill, "defined kill trigger with no choreo / sound hash"); }
 							}
 
 							// - parse points
@@ -1223,7 +1225,7 @@ namespace components
 								}
 
 								if (!i && !point_has_valid_position) // first point needs to define a position
-								{	
+								{
 									TOML_ERROR("[LIGHTS] #position", p, "first point needs to define a position! Ignoring light");
 									break;
 								}
@@ -1231,10 +1233,11 @@ namespace components
 								Vector temp_radiance = { 10.0f, 10.0f, 10.0f };
 								if (p.contains("radiance"))
 								{
-									if (const auto& radiance = p.at("radiance").as_array(); radiance.size() == 3) 
+									if (const auto& radiance = p.at("radiance").as_array(); radiance.size() == 3)
 									{
 										temp_radiance = Vector(to_float(radiance[0], 10.0f), to_float(radiance[1], 10.0f), to_float(radiance[2], 10.0f));
-									} else { TOML_ERROR("[LIGHTS] #radiance", p.at("radiance"), "expected a 3D vector but got => %d ", p.at("radiance").as_array().size()); }
+									}
+									else { TOML_ERROR("[LIGHTS] #radiance", p.at("radiance"), "expected a 3D vector but got => %d ", p.at("radiance").as_array().size()); }
 								}
 
 								float temp_radiance_scalar = 1.0f;
@@ -1253,7 +1256,7 @@ namespace components
 								}
 
 								float temp_smoothness = 0.5f;
-								if (p.contains("smoothness")) 
+								if (p.contains("smoothness"))
 								{
 									temp_smoothness = to_float(p.at("smoothness"), 0.5f);
 									temp_smoothness = std::clamp<float>(temp_smoothness, 0.0f, 10.0f);
@@ -1269,12 +1272,24 @@ namespace components
 									{
 										temp_direction = Vector(to_float(direction[0], 0.0f), to_float(direction[1], 0.0f), to_float(direction[2], 1.0f));
 										temp_direction.Normalize();
-									} else { TOML_ERROR("[LIGHTS] #direction", p.at("direction"), "expected a 3D vector but got => %d ", p.at("direction").as_array().size()); }
+									}
+									else { TOML_ERROR("[LIGHTS] #direction", p.at("direction"), "expected a 3D vector but got => %d ", p.at("direction").as_array().size()); }
+								}
+
+								Vector temp_angle_offset_attached = { 0.0f, 0.0f, 0.0f };
+								if (p.contains("angle_offset_attached"))
+								{
+									if (const auto& angle_offset_attached = p.at("angle_offset_attached").as_array(); angle_offset_attached.size() == 3)
+									{
+										temp_angle_offset_attached = Vector(to_float(angle_offset_attached[0], 0.0f), to_float(angle_offset_attached[1], 0.0f), to_float(angle_offset_attached[2], 0.0f));
+										utils::vector::angle_normalize(temp_angle_offset_attached);
+									}
+									else { TOML_ERROR("[LIGHTS] #angle_offset_attached", p.at("angle_offset_attached"), "expected a 3D vector but got => %d ", p.at("angle_offset_attached").as_array().size()); }
 								}
 
 								bool temp_shaping_enabled = false;
 								float temp_degrees = 180.0f;
-								if (p.contains("degrees")) 
+								if (p.contains("degrees"))
 								{
 									temp_degrees = to_float(p.at("degrees"), 180.0f);
 									temp_degrees = std::clamp<float>(temp_degrees, 0.0f, 180.0f);
@@ -1294,7 +1309,7 @@ namespace components
 								}
 
 								// volumetrics
-								float temp_volumetric = 0.0f;
+								float temp_volumetric = 1.0f;
 								if (p.contains("volumetric_scale")) { // volumetricRadianceScale
 									temp_volumetric = to_float(p.at("volumetric_scale"), 1.0f);
 								}
@@ -1313,20 +1328,21 @@ namespace components
 								}
 
 								temp_points.emplace_back(
-									remix_light_settings_s::point_s(
-										pt, 
-										temp_radiance,
-										temp_radiance_scalar,
-										temp_radius,
-										temp_timepoint,
-										temp_smoothness,
-										temp_shaping_enabled,
-										temp_direction,
-										temp_degrees,
-										temp_softness,
-										temp_exponent,
-										temp_volumetric)
-								);
+									remix_light_settings_s::point_s{
+										.position = pt,
+										.radiance = temp_radiance,
+										.radiance_scalar = temp_radiance_scalar,
+										.radius = temp_radius,
+										.timepoint = temp_timepoint,
+										.smoothness = temp_smoothness,
+										.use_shaping = temp_shaping_enabled,
+										.direction = temp_direction,
+										.angle_offset_attached = temp_angle_offset_attached,
+										.degrees = temp_degrees,
+										.softness = temp_softness,
+										.exponent = temp_exponent,
+										.volumetric_scale = temp_volumetric }
+										);
 							}
 
 							// attach settings
@@ -1336,12 +1352,15 @@ namespace components
 							Vector temp_attach_prop_bounds_min;
 							Vector temp_attach_prop_bounds_max;
 
+							int temp_attach_bone_index = -1;
+							std::string temp_attach_bone_str;
+
 							if (entry.contains("attach"))
 							{
 								bool has_valid_attach = false;
 								const auto& attach = entry.at("attach");
 
-								if (attach.contains("radius")) 
+								if (attach.contains("radius"))
 								{
 									temp_attach_prop_radius = to_float(attach.at("radius"), 0.0f);
 									has_valid_attach = true;
@@ -1360,12 +1379,22 @@ namespace components
 
 									if (attach.contains("bounds"))
 									{
-										if (const auto& bounds = attach.at("bounds").as_array(); 
+										if (const auto& bounds = attach.at("bounds").as_array();
 											bounds.size() == 6u)
 										{
 											temp_attach_prop_bounds_min = Vector(to_float(bounds[0]), to_float(bounds[1]), to_float(bounds[2]));
 											temp_attach_prop_bounds_max = Vector(to_float(bounds[3]), to_float(bounds[4]), to_float(bounds[5]));
 										}
+									}
+
+									if (attach.contains("bone_index")) {
+										temp_attach_bone_index = to_int(attach.at("bone_index"), -1);
+									}
+
+									if (attach.contains("bone_name"))
+									{
+										try { temp_attach_bone_str = attach.at("bone_name").as_string(); }
+										CATCH_ERR;
 									}
 								}
 							}
@@ -1390,27 +1419,33 @@ namespace components
 								}
 
 								m_map_settings.remix_lights.push_back(
-									remix_light_settings_s(
-										std::move(temp_points),
-										temp_run_once,
-										temp_loop,
-										temp_loop_smoothing,
-										temp_trigger_always,
-										std::move(temp_trigger_choreo_name),
-										std::move(temp_trigger_choreo_actor),
-										std::move(temp_trigger_choreo_event),
-										std::move(temp_trigger_choreo_param1),
-										temp_trigger_sound,
-										temp_trigger_delay,
-										std::move(temp_kill_choreo_name),
-										temp_kill_sound,
-										temp_kill_delay,
-										temp_attach_prop_radius,
-										std::move(temp_attach_prop_str),
-										temp_attach_prop_bounds_min,
-										temp_attach_prop_bounds_max,
-										std::move(temp_comment))
-								);
+									remix_light_settings_s{
+										.points = std::move(temp_points),
+										.run_once = temp_run_once,
+										.loop = temp_loop,
+										.loop_smoothing = temp_loop_smoothing,
+										.trigger_always = temp_trigger_always,
+
+										.trigger_choreo_name = std::move(temp_trigger_choreo_name),
+										.trigger_choreo_actor = std::move(temp_trigger_choreo_actor),
+										.trigger_choreo_event = std::move(temp_trigger_choreo_event),
+										.trigger_choreo_param1 = std::move(temp_trigger_choreo_param1),
+										.trigger_sound_hash = temp_trigger_sound,
+										.trigger_delay = temp_trigger_delay,
+
+										.kill_choreo_name = std::move(temp_kill_choreo_name),
+										.kill_sound_hash = temp_kill_sound,
+										.kill_delay = temp_kill_delay,
+
+										.attach_prop_radius = temp_attach_prop_radius,
+										.attach_prop_name = std::move(temp_attach_prop_str),
+										.attach_prop_mins = temp_attach_prop_bounds_min,
+										.attach_prop_maxs = temp_attach_prop_bounds_max,
+										.attach_bone_index = temp_attach_bone_index,
+										.attach_bone_name = temp_attach_bone_str,
+
+										.comment = std::move(temp_comment)
+									});
 							}
 						}
 						else { TOML_ERROR("[LIGHTS] #points", entry, "needs at least one point to define a light"); }

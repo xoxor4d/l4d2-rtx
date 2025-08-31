@@ -50,6 +50,47 @@ namespace game
 
 	inline Vector* get_camera_forward_vector() { return reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A2638); } // same as engine one above?
 
+	// returns C_BaseAnimating class pointer for a given IClientRenderable
+	C_BaseAnimating* get_base_animating_for_client_renderable(IClientRenderable* pRenderable);
+
+	namespace namespaces
+	{
+		namespace C_BaseAnimating
+		{
+			// returns bone matrix for given bone index
+			/// @param this_ptr			C_BaseAnimating ptr
+			/// @param bone				bone index
+			/// @param boneToWorld		out bone matrix
+			inline void GetBoneTransform(void* this_ptr, const int bone, matrix3x4_t* boneToWorld)
+			{
+				// 55 8B EC 56 8B F1 83 BE ? ? ? ? ? 57 75 ? 8B 46 ? 8B 50 ? 8D 4E ? FF D2 85 C0 74 ? 8B CE E8 ? ? ? ? 8B 86
+				utils::hook::call<void(__fastcall)(void* this_ptr, void* null, int bone, matrix3x4_t* boneToWorld)>(CLIENT_BASE + 0x331C0)
+					(this_ptr, nullptr, bone, boneToWorld);
+			}
+
+			// returns bone index for given bone name
+			/// @param this_ptr			C_BaseAnimating ptr
+			/// @param bone_name		bone name
+			/// @return					bone index
+			inline int LookupBone(void* this_ptr, const char* bone_name)
+			{
+				//xref "doorhandlebone"
+				return utils::hook::call<int(__fastcall)(void* this_ptr, void* null, const char* bone_name)>(CLIENT_BASE + 0x2F380)
+					(this_ptr, nullptr, bone_name);
+			}
+
+			// returns CStudioHdr pointer for given C_BaseAnimating pointer
+			/// @param this_ptr			C_BaseAnimating ptr
+			/// @return					CStudioHdr ptr
+			inline CStudioHdr* GetModelPtr(void* this_ptr)
+			{
+				// 56 8B F1 83 BE ? ? ? ? ? 75 ? 8B 46 ? 8B 50 ? 8D 4E ? FF D2 85 C0 74 ? 8B CE E8 ? ? ? ? 8B 86 ? ? ? ? 5E 85 C0 74 ? ? ? ? 75 ? 33 C0 C3
+				return utils::hook::call<CStudioHdr * (__fastcall)(void* this_ptr, void* null)>(CLIENT_BASE + 0x2140)
+					(this_ptr, nullptr);
+			}
+		}
+	}
+
 	inline int get_visframecount() { return *reinterpret_cast<int*>(ENGINE_BASE + 0x6AFDD8); }
 	inline view_id get_viewid() { return *reinterpret_cast<view_id*>(CLIENT_BASE + 0x6DF6CC); }
 

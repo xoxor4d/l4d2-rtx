@@ -2368,39 +2368,39 @@ namespace components
 			if (!utils::float_equal(edit_p.degrees, map_p.degrees)) { return true; }
 			if (!utils::float_equal(edit_p.softness, map_p.softness)) { return true; }
 			if (!utils::float_equal(edit_p.exponent, map_p.exponent)) { return true; }
-			if (!utils::float_equal(edit_p.volumetric, map_p.volumetric)) { return true; }
+			if (!utils::float_equal(edit_p.volumetric_scale, map_p.volumetric_scale)) { return true; }
 		}
 
 		return false;
 	}
 
-	void mapsettings_ls_general_light_settings(remix_lights::remix_light_s* edit_active_light)
+	void mapsettings_ls_general_light_settings(remix_lights::light* edit_active_light)
 	{
 		const auto im = imgui::get();
 		const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
 
-		ImGui::Spacing(0, 12);
+		/*ImGui::Spacing(0, 12);
 		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
 		ImGui::SeparatorText(" General Light Settings ");
-		ImGui::PopFont();
+		ImGui::PopFont();*/
 		ImGui::Spacing(0, 4);
 
 		static float cont_height = 0.0f;
 		cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [edit_active_light]
 			{
-				ImGui::BeginDisabled(!edit_active_light->mover.is_initialized());
-				ImGui::Checkbox("Run Once", &edit_active_light->def.run_once);
+				ImGui::BeginDisabled(!edit_active_light->m_mover.is_initialized());
+				ImGui::Checkbox("Run Once", &edit_active_light->m_def.run_once);
 				TT("Enabled: Destroy light after reaching the last point");
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.33f, 0);
-				ImGui::Checkbox("Loop", &edit_active_light->def.loop);
+				ImGui::Checkbox("Loop", &edit_active_light->m_def.loop);
 				TT("Enabled: Looping light that restarts at the first point after reaching the last point.\n"
 					"Disabled: Light will stop and stay active when reaching the last point.\n"
 					"This does not make a difference when in edit mode.");
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.66f, 0);
-				if (ImGui::Checkbox("Loop Smoothing", &edit_active_light->def.loop_smoothing)) {
-					edit_active_light->mover.init(edit_active_light->mover.get_points_vec(), true, edit_active_light->def.loop_smoothing);
+				if (ImGui::Checkbox("Loop Smoothing", &edit_active_light->m_def.loop_smoothing)) {
+					edit_active_light->m_mover.init(edit_active_light->m_mover.get_points_vec(), true, edit_active_light->m_def.loop_smoothing);
 				}
 				TT("Enabled: Automatically connect and smooth the start and end point.\n"
 					"[!] requires 'loop' to be true\n"
@@ -2413,7 +2413,7 @@ namespace components
 				//ImGui::TextUnformatted(" Comment ");
 				//ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-				ImGui::InputText("Comment", &edit_active_light->def.comment);
+				ImGui::InputText("Comment", &edit_active_light->m_def.comment);
 
 
 				ImGui::Spacing(0, 12);
@@ -2422,7 +2422,7 @@ namespace components
 				const auto s_workrect_max_x = window->WorkRect.Max.x;
 				window->WorkRect.Max.x -= (ImGui::GetStyle().WindowPadding.x * 3.0f);
 
-				
+
 				ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
 
 				ImGui::TableHeaderDropshadow(12.0f, 0.6f, 0.0f, window->WorkRect.Max.x - window->DC.CursorPos.x);
@@ -2445,30 +2445,30 @@ namespace components
 				if (triggersettings_state)
 				{
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					ImGui::InputText("Choreo Name##Trigger", &edit_active_light->def.trigger_choreo_name);
+					ImGui::InputText("Choreo Name##Trigger", &edit_active_light->m_def.trigger_choreo_name);
 					TT("Trigger light creation when a specified choreography (vcd) starts playing.\n"
 						"The choreo trigger has HIGHER precedence over sound triggering.\n"
 						"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 
 					// clear sound trigger if choreo is not empty
-					if (!edit_active_light->def.trigger_choreo_name.empty()) {
-						edit_active_light->def.trigger_sound_hash = 0u;
+					if (!edit_active_light->m_def.trigger_choreo_name.empty()) {
+						edit_active_light->m_def.trigger_sound_hash = 0u;
 					}
 
-					if (!edit_active_light->def.trigger_choreo_name.empty())
+					if (!edit_active_light->m_def.trigger_choreo_name.empty())
 					{
 						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-						ImGui::InputText("Choreo Actor##Trigger", &edit_active_light->def.trigger_choreo_actor);
+						ImGui::InputText("Choreo Actor##Trigger", &edit_active_light->m_def.trigger_choreo_actor);
 						TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should trigger light creation.\n"
 							"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 
 						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-						ImGui::InputText("Choreo Event##Trigger", &edit_active_light->def.trigger_choreo_event);
+						ImGui::InputText("Choreo Event##Trigger", &edit_active_light->m_def.trigger_choreo_event);
 						TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should trigger light creation.\n"
 							"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 
 						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-						ImGui::InputText("Choreo Param1##Trigger", &edit_active_light->def.trigger_choreo_param1);
+						ImGui::InputText("Choreo Param1##Trigger", &edit_active_light->m_def.trigger_choreo_param1);
 						TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should trigger light creation.\n"
 							"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 					}
@@ -2476,7 +2476,7 @@ namespace components
 					// --- sound
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					std::string temp_sound_hash_str = edit_active_light->def.trigger_sound_hash ? std::format("0x{:X}", edit_active_light->def.trigger_sound_hash) : "";
+					std::string temp_sound_hash_str = edit_active_light->m_def.trigger_sound_hash ? std::format("0x{:X}", edit_active_light->m_def.trigger_sound_hash) : "";
 
 					if (ImGui::InputText("Sound Hash##Trigger", &temp_sound_hash_str, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue,
 						[](ImGuiInputTextCallbackData* data)
@@ -2488,8 +2488,8 @@ namespace components
 							return 1; // block input
 						}))
 					{
-						edit_active_light->def.trigger_sound_hash = static_cast<uint32_t>(std::strtoul(temp_sound_hash_str.c_str(), nullptr, 16));
-						temp_sound_hash_str = std::format("0x{:X}", edit_active_light->def.trigger_sound_hash);
+						edit_active_light->m_def.trigger_sound_hash = static_cast<uint32_t>(std::strtoul(temp_sound_hash_str.c_str(), nullptr, 16));
+						temp_sound_hash_str = std::format("0x{:X}", edit_active_light->m_def.trigger_sound_hash);
 					}
 					TT("Trigger light creation when a specified sound starts playing.\n"
 						"The sound trigger has LOWER precedence over choreo triggering.\n"
@@ -2498,22 +2498,22 @@ namespace components
 					ImGui::BeginDisabled(!edit_active_light->has_spawn_trigger());
 					{
 						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-						if (ImGui::DragFloat("Delay##Trigger", &edit_active_light->def.trigger_delay, 0.05f, 0.0f)) {
-							edit_active_light->def.trigger_delay = edit_active_light->def.trigger_delay < 0.0f ? 0.0f : edit_active_light->def.trigger_delay;
+						if (ImGui::DragFloat("Delay##Trigger", &edit_active_light->m_def.trigger_delay, 0.05f, 0.0f)) {
+							edit_active_light->m_def.trigger_delay = edit_active_light->m_def.trigger_delay < 0.0f ? 0.0f : edit_active_light->m_def.trigger_delay;
 						} TT("Delay spawn after trigger in seconds.");
 
-						ImGui::Checkbox("Always", &edit_active_light->def.trigger_always);
+						ImGui::Checkbox("Always", &edit_active_light->m_def.trigger_always);
 						TT("Retriggering the event again will spawn a new light instance everytime.");
 					}
 					ImGui::EndDisabled();
 
 					// clear choreo trigger if sound hash is not empty
-					if (edit_active_light->def.trigger_sound_hash)
+					if (edit_active_light->m_def.trigger_sound_hash)
 					{
-						edit_active_light->def.trigger_choreo_name.clear();
-						edit_active_light->def.trigger_choreo_actor.clear();
-						edit_active_light->def.trigger_choreo_event.clear();
-						edit_active_light->def.trigger_choreo_param1.clear();
+						edit_active_light->m_def.trigger_choreo_name.clear();
+						edit_active_light->m_def.trigger_choreo_actor.clear();
+						edit_active_light->m_def.trigger_choreo_event.clear();
+						edit_active_light->m_def.trigger_choreo_param1.clear();
 					}
 
 					// --
@@ -2524,20 +2524,20 @@ namespace components
 					ImGui::TextUnformatted(" Kill Settings ");
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					ImGui::InputText("Choreo Name##Kill", &edit_active_light->def.kill_choreo_name);
+					ImGui::InputText("Choreo Name##Kill", &edit_active_light->m_def.kill_choreo_name);
 					TT("Trigger light deletion when a specified choreography (vcd) starts playing.\n"
 						"The choreo trigger has HIGHER precedence over sound triggering.\n"
 						"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 
 					// clear sound trigger if choreo is not empty
-					if (!edit_active_light->def.kill_choreo_name.empty()) {
-						edit_active_light->def.kill_sound_hash = 0u;
+					if (!edit_active_light->m_def.kill_choreo_name.empty()) {
+						edit_active_light->m_def.kill_sound_hash = 0u;
 					}
 
 					// kill sound
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					std::string temp_kill_sound_hash_str = edit_active_light->def.kill_sound_hash ? std::format("0x{:X}", edit_active_light->def.kill_sound_hash) : "";
+					std::string temp_kill_sound_hash_str = edit_active_light->m_def.kill_sound_hash ? std::format("0x{:X}", edit_active_light->m_def.kill_sound_hash) : "";
 
 					if (ImGui::InputText("Sound Hash##Kill", &temp_kill_sound_hash_str, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue,
 						[](ImGuiInputTextCallbackData* data)
@@ -2549,25 +2549,25 @@ namespace components
 							return 1; // block input
 						}))
 					{
-						edit_active_light->def.kill_sound_hash = static_cast<uint32_t>(std::strtoul(temp_kill_sound_hash_str.c_str(), nullptr, 16));
-						temp_kill_sound_hash_str = std::format("0x{:X}", edit_active_light->def.kill_sound_hash);
+						edit_active_light->m_def.kill_sound_hash = static_cast<uint32_t>(std::strtoul(temp_kill_sound_hash_str.c_str(), nullptr, 16));
+						temp_kill_sound_hash_str = std::format("0x{:X}", edit_active_light->m_def.kill_sound_hash);
 					}
-					TT( "Trigger light creation when a specified sound starts playing.\n"
+					TT("Trigger light creation when a specified sound starts playing.\n"
 						"The sound trigger has LOWER precedence over choreo triggering.\n"
 						"Use cmd 'xo_debug_toggle_sound_print' to get info about playing sounds.");
 
 					ImGui::BeginDisabled(!edit_active_light->has_kill_trigger());
 					{
 						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-						if (ImGui::DragFloat("Delay##Kill", &edit_active_light->def.kill_delay, 0.05f, 0.0f)) {
-							edit_active_light->def.kill_delay = edit_active_light->def.kill_delay < 0.0f ? 0.0f : edit_active_light->def.kill_delay;
+						if (ImGui::DragFloat("Delay##Kill", &edit_active_light->m_def.kill_delay, 0.05f, 0.0f)) {
+							edit_active_light->m_def.kill_delay = edit_active_light->m_def.kill_delay < 0.0f ? 0.0f : edit_active_light->m_def.kill_delay;
 						} TT("Delay kill after kill trigger in seconds.");
 					}
 					ImGui::EndDisabled();
-					
+
 					// clear choreo kill trigger if sound hash is not empty
-					if (edit_active_light->def.kill_sound_hash) {
-						edit_active_light->def.kill_choreo_name.clear();
+					if (edit_active_light->m_def.kill_sound_hash) {
+						edit_active_light->m_def.kill_choreo_name.clear();
 					}
 				}
 
@@ -2579,7 +2579,7 @@ namespace components
 				const auto spos_pre_attach_header = ImGui::GetCursorScreenPos();
 				const auto attachprop_settings_state = ImGui::CollapsingHeader("Attach to Prop");
 
-				if (edit_active_light->has_attach_parms())
+				if (edit_active_light->is_attached())
 				{
 					const auto spos_post_header = ImGui::GetCursorScreenPos();
 					const auto header_dims = ImGui::GetItemRectSize();
@@ -2595,42 +2595,101 @@ namespace components
 				if (attachprop_settings_state)
 				{
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					if (ImGui::DragFloat("Prop Radius##Attach", &edit_active_light->def.attach_prop_radius, 0.05f, 0.0f)) 
+					if (ImGui::DragFloat("Prop Radius##Attach", &edit_active_light->m_def.attach_prop_radius, 0.001f, 0.0f, 0.0f, "%.6f"))
 					{
-						edit_active_light->def.attach_prop_radius = edit_active_light->def.attach_prop_radius < 0.0f ? 0.0f : edit_active_light->def.attach_prop_radius;
-						if (edit_active_light->def.attach_prop_radius > 0.0f) {
-							edit_active_light->def.attach_prop_name.clear();
+						edit_active_light->m_def.attach_prop_radius = edit_active_light->m_def.attach_prop_radius < 0.0f ? 0.0f : edit_active_light->m_def.attach_prop_radius;
+						if (edit_active_light->m_def.attach_prop_radius > 0.0f) {
+							edit_active_light->m_def.attach_prop_name.clear();
 						}
 					}
-					TT( "Attach light to a prop with this radius. This + bounds is the recommended way!\n"
+					TT("Attach light to a prop with this radius. This + bounds is the recommended way!\n"
 						"Use cmd 'xo_debug_toggle_model_info' to get info about nearby props.");
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					if (ImGui::InputText("Prop Name##Attach", &edit_active_light->def.attach_prop_name))
+					if (ImGui::InputText("Prop Name##Attach", &edit_active_light->m_def.attach_prop_name))
 					{
-						if (!edit_active_light->def.attach_prop_name.empty()) {
-							edit_active_light->def.attach_prop_radius = 0.0f;
+						if (!edit_active_light->m_def.attach_prop_name.empty()) {
+							edit_active_light->m_def.attach_prop_radius = 0.0f;
 						}
 					}
-					TT( "Attach light to a prop that contains this string within its name.\n"
-						"This is slower then using radius + bounds so be aware of that.\n"
+					TT("Attach light to a prop that contains this string within its name.\n"
+						"This is slower than using radius + bounds so be aware of that.\n"
 						"Use cmd 'xo_debug_toggle_model_info' to get info about nearby props.");
 
 					ImGui::BeginDisabled(!edit_active_light->has_attach_parms());
-					ImGui::Widget_PrettyDragVec3("Bounds Min", &edit_active_light->def.attach_prop_mins.x, true, 120.0f, 0.05f);
-					ImGui::Widget_PrettyDragVec3("Bounds Max", &edit_active_light->def.attach_prop_maxs.x, true, 120.0f, 0.05f);
-
-					// check if any val of max is smaller than any val of mins and warn the user 
-					if (edit_active_light->def.attach_prop_maxs < edit_active_light->def.attach_prop_mins) 
 					{
-						ImGui::PushFont(common::imgui::font::BOLD);
-						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.15f, 0.15f, 1.0f));
-						ImGui::TextUnformatted("Invalid Bounds! MAX smaller than MIN (any of X Y Z)");
-						ImGui::PopStyleColor();
-						ImGui::PopFont();
+						if (ImGui::Widget_PrettyDragVec3("Bounds Min", &edit_active_light->m_def.attach_prop_mins.x, true, 120.0f, 0.05f))
+						{
+							auto& mins = edit_active_light->m_def.attach_prop_mins;
+							const auto& maxs = edit_active_light->m_def.attach_prop_maxs;
+							mins.x = mins.x > maxs.x ? maxs.x - 1.0f : mins.x;
+							mins.y = mins.y > maxs.y ? maxs.y - 1.0f : mins.y;
+							mins.z = mins.z > maxs.z ? maxs.z - 1.0f : mins.z;
+						} TT("Bounding Box Mins where a light can get attached to a mesh fitting the above parameters.");
+
+						if (ImGui::Widget_PrettyDragVec3("Bounds Max", &edit_active_light->m_def.attach_prop_maxs.x, true, 120.0f, 0.05f))
+						{
+							const auto& mins = edit_active_light->m_def.attach_prop_mins;
+							auto& maxs = edit_active_light->m_def.attach_prop_maxs;
+							maxs.x = maxs.x < mins.x ? mins.x + 1.0f : maxs.x;
+							maxs.y = maxs.y < mins.y ? mins.y + 1.0f : maxs.y;
+							maxs.z = maxs.z < mins.z ? mins.z + 1.0f : maxs.z;
+						} TT("Bounding Box Maxs where a light can get attached to a mesh fitting the above parameters.");
+
+						// check if any val of max is smaller than any val of mins and warn the user 
+						if (edit_active_light->m_def.attach_prop_maxs < edit_active_light->m_def.attach_prop_mins)
+						{
+							ImGui::PushFont(common::imgui::font::BOLD);
+							ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.15f, 0.15f, 1.0f));
+							ImGui::TextUnformatted("Invalid Bounds! MAX smaller than MIN (any of X Y Z)");
+							ImGui::PopStyleColor();
+							ImGui::PopFont();
+						}
+
+						ImGui::EndDisabled();
 					}
 
-					ImGui::EndDisabled();
+					ImGui::Spacing(0, 4);
+					ImGui::SeparatorText(" Attach to Bone Section ");
+
+					ImGui::BeginDisabled(!edit_active_light->is_attached());
+					{
+						{
+							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+
+							const float half_button_width = (ImGui::CalcItemWidth() - ImGui::GetStyle().ItemSpacing.x) / 2.0f; //(window->WorkRect.Max.x - window->DC.CursorPos.x) * 0.5f;
+							if (ImGui::Button("Toggle Bone Information", ImVec2(half_button_width, 0))) {
+								cmd::show_mesh_bone_info_attached = !cmd::show_mesh_bone_info_attached;
+							} TT("Show bone information for the current 'active' mesh that has a light attached.");
+
+							ImGui::SameLine();
+							if (ImGui::Button("Reset Tracked Entity", ImVec2(half_button_width, 0))) {
+								edit_active_light->m_entity_index = -1;
+							} TT("Lights will track the index of the entity that they were first spawned on. You might need to reset it when the original entity was removed or similar.");
+						}
+
+						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						if (ImGui::DragInt("Prop Bone Index##Attach", &edit_active_light->m_def.attach_bone_index, 0.02f, -1, 256, "%d", ImGuiSliderFlags_AlwaysClamp)) {
+							edit_active_light->m_def.attach_bone_name.clear();
+						}
+						TT("Attach light to a specific bone on the prop.\n"
+							"A value of -1 will disable this functionality."
+							"Use cmd 'xo_debug_show_mesh_bone_info' to show bone info of the currently 'active' prop.");
+
+
+						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						if (ImGui::InputText("Prop Bone Name##Attach", &edit_active_light->m_def.attach_bone_name))
+						{
+							if (!edit_active_light->m_def.attach_bone_name.empty()) {
+								edit_active_light->m_def.attach_bone_index = -1;
+							}
+						}
+						TT("Attach light to a specific bone on the prop.\n"
+							"You need to provide the full bone name. This is slower then using the bone index.\n"
+							"Use cmd 'xo_debug_show_mesh_bone_info' to show bone info of the currently 'active' prop.");
+
+						ImGui::EndDisabled();
+					}
 
 					ImGui::Spacing(0, 4);
 
@@ -2653,12 +2712,12 @@ namespace components
 		if (im->m_debugvis_attach_bounds && edit_active_light->has_attach_parms())
 		{
 			const auto remixapi = remix_api::get();
-			remixapi->debug_draw_box(edit_active_light->def.attach_prop_mins, edit_active_light->def.attach_prop_maxs, 1.0f, 
+			remixapi->debug_draw_box(edit_active_light->m_def.attach_prop_mins, edit_active_light->m_def.attach_prop_maxs, 1.0f,
 				edit_active_light->is_attached() ? remix_api::DEBUG_REMIX_LINE_COLOR::WHITE : remix_api::DEBUG_REMIX_LINE_COLOR::RED);
 		}
 	}
 
-	void mapsettings_ls_playback_visualization_settings(remix_lights::remix_light_s* edit_active_light, const bool is_static_light_with_single_point)
+	void mapsettings_ls_playback_visualization_settings(remix_lights::light* edit_active_light, const bool is_static_light_with_single_point)
 	{
 		const auto im = imgui::get();
 		const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
@@ -2692,23 +2751,23 @@ namespace components
 
 				ImGui::Spacing(0, 6);
 
-				ImGui::BeginDisabled(!edit_active_light->mover.is_initialized());
+				ImGui::BeginDisabled(!edit_active_light->m_mover.is_initialized());
 				ImGui::BeginDisabled(is_static_light_with_single_point);
 				if (ImGui::Button("Restart Light Loop", ImVec2(ImGui::GetContentRegionAvail().x * 0.49f - ImGui::GetStyle().ItemSpacing.x, 0))) {
-					edit_active_light->mover.restart();
+					edit_active_light->m_mover.restart();
 				} TT("This resets the current loop to timepoint = 0");
 				ImGui::EndDisabled();
 
 				ImGui::SameLine(ImGui::GetContentRegionAvail().x * 0.49f);
 				if (ImGui::Button("Evenly distribute all timepoints", ImVec2(ImGui::GetContentRegionAvail().x * 0.98f, 0)))
 				{
-					auto& pts = edit_active_light->mover.get_points_vec();
+					auto& pts = edit_active_light->m_mover.get_points_vec();
 					// clear timepoints for all but the very first & very last points:
 					for (size_t i = 1u; i < pts.size() - 1u; i++) {
 						pts[i].timepoint = 0.0f;
 					}
 
-					edit_active_light->mover.init(pts, true, edit_active_light->def.loop_smoothing);
+					edit_active_light->m_mover.init(pts, true, edit_active_light->m_def.loop_smoothing);
 				} TT("This will clear and recalculate the timepoints of all but the last point to evenly distribute time across all point 2 point segments.");
 				ImGui::EndDisabled();
 
@@ -2724,7 +2783,7 @@ namespace components
 		static map_settings::remix_light_settings_s* ms_light_selection_pending = nullptr;
 
 		// this will handle the reload popup as long as we are not in edit mode
-		if (!im->m_light_edit_mode) 
+		if (!im->m_light_edit_mode)
 		{
 			ms_light_selection = nullptr;
 			ms_light_selection_pending = nullptr;
@@ -2784,9 +2843,9 @@ namespace components
 		{
 			if (const auto edit_light = lights->get_first_active_light(); edit_light)
 			{
-				auto temp_def = edit_light->def;
-				if (edit_light->mover.is_initialized()) {
-					temp_def.points = edit_light->mover.get_points_vec();
+				auto temp_def = edit_light->m_def;
+				if (edit_light->m_mover.is_initialized()) {
+					temp_def.points = edit_light->m_mover.get_points_vec();
 				}
 
 				ImGui::LogToClipboard();
@@ -2798,10 +2857,10 @@ namespace components
 		ImGui::SameLine();
 		reload_mapsettings_button_with_popup("RemixLights");
 
-		
+
 
 		// default selection (when table not visible and selection empty)
-		if (!ms_light_selection && !ms_lights.empty()) 
+		if (!ms_light_selection && !ms_lights.empty())
 		{
 			ms_light_selection = &ms_lights.front();
 			lights->destroy_and_clear_all_active_lights();
@@ -2857,13 +2916,13 @@ namespace components
 				// -
 				ImGui::TableNextColumn();
 				if (!is_selected) // only selectable if not selected
-				{ 
+				{
 					ImGui::Style_InvisibleSelectorPush(); // never show selection - we use tablebg
-					if (ImGui::Selectable(utils::va("%d", i), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap)) 
+					if (ImGui::Selectable(utils::va("%d", i), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap))
 					{
 						if (const auto edit_light = lights->get_first_active_light(); edit_light)
 						{
-							if (check_light_for_modifications(edit_light->def, *ms_light_selection, &edit_light->mover.get_points_vec()))
+							if (check_light_for_modifications(edit_light->m_def, *ms_light_selection, &edit_light->m_mover.get_points_vec()))
 							{
 								if (!ImGui::IsPopupOpen("Ignore Changes?", ImGuiPopupFlags_AnyPopup)) {
 									ImGui::OpenPopup("Ignore Changes?", ImGuiPopupFlags_AnyPopup);
@@ -2893,10 +2952,10 @@ namespace components
 				}
 
 				// check if there is at least one valid selection
-				if (ms_light_selection && ms_light_selection == &l) 
+				if (ms_light_selection && ms_light_selection == &l)
 				{
 					// user selected a new light
-					if (!is_selected) 
+					if (!is_selected)
 					{
 						lights->destroy_and_clear_all_active_lights();
 						reset_point_selection = true;
@@ -2911,7 +2970,7 @@ namespace components
 				// comment
 				ImGui::TableNextColumn();
 				ImGui::TextUnformatted_ClippedByColumnTooltip(l.comment.c_str());
-				
+
 				// trig choreo
 				ImGui::TableNextColumn();
 				ImGui::TextUnformatted_ClippedByColumnTooltip(l.trigger_choreo_name.c_str());
@@ -2983,18 +3042,18 @@ namespace components
 
 
 
-		if (ms_light_selection) 
+		if (ms_light_selection)
 		{
 			// create light
 			if (!lights->get_active_light_count()) {
 				lights->add_single_map_setting_light_for_editing(ms_light_selection);
 			}
 
-			if (auto edit_light = lights->get_first_active_light(); 
+			if (auto edit_light = lights->get_first_active_light();
 				edit_light)
 			{
 				// debug text
-				Vector lpos = &edit_light->ext.position.x;
+				Vector lpos = &edit_light->m_ext.position.x;
 				Vector screen_pos; common::imgui::world2screen(lpos, screen_pos);
 				ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(screen_pos.x, screen_pos.y), 4.0f, ImGui::GetColorU32(ImGuiCol_Text));
 				game::debug_add_text_overlay(&lpos.x, "  Selected Light", -1, 0.8f, 0.8f, 0.8f, 0.8f);
@@ -3009,9 +3068,9 @@ namespace components
 			// write modified params into the current mapsetting light so changes dont get lost
 			if (auto edit_light = lights->get_first_active_light(); edit_light)
 			{
-				auto temp_def = edit_light->def;
-				if (edit_light->mover.is_initialized()) {
-					temp_def.points = edit_light->mover.get_points_vec();
+				auto temp_def = edit_light->m_def;
+				if (edit_light->m_mover.is_initialized()) {
+					temp_def.points = edit_light->m_mover.get_points_vec();
 				}
 				*ms_light_selection = temp_def;
 			}
@@ -3071,7 +3130,7 @@ namespace components
 						ms_lights.erase(it);
 						reset_point_selection = true;
 
-						if (!ms_lights.empty()) 
+						if (!ms_lights.empty())
 						{
 							ms_light_selection = &ms_lights.front();
 							if (!lights->get_active_light_count()) {
@@ -3094,9 +3153,9 @@ namespace components
 				// write modified params into the current mapsetting light so changes dont get lost
 				if (auto edit_light = lights->get_first_active_light(); edit_light)
 				{
-					auto temp_def = edit_light->def;
-					if (edit_light->mover.is_initialized()) {
-						temp_def.points = edit_light->mover.get_points_vec();
+					auto temp_def = edit_light->m_def;
+					if (edit_light->m_mover.is_initialized()) {
+						temp_def.points = edit_light->m_mover.get_points_vec();
 					}
 					*ms_light_selection = temp_def;
 				}
@@ -3111,9 +3170,9 @@ namespace components
 					lights->add_single_map_setting_light_for_editing(ms_light_selection);
 				}
 			} TT("Duplicates the currently selected light.")
-			//ImGui::Style_ColorButtonPop();
+				//ImGui::Style_ColorButtonPop();
 
-			ImGui::SameLine();
+				ImGui::SameLine();
 			if (ImGui::Button("TP to Light", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
 				interfaces::get()->m_engine->execute_client_cmd_unrestricted(utils::va("sv_cheats 1; noclip; setpos %.2f %.2f %.2f", ms_light_selection->points[0].position.x, ms_light_selection->points[0].position.y, ms_light_selection->points[0].position.z - 40.0f));
 			}
@@ -3121,11 +3180,15 @@ namespace components
 			ImGui::EndDisabled();
 		}
 
-
-		if (auto edit_active_light = lights->get_first_active_light(); 
+		if (auto edit_active_light = lights->get_first_active_light();
 			edit_active_light && ms_light_selection)
 		{
-			const auto is_static_light_with_single_point = !edit_active_light->mover.is_initialized();
+			//ImGui::Spacing(0, 8);
+			mapsettings_ls_general_light_settings(edit_active_light);
+
+			ImGui::Spacing(0, 8);
+
+			const auto is_static_light_with_single_point = !edit_active_light->m_mover.is_initialized();
 			// ---
 			// holds mover points OR def point if light is static
 			static map_settings::remix_light_settings_s::point_s* active_point_selection = nullptr;
@@ -3134,16 +3197,16 @@ namespace components
 			size_t active_points_count = 0u;
 
 			// if light only has a single point, mover wont be initialized
-			if (is_static_light_with_single_point && !edit_active_light->def.points.empty())
+			if (is_static_light_with_single_point && !edit_active_light->m_def.points.empty())
 			{
-				active_points = edit_active_light->def.points.data();
+				active_points = edit_active_light->m_def.points.data();
 				active_points_count = 1u;
 				active_point_selection = active_points;
 			}
-			else if (edit_active_light->mover.is_initialized())
+			else if (edit_active_light->m_mover.is_initialized())
 			{
-				active_points = edit_active_light->mover.get_points();
-				active_points_count = edit_active_light->mover.get_points_count();
+				active_points = edit_active_light->m_mover.get_points();
+				active_points_count = edit_active_light->m_mover.get_points_count();
 			}
 
 			if (reset_point_selection || !active_point_selection && active_points_count > 0u) {
@@ -3156,8 +3219,8 @@ namespace components
 			ImGui::PopFont();
 
 			ImGui::TableHeaderDropshadow();
-			
-			if (ImGui::BeginTable("PointTable", 13,
+
+			if (ImGui::BeginTable("PointTable", 12,
 				ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable | ImGuiTableFlags_ContextMenuInBody |
 				ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_ScrollY, ImVec2(0, 134.0f)))
 			{
@@ -3175,7 +3238,6 @@ namespace components
 				ImGui::TableSetupColumn("Degrees", ImGuiTableColumnFlags_WidthStretch, 30.0f);
 				ImGui::TableSetupColumn("Soft", ImGuiTableColumnFlags_WidthStretch, 30.0f);
 				ImGui::TableSetupColumn("Expo", ImGuiTableColumnFlags_WidthStretch, 30.0f);
-				ImGui::TableSetupColumn("Volu", ImGuiTableColumnFlags_WidthStretch, 30.0f);
 				ImGui::TableHeadersRow();
 
 				bool selection_matches_any_entry = false;
@@ -3257,13 +3319,9 @@ namespace components
 					ImGui::TableNextColumn();
 					ImGui::Text("%.2f", p.softness);
 
-					// expo
+					// smooth
 					ImGui::TableNextColumn();
-					ImGui::Text("%.2f", p.exponent);
-
-					// volumetric
-					ImGui::TableNextColumn();
-					ImGui::Text("%.2f", p.volumetric);
+					ImGui::Text("%.2f", p.smoothness);
 				}
 
 				if (!selection_matches_any_entry) {
@@ -3281,55 +3339,55 @@ namespace components
 				//if (active_points_count <= 1)
 				{
 					// copy light def because we dont want to directly edit the mapsettings def
-					auto new_def = edit_active_light->def;
+					auto new_def = edit_active_light->m_def;
 
 					// use mover points if light has more then 1 pt
-					new_def.points = edit_active_light->mover.is_initialized()
-						? edit_active_light->mover.get_points_vec()
+					new_def.points = edit_active_light->m_mover.is_initialized()
+						? edit_active_light->m_mover.get_points_vec()
 						: new_def.points;
 
-					lights->destroy_and_clear_all_active_lights(); 
+					lights->destroy_and_clear_all_active_lights();
 
 					std::uint32_t prev_point_index = new_def.points.size() - 1u;
 					new_def.points.push_back(new_def.points[prev_point_index]); // copy first point
 					new_def.points.back().timepoint += 2.0f;
-					
+
 					if (!lights->get_active_light_count()) {
 						lights->add_single_map_setting_light_for_editing(&new_def);
 					}
 
 					// --
 
-					if (edit_active_light->mover.is_initialized())
+					if (edit_active_light->m_mover.is_initialized())
 					{
-						active_points = edit_active_light->mover.get_points();
-						active_points_count = edit_active_light->mover.get_points_count();
+						active_points = edit_active_light->m_mover.get_points();
+						active_points_count = edit_active_light->m_mover.get_points_count();
 						active_point_selection = &active_points[active_points_count - 1u];
 					}
 				}
 			}
 			ImGui::Style_ColorButtonPop();
 
-			ImGui::BeginDisabled( !active_point_selection 
-								|| active_points_count <= 1u
-								|| active_point_selection == active_points); // if first point
+			ImGui::BeginDisabled(!active_point_selection
+				|| active_points_count <= 1u
+				|| active_point_selection == active_points); // if first point
 			{
 				ImGui::SameLine();
 				ImGui::Style_ColorButtonPush(im->ImGuiCol_ButtonRed, true);
 				if (ImGui::Button("Delete Selected Point", ImVec2(ImGui::GetContentRegionAvail().x, 0)))
 				{
 					// copy light def because we dont want to directly edit the mapsettings def
-					auto new_def = edit_active_light->def;
-					 
+					auto new_def = edit_active_light->m_def;
+
 					// use mover points if light has more then 1 pt
-					new_def.points = edit_active_light->mover.is_initialized()
-						? edit_active_light->mover.get_points_vec()
+					new_def.points = edit_active_light->m_mover.is_initialized()
+						? edit_active_light->m_mover.get_points_vec()
 						: new_def.points;
 
 					// disabled handles single points ..
 					std::ptrdiff_t pt_index = active_point_selection - active_points;
 
-					if ((size_t) pt_index < new_def.points.size()) {
+					if ((size_t)pt_index < new_def.points.size()) {
 						new_def.points.erase(new_def.points.begin() + pt_index);
 					}
 
@@ -3339,10 +3397,10 @@ namespace components
 						lights->add_single_map_setting_light_for_editing(&new_def);
 					}
 
-					if (edit_active_light->mover.is_initialized())
+					if (edit_active_light->m_mover.is_initialized())
 					{
-						active_points = edit_active_light->mover.get_points();
-						active_points_count = edit_active_light->mover.get_points_count();
+						active_points = edit_active_light->m_mover.get_points();
+						active_points_count = edit_active_light->m_mover.get_points_count();
 						active_point_selection = &active_points[active_points_count - 1u];
 					}
 				}
@@ -3362,55 +3420,55 @@ namespace components
 				//const auto cont_bg_color = im->ImGuiCol_ContainerBackground + ImVec4(0.05f, 0.05f, 0.05f, 0.0f);
 				//static float cont_height = 0.0f;
 				//cont_height = ImGui::Widget_ContainerWithDropdownShadow(cont_height, [active_points, edit_active_light, is_static_light_with_single_point]
+				{
+					if (ImGui::Button("Teleport Light To Player", ImVec2(ImGui::CalcWidgetWidthForChild(120.0f), 0)))
 					{
-						if (ImGui::Button("Teleport Light To Player", ImVec2(ImGui::CalcWidgetWidthForChild(120.0f), 0)))
+						if (is_static_light_with_single_point) {
+							active_points->position = *game::get_current_view_origin();
+						}
+						else
 						{
-							if (is_static_light_with_single_point) {
-								active_points->position = *game::get_current_view_origin();
-							}
-							else
-							{
-								auto& pts = edit_active_light->mover.get_points_vec();
-								Vector current_center = {};
+							auto& pts = edit_active_light->m_mover.get_points_vec();
+							Vector current_center = {};
 
-								for (const auto& point : pts) {
-									current_center += point.position;
-								} current_center /= (float)pts.size();
+							for (const auto& point : pts) {
+								current_center += point.position;
+							} current_center /= (float)pts.size();
 
-								Vector teleport_offset = *game::get_current_view_origin() - current_center;
+							Vector teleport_offset = *game::get_current_view_origin() - current_center;
 
-								for (auto& point : pts) {
-									point.position += teleport_offset;
-								}
+							for (auto& point : pts) {
+								point.position += teleport_offset;
 							}
 						}
+					}
 
-						static float offs_step_offset = 0.5f;
+					static float offs_step_offset = 0.5f;
 
-						float offs[3] = {};
-						if (ImGui::Widget_PrettyStepVec3("Offset Light", offs, true, 80.0f, offs_step_offset))
+					float offs[3] = {};
+					if (ImGui::Widget_PrettyStepVec3("Offset Light", offs, true, 80.0f, offs_step_offset))
+					{
+						if (is_static_light_with_single_point) {
+							active_points->position += offs;
+						}
+						else
 						{
-							if (is_static_light_with_single_point) {
-								active_points->position += offs;
-							}
-							else
-							{
-								for (auto& point : edit_active_light->mover.get_points_vec()) {
-									point.position += offs;
-								}
+							for (auto& point : edit_active_light->m_mover.get_points_vec()) {
+								point.position += offs;
 							}
 						}
+					}
 
-						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-						if (ImGui::DragFloat("Step Offset", &offs_step_offset, 0.005f, 0.0f, 100.0f)) {
-							offs_step_offset = std::clamp(offs_step_offset, 0.0f, 100.0f);
-						}
+					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					if (ImGui::DragFloat("Step Offset", &offs_step_offset, 0.005f, 0.0f, 100.0f)) {
+						offs_step_offset = std::clamp(offs_step_offset, 0.0f, 100.0f);
+					}
 
-						ImGui::Spacing(0, 4);
-						ImGui::Separator();
-						ImGui::Spacing(0, 4);
+					ImGui::Spacing(0, 4);
+					ImGui::Separator();
+					ImGui::Spacing(0, 4);
 
-					}//, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
+				}//, &cont_bg_color, &im->ImGuiCol_ContainerBorder);
 			}
 
 			ImGui::Spacing(0, 8);
@@ -3428,18 +3486,19 @@ namespace components
 
 				ImGui::Widget_PrettyDragVec3("Position", &active_point_selection->position.x, true, 120.0f, 0.25f);
 
-				Vector normalized_radiance = im->m_debugvis_live ? &edit_active_light->info.radiance.x : active_point_selection->radiance; 
+				Vector normalized_radiance = im->m_debugvis_live ? &edit_active_light->m_info.radiance.x : active_point_selection->radiance;
 				normalized_radiance.Normalize();
 
 				//const auto debug_color_bg = ImGui::ColorConvertFloat4ToU32(ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
 				const auto debug_color = ImGui::ColorConvertFloat4ToU32(ImVec4(normalized_radiance.x, normalized_radiance.y, normalized_radiance.z, 1.0f));
 
 				// draw position as circle
-				Vector screen_pos; common::imgui::world2screen((im->m_debugvis_live ? &edit_active_light->ext.position.x : active_point_selection->position) + edit_active_light->attached_offset, screen_pos);
+				Vector screen_pos;
+				common::imgui::world2screen((im->m_debugvis_live ? &edit_active_light->m_ext.position.x : edit_active_light->calculate_position_for_point(active_point_selection)), screen_pos);
 				ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(screen_pos.x, screen_pos.y), 8.0f, debug_color);
 
-				//ImGui::ColorButton
-				ImGui::Widget_PrettyDragVec3WithColorPicker("Radiance", &active_point_selection->radiance.x, true, 120.0f, 0.1f, 0.0f, FLT_MAX,
+
+				ImGui::Widget_PrettyDragVec3("Radiance", &active_point_selection->radiance.x, true, 120.0f, 0.1f, 0.0f, FLT_MAX,
 					"R", "G", "B");
 
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
@@ -3447,15 +3506,16 @@ namespace components
 					active_point_selection->radiance_scalar = active_point_selection->radiance_scalar < 0.0f ? 0.0f : active_point_selection->radiance_scalar;
 				} TT("General radiance scalar");
 
-				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-				if (ImGui::DragFloat("Volumetric", &active_point_selection->volumetric, 0.005f, 0.0f, 10.0f, "%.2f")) {
-					active_point_selection->volumetric = std::clamp(active_point_selection->volumetric, 0.0f, 10.0f);
-				} TT("Volumetric Intensity Scalar");
 
 				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
 				if (ImGui::DragFloat("Radius", &active_point_selection->radius, 0.005f, 0.0f, FLT_MAX, "%.2f")) {
 					active_point_selection->radius = active_point_selection->radius < 0.0f ? 0.0f : active_point_selection->radius;
 				} TT("Radius of light (defaults to 1.0)");
+
+				SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+				if (ImGui::DragFloat("Volumetric Scale", &active_point_selection->volumetric_scale, 0.005f, 0.0f, 20.0f, "%.2f")) {
+					active_point_selection->volumetric_scale = active_point_selection->volumetric_scale < 0.0f ? 0.0f : active_point_selection->volumetric_scale;
+				} TT("Volumetric Radiance Scale of light (defaults to 1.0)");
 
 				//ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), &edit_active_light->ext.position.x, Vector(0.0f, 0.0f, 1.0f), active_point_selection->radius, false, debug_color, 2.0f);
 				//ImGui::Draw3DCircle(ImGui::GetBackgroundDrawList(), &edit_active_light->ext.position.x, Vector(0.0f, 1.0f, 0.0f), active_point_selection->radius, false, debug_color, 2.0f);
@@ -3463,8 +3523,8 @@ namespace components
 
 				if (im->m_debugvis_radius)
 				{
-					const Vector circle_pos = (im->m_debugvis_live ? &edit_active_light->ext.position.x : active_point_selection->position) + edit_active_light->attached_offset;
-					const float radius = im->m_debugvis_live ? edit_active_light->ext.radius : active_point_selection->radius;
+					const Vector circle_pos = (im->m_debugvis_live ? &edit_active_light->m_ext.position.x : edit_active_light->calculate_position_for_point(active_point_selection));
+					const float radius = im->m_debugvis_live ? edit_active_light->m_ext.radius : active_point_selection->radius;
 
 					const auto remixapi = remix_api::get();
 					remixapi->add_debug_circle(circle_pos, Vector(0.0f, 0.0f, 1.0f), radius - 0.02f, radius * 0.1f, normalized_radiance);
@@ -3486,13 +3546,13 @@ namespace components
 					}
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-					if (ImGui::DragFloat("Timepoint", &active_point_selection->timepoint, 0.005f, min_timepoint, max_timepoint, "%.3f")) 
+					if (ImGui::DragFloat("Timepoint", &active_point_selection->timepoint, 0.005f, min_timepoint, max_timepoint, "%.3f"))
 					{
 						active_point_selection->timepoint = std::clamp(active_point_selection->timepoint, min_timepoint, max_timepoint);
-						edit_active_light->mover.calculate_segment_durations();
+						edit_active_light->m_mover.calculate_segment_durations();
 					}
 					TT("Time in seconds at which the light arrives at the point\n"
-					   "Last point defines the total duration.");
+						"Last point defines the total duration.");
 
 					ImGui::EndDisabled();
 				}
@@ -3523,8 +3583,20 @@ namespace components
 
 				if (active_point_selection->use_shaping)
 				{
-					if (ImGui::Widget_PrettyDragVec3("Direction", &active_point_selection->direction.x, true, 120.0f, 0.1f, -1.0f, 1.0f)) {
-						active_point_selection->direction.Normalize();
+					const bool is_attached = edit_active_light->is_attached();
+					if (!is_attached)
+					{
+						if (ImGui::Widget_PrettyDragVec3("Direction", &active_point_selection->direction.x, true, 120.0f, 0.1f, -1.0f, 1.0f)) {
+							active_point_selection->direction.Normalize();
+						} TT("Direction of the light");
+					}
+					else
+					{
+						if (ImGui::Widget_PrettyDragVec3("Direction (Offset)", &active_point_selection->angle_offset_attached.x, true, 120.0f, 0.1f, -180.0f, 180.0f))
+						{
+							utils::vector::angle_normalize(active_point_selection->angle_offset_attached);
+							utils::vector::AngleVectors(active_point_selection->angle_offset_attached, &active_point_selection->direction);
+						} TT("Offset the light direction with reference to the attached bone / entity angles. Offset in Euler Angles.");
 					}
 
 					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
@@ -3545,7 +3617,7 @@ namespace components
 					if (im->m_debugvis_shaping)
 					{
 						const auto remixapi = remix_api::get();
-						const float cone_deg = im->m_debugvis_live ? edit_active_light->ext.shaping_value.coneAngleDegrees : active_point_selection->degrees;
+						const float cone_deg = im->m_debugvis_live ? edit_active_light->m_ext.shaping_value.coneAngleDegrees : active_point_selection->degrees;
 
 						if (cone_deg <= 90.0f)
 						{
@@ -3560,28 +3632,27 @@ namespace components
 								float radius = (step_fraction * scaled_height) * cone_rad_tan;
 
 								Vector circle_pos =
-									(im->m_debugvis_live ? Vector(&edit_active_light->ext.position.x) + Vector(&edit_active_light->ext.shaping_value.direction.x) * (step_fraction * scaled_height)
-									: active_point_selection->position + active_point_selection->direction * (step_fraction * scaled_height)) + edit_active_light->attached_offset;
+									(im->m_debugvis_live ? Vector(&edit_active_light->m_ext.position.x) + Vector(&edit_active_light->m_ext.shaping_value.direction.x) * (step_fraction * scaled_height)
+										: edit_active_light->calculate_position_for_point(active_point_selection) + edit_active_light->calculate_direction_for_point(active_point_selection) * (step_fraction * scaled_height)) /*+ edit_active_light->attached_position*/;
 
 								remixapi->add_debug_circle(
 									circle_pos,
-									im->m_debugvis_live ? &edit_active_light->ext.shaping_value.direction.x : active_point_selection->direction,
+									im->m_debugvis_live ? &edit_active_light->m_ext.shaping_value.direction.x
+									: edit_active_light->calculate_direction_for_point(active_point_selection),
 									radius, radius * 0.025f, normalized_radiance, false);
 							}
 						}
 
 						// draw dir line
 						remixapi->add_debug_line(
-							im->m_debugvis_live ?	&edit_active_light->ext.position.x
-														: active_point_selection->position,
-							im->m_debugvis_live	? Vector(&edit_active_light->ext.position.x) + Vector(&edit_active_light->ext.shaping_value.direction.x).Scale(im->m_debugvis_cone_height)
-													: active_point_selection->position + active_point_selection->direction.Scale(im->m_debugvis_cone_height),
+							im->m_debugvis_live ? &edit_active_light->m_ext.position.x
+							: edit_active_light->calculate_position_for_point(active_point_selection),
+
+							im->m_debugvis_live ? Vector(&edit_active_light->m_ext.position.x) + Vector(&edit_active_light->m_ext.shaping_value.direction.x).Scale(im->m_debugvis_cone_height)
+							: edit_active_light->calculate_position_for_point(active_point_selection) + edit_active_light->calculate_direction_for_point(active_point_selection).Scale(im->m_debugvis_cone_height), //active_point_selection->direction.Scale(im->m_debugvis_cone_height),
 							1.0f, remix_api::WHITE);
 					}
 				} // end use shaping
-
-				ImGui::Spacing(0, 8);
-				mapsettings_ls_general_light_settings(edit_active_light);
 
 				ImGui::Spacing(0, 8);
 				mapsettings_ls_playback_visualization_settings(edit_active_light, is_static_light_with_single_point);
@@ -3592,7 +3663,7 @@ namespace components
 					remix_lights::get()->update_static_remix_light(edit_active_light, active_point_selection);
 				}
 			} // end if active_point_selection
-			
+
 
 			// popup frame
 			ImGui::PushID("LightTable");
@@ -3610,7 +3681,7 @@ namespace components
 				ImGui::SetCursorPosX(5.0f + half_width - (ImGui::CalcTextSize(line1_str).x * 0.5f));
 				ImGui::TextUnformatted(line1_str);
 
-				
+
 
 				ImGui::Spacing(0, 2);
 				ImGui::PushFont(common::imgui::font::BOLD);
@@ -3619,9 +3690,9 @@ namespace components
 				{
 					if (const auto edit_light = lights->get_first_active_light(); edit_light)
 					{
-						auto temp_def = edit_light->def;
-						if (edit_light->mover.is_initialized()) {
-							temp_def.points = edit_light->mover.get_points_vec();
+						auto temp_def = edit_light->m_def;
+						if (edit_light->m_mover.is_initialized()) {
+							temp_def.points = edit_light->m_mover.get_points_vec();
 						}
 
 						ImGui::LogToClipboard();
@@ -3654,7 +3725,7 @@ namespace components
 				}
 
 				ImGui::SameLine(0, 6.0f);
-				if (ImGui::Button("Cancel", button_size)) 
+				if (ImGui::Button("Cancel", button_size))
 				{
 					ms_light_selection_pending = nullptr;
 					ImGui::CloseCurrentPopup();
@@ -4043,7 +4114,11 @@ namespace components
 		TT(gs->default_nocull_distance.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-		ImGui::DragFloat("Player Backward Offset", gs->player_backwards_offset.get_as<float*>(), 0.01f);
+		ImGui::DragFloat("Debug Info Distance", gs->debug_info_distance.get_as<float*>(), 0.1f);
+		TT(gs->debug_info_distance.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+		ImGui::DragFloat("Player Backwards Offset", gs->player_backwards_offset.get_as<float*>(), 0.01f);
 		TT(gs->player_backwards_offset.get_tooltip_string().c_str());
 	}
 

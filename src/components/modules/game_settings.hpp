@@ -390,6 +390,13 @@ namespace components
 				0.8f
 			};
 
+			variable debug_info_distance =
+			{
+				"debug_info_distance",
+				"The distance cutoff (in units) were debug info such as static prop info, unbake info, bone info etc. no longer gets drawn at.",
+				400.0f
+			};
+
 			variable player_backwards_offset =
 			{
 				"player_backwards_offset",

@@ -245,6 +245,51 @@ namespace utils
 		}
 	}
 
+	void matrix_angles(const matrix3x4_t& matrix, Vector* angles)
+	{
+		float forward[3];
+		float left[3];
+		float up[3];
+
+		//
+		// Extract the basis vectors from the matrix. Since we only need the Z
+		// component of the up vector, we don't get X and Y.
+		//
+		forward[0] = matrix.m_flMatVal[0][0];
+		forward[1] = matrix.m_flMatVal[1][0];
+		forward[2] = matrix.m_flMatVal[2][0];
+		left[0] = matrix.m_flMatVal[0][1];
+		left[1] = matrix.m_flMatVal[1][1];
+		left[2] = matrix.m_flMatVal[2][1];
+		up[2] = matrix.m_flMatVal[2][2];
+
+		float xyDist = sqrtf(forward[0] * forward[0] + forward[1] * forward[1]);
+
+		// enough here to get angles?
+		if (xyDist > 0.001f)
+		{
+			// (yaw)	y = ATAN( forward.y, forward.x );		-- in our space, forward is the X axis
+			angles->y = RAD2DEG(atan2f(forward[1], forward[0]));
+
+			// (pitch)	x = ATAN( -forward.z, sqrt(forward.x*forward.x+forward.y*forward.y) );
+			angles->x = RAD2DEG(atan2f(-forward[2], xyDist));
+
+			// (roll)	z = ATAN( left.z, up.z );
+			angles->z = RAD2DEG(atan2f(left[2], up[2]));
+		}
+		else	// forward is mostly Z, gimbal lock-
+		{
+			// (yaw)	y = ATAN( -left.x, left.y );			-- forward is mostly z, so use right for yaw
+			angles->y = RAD2DEG(atan2f(-left[0], left[1]));
+
+			// (pitch)	x = ATAN( -forward.z, sqrt(forward.x*forward.x+forward.y*forward.y) );
+			angles->x = RAD2DEG(atan2f(-forward[2], xyDist));
+
+			// Assume no roll in this case as one degree of freedom has been lost (i.e. yaw == roll)
+			angles->z = 0;
+		}
+	}
+
 	bool float_equal(const float a, const float b, const float eps)
 	{
 		return std::fabs(a - b) < eps;
