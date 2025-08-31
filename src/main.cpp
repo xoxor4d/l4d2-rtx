@@ -153,6 +153,11 @@ BOOL APIENTRY DllMain(HMODULE, const DWORD ul_reason_for_call, LPVOID)
 			return TRUE;
 		}
 
+#if DEBUG
+		// hook OutputDebugString
+		game::SetupDebugOutputHook();
+#endif
+
 		CreateThread(nullptr, 0, find_window_loop, nullptr, 0, nullptr);
 	}
 

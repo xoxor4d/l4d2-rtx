@@ -108,6 +108,65 @@ namespace game
 	// CM_PointLeafnum
 	inline int get_leaf_from_position(const Vector& pos) { return utils::hook::call<int(__cdecl)(const float*)>(ENGINE_BASE + 0x14B130)(&pos.x); }
 
+	// ::
+	// debug print console redirects
+
+	static void(WINAPI* OriginalOutputDebugStringA)(LPCSTR lpOutputString) = nullptr;
+	static void(WINAPI* OriginalOutputDebugStringW)(LPCWSTR lpOutputString) = nullptr;
+
+	inline void WINAPI HookedOutputDebugStringA(LPCSTR lpOutputString)
+	{
+		if (lpOutputString) 
+		{
+			printf("[>] %s", lpOutputString);
+			fflush(stdout);
+		}
+
+		// og func
+		if (OriginalOutputDebugStringA) {
+			OriginalOutputDebugStringA(lpOutputString);
+		}
+	}
+
+	inline void WINAPI HookedOutputDebugStringW(LPCWSTR lpOutputString)
+	{
+		if (lpOutputString) 
+		{
+			// Convert wide string to multibyte string for printf
+			char buffer[1024];
+			WideCharToMultiByte(CP_UTF8, 0, lpOutputString, -1, buffer, sizeof(buffer), NULL, NULL);
+
+			printf("[>] %s", buffer);
+			fflush(stdout); 
+		}
+
+		// og func
+		if (OriginalOutputDebugStringW) {
+			OriginalOutputDebugStringW(lpOutputString);
+		}
+	}
+
+	inline void SetupDebugOutputHook()
+	{
+		if (MH_CreateHook(&OutputDebugStringA, &HookedOutputDebugStringA, reinterpret_cast<LPVOID*>(&OriginalOutputDebugStringA)) != MH_OK) 
+		{
+			std::cout << "[!][ERROR] Failed to create hook for OutputDebugStringA\n";
+			return;
+		}
+
+		if (MH_CreateHook(&OutputDebugStringW, &HookedOutputDebugStringW, reinterpret_cast<LPVOID*>(&OriginalOutputDebugStringW)) != MH_OK) 
+		{
+			std::cout << "[!][ERROR] Failed to create hook for OutputDebugStringW\n";
+			return;
+		}
+
+		if (MH_EnableHook(&OutputDebugStringA) != MH_OK || MH_EnableHook(&OutputDebugStringW) != MH_OK) 
+		{
+			std::cout << "[!][ERROR] Failed to enable hooks for OutputDebugStringA & OutputDebugStringW\n";
+			return;
+		}
+	}
+
 	/**
 	 * Creates an external console
 	 */
