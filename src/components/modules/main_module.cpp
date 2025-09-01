@@ -1022,90 +1022,126 @@ namespace components
 	// #
 	// #
 
-	HOOK_RETN_PLACE_DEF(cbaseplayer_get_local_player_func);
-	HOOK_RETN_PLACE_DEF(draw_player_thirdperson_mesh_retn);
-	__declspec(naked) void draw_player_thirdperson_mesh_stub()
+	namespace playershadow
 	{
-		__asm
+		HOOK_RETN_PLACE_DEF(draw_player_thirdperson_mesh_draw_retn);
+
+		HOOK_RETN_PLACE_DEF(draw_player_thirdperson_mesh_check01_retn);
+		__declspec(naked) void draw_player_thirdperson_mesh_check01_stub()
 		{
-			call	cbaseplayer_get_local_player_func;
-			lea     ecx, [esi - 4];
-			add     esp, 4;
-			cmp     eax, ecx;
-			jnz		NOT_PLAYER; // jump if not our mesh
-			mov		g_is_rendering_our_thirdperson_mesh, 1;
-			jmp		draw_player_thirdperson_mesh_retn;
-
-		NOT_PLAYER:
-			mov		g_is_rendering_our_thirdperson_mesh, 0;
-			jmp		draw_player_thirdperson_mesh_retn;
-		}
-	}
-
-	// retn after C_BasePlayer::Draw()
-	__declspec(naked) void post_draw_player_thirdperson_mesh_stub()
-	{
-		__asm
-		{
-			mov		g_is_rendering_our_thirdperson_mesh, 0;
-			retn	8; // og
-		}
-	}
-
-
-	// returning 0 skips the impact decal
-	int impact_mid_hk(C_BaseEntity* ent)
-	{
-		if (const auto entity = reinterpret_cast<sdk::c_base_player*>(ent);
-			entity)
-		{
-			if (const auto* m_classes = entity->client_class();
-				m_classes)
+			__asm
 			{
-				switch (m_classes->class_id)
-				{
-				default:
-					break;
+				add     esp, 4;
+				cmp     eax, ecx;
+				jnz		NOT_LOCAL_PLAYER; // jump if not our player mesh
+				jmp		draw_player_thirdperson_mesh_check01_retn; // onto check #2
 
-				case sdk::ET_CTERRORPLAYER:
-				{
-					if (entity->is_local_player()) {
-						return 0;
-					}
-					break;
-				}
-				case sdk::ET_SURVIVORBOT:
-					break;
-				}
+			NOT_LOCAL_PLAYER:
+				mov		g_is_rendering_our_thirdperson_mesh, 0;
+				jmp		draw_player_thirdperson_mesh_draw_retn; // skip other checks and draw mesh
 			}
 		}
 
-		return 1;
-	}
-
-	HOOK_RETN_PLACE_DEF(impact_og_retn);
-	HOOK_RETN_PLACE_DEF(impact_skip_retn);
-	__declspec(naked) void impact_stub()
-	{
-		__asm
+		HOOK_RETN_PLACE_DEF(draw_player_thirdperson_mesh_check02_retn);
+		__declspec(naked) void draw_player_thirdperson_mesh_check02_stub()
 		{
-			pushad;
-			push	edi; // C_BaseEntity
-			call	impact_mid_hk;
-			add		esp, 4;
-			test	eax, eax;
-			jz		SKIP; // jump if eax = 0
-			popad;
+			__asm
+			{
+				push    0xFFFFFFFF;
+				call    eax;
+				test    eax, eax;
+				jnz		IS_THIRDPERSON_CAM; // jump if CAM_IsThirdPerson returns true
+				jmp		draw_player_thirdperson_mesh_check02_retn; // onto check #3
 
-			// og
-			mov     cl, 1;
-			test	[ebx + 0x24], cl;
-			jmp		impact_og_retn;
+			IS_THIRDPERSON_CAM:
+				mov		g_is_rendering_our_thirdperson_mesh, 0;
+				jmp		draw_player_thirdperson_mesh_draw_retn; // skip other checks and draw mesh
+			}
+		}
 
-		SKIP:
-			popad;
-			mov     cl, 1;
-			jmp		impact_skip_retn;
+
+		__declspec(naked) void draw_player_thirdperson_mesh_check03_stub()
+		{
+			__asm
+			{
+				mov     ecx, edi;
+				call    eax;
+				test    al, al;
+				jnz		IS_EXT_CAMERA; // jump if in detached camera state
+				mov		g_is_rendering_our_thirdperson_mesh, 1;	// we are in first person view - tag as player body
+				jmp		draw_player_thirdperson_mesh_draw_retn; // draw mesh
+
+			IS_EXT_CAMERA:
+				mov		g_is_rendering_our_thirdperson_mesh, 0; // camera is in detached state - do not tag as player body
+				jmp		draw_player_thirdperson_mesh_draw_retn; // still draw mesh tho
+			}
+		}
+
+		// retn after C_BasePlayer::Draw()
+		__declspec(naked) void post_draw_player_thirdperson_mesh_stub()
+		{
+			__asm
+			{
+				mov		g_is_rendering_our_thirdperson_mesh, 0;
+				retn	8; // og
+			}
+		}
+
+
+		// returning 0 skips the impact decal
+		int impact_mid_hk(C_BaseEntity* ent)
+		{
+			if (const auto entity = reinterpret_cast<sdk::c_base_player*>(ent);
+				entity)
+			{
+				if (const auto* m_classes = entity->client_class();
+					m_classes)
+				{
+					switch (m_classes->class_id)
+					{
+					default:
+						break;
+
+					case sdk::ET_CTERRORPLAYER:
+					{
+						if (entity->is_local_player()) {
+							return 0;
+						}
+						break;
+					}
+					case sdk::ET_SURVIVORBOT:
+						break;
+					}
+				}
+			}
+
+			return 1;
+		}
+
+		HOOK_RETN_PLACE_DEF(impact_og_retn);
+		HOOK_RETN_PLACE_DEF(impact_skip_retn);
+		__declspec(naked) void impact_stub()
+		{
+			__asm
+			{
+				pushad;
+				push	edi; // C_BaseEntity
+				call	impact_mid_hk;
+				add		esp, 4;
+				test	eax, eax;
+				jz		SKIP; // jump if eax = 0
+				popad;
+
+				// og
+				mov     cl, 1;
+				test[ebx + 0x24], cl;
+				jmp		impact_og_retn;
+
+			SKIP:
+				popad;
+				mov     cl, 1;
+				jmp		impact_skip_retn;
+			}
 		}
 	}
 
@@ -1515,25 +1551,34 @@ namespace components
 		// ---------------
 		// # player shadow
 
-		if (g_use_playershadow = flags::has_flag("playershadow"); g_use_playershadow)
+		if (g_use_playershadow = !flags::has_flag("disable_playershadow"); g_use_playershadow)
 		{
-			// C_BasePlayer_Draw and prior function to always draw the player character
-			//utils::hook::nop(CLIENT_BASE + 0x223376, 6); // 0F85 A300 0000 to E9 A4 00 00 (00) + 1 nop
-			//utils::hook::set<DWORD>(CLIENT_BASE + 0x223376, 0x0000A4E9); // ^
-			//utils::hook::set<BYTE>(CLIENT_BASE + 0x223376 + 4, 0x00); // ^
-
-			utils::hook::set<BYTE>(ENGINE_BASE + 0x64020, 0xEB); // je to jmp 
-
 			// helper var around C_BasePlayer_Draw so we know when we are drawing our player mesh
-			utils::hook(CLIENT_BASE + 0x223369, draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
-			HOOK_RETN_PLACE(cbaseplayer_get_local_player_func, CLIENT_BASE + 0x634E0);
-			HOOK_RETN_PLACE(draw_player_thirdperson_mesh_retn, CLIENT_BASE + 0x22341F);
-			utils::hook(CLIENT_BASE + 0x223431, post_draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
+			// we wrap around each of the three initial checks because we do not want to tag the player body 
+			// if the game is rendering in third person or when doing intro cinematics
 
+			// GetLocalPlayer check
+			utils::hook(CLIENT_BASE + 0x223371, playershadow::draw_player_thirdperson_mesh_check01_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_check01_retn, CLIENT_BASE + 0x22337C);
+
+			// CAM_IsThirdPerson check
+			utils::hook::nop(CLIENT_BASE + 0x223387, 6);
+			utils::hook(CLIENT_BASE + 0x223387, playershadow::draw_player_thirdperson_mesh_check02_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_check02_retn, CLIENT_BASE + 0x223393);
+
+			// intro cam / "scripted third person" (eg. jockey on player) check
+			utils::hook::nop(CLIENT_BASE + 0x22339F, 6);
+			utils::hook(CLIENT_BASE + 0x22339F, playershadow::draw_player_thirdperson_mesh_check03_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_draw_retn, CLIENT_BASE + 0x22341F); // addr of draw func
+
+			// reset helper var after drawing
+			utils::hook(CLIENT_BASE + 0x223431, playershadow::post_draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
+
+			// 
 			// F890E disable impact marks on ourselfs
-			utils::hook(CLIENT_BASE + 0xF890E, impact_stub, HOOK_JUMP).install()->quick();
-			HOOK_RETN_PLACE(impact_og_retn, CLIENT_BASE + 0xF8913);
-			HOOK_RETN_PLACE(impact_skip_retn, CLIENT_BASE + 0xF89C0);
+			utils::hook(CLIENT_BASE + 0xF890E, playershadow::impact_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::impact_og_retn, CLIENT_BASE + 0xF8913);
+			HOOK_RETN_PLACE(playershadow::impact_skip_retn, CLIENT_BASE + 0xF89C0);
 		}
 
 		// #
