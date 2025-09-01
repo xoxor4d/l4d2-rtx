@@ -49,11 +49,11 @@
 # ~~ Parameters:
 # <map name> = [
 #   {
-#       in_area =       the area the player has to be in                        [int]
-#       areas = []      area/s with forced visibility                           [int array]
-#       leafs = []      leaf/s with forced visibility                           [int array]
+#       in_area =       the area the player has to be in                            [int]
+#       areas = []      area/s with forced visibility                               [int array]
+#       leafs = []      leaf/s with forced visibility                               [int array]
 #
-#       cull =          [0] disable frustum culling                             [int 0-5]
+#       cull =          [0] disable frustum culling                                 [int 0-5]
 #                       [1] disable frustum culling in current area
 #                       [2] stock
 #                       [3] frustum culling (outside current area) + force all nodes/leafs in current area
@@ -65,7 +65,7 @@
 #       ----- :: This can be used to disable frustum culling for specified areas when the player is in specified leafs 
 #             :: Useful at area crossings when used in conjunction with nocull - area-specific markers that block visibility
 #                   
-#       leaf_tweak = [    [array of structure below]
+#       leaf_tweak = [        [array of structure below]
 #         {                                                                                   
 #             in_leafs = []   the leaf/s the player has to be in                      [int array]
 #                areas = []   area/s with forced visibility                           [int array]
@@ -77,7 +77,7 @@
 #
 #       ------ :: This can be used to forcefully cull parts of the map
 #
-#       hide_areas = [    [array of structure below]
+#       hide_areas = [        [array of structure below]
 #         {                
 #               areas = []    area/s to hide                                          [int array]
 #             N_leafs = []    only hide area/s when NOT in leaf/s                     [int array]
@@ -361,6 +361,7 @@
 # :: Useful console commands:  
 #    > 'xo_debug_scene_print' to print info about all choreographies to the console
 #    > 'xo_debug_sound_print' to print info about running sounds to the console
+#    > 'xo_debug_toggle_node_vis' to visualize current node/leaf and area
 #
 # ~~ Parameters:
 # <map name> = {
@@ -423,6 +424,8 @@
 #    > 'xo_debug_scene_print' to print info about all choreographies to the console (choreo trigger/kill)
 #    > 'xo_debug_sound_print' to print info about running sounds to the console (sound trigger/kill)
 #    > 'xo_debug_toggle_model_info' to show required prop info (name, radius) for the 'attach' functionality
+#    > 'xo_debug_show_mesh_bone_info_attached' to show bone info for the prop the light is attached to
+#    > 'xo_debug_show_mesh_bone_info' to show bone info for all props within 'gamesettings::debug_info_distance'
 #
 # ~~ Parameters:
 # <map name> = [
@@ -456,6 +459,8 @@
 #                       name    ] OR THAT =         model name that contains this substring (cmd: see desc.)                                            [string]
 #                         
 #                               |> bounds = []      (opt.) define bounds (min/max) where the light can spawn and attach to the prop                     [2x 3D Vector :: [minX, minY, minZ, maxX, maxY, maxZ]
+#                               |> bone_index =     (opt.) THIS     attach light to bone with this index (cmd: see desc.)                               [uint]
+#                               |> bone_name  =     (opt.) OR THAT  attach light to bone with this name (slower) (cmd: see desc.)                       [string]
 #       }
 #
 #       -----------
