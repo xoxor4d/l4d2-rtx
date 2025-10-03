@@ -1921,7 +1921,7 @@ namespace components
 					}
 
 					game::debug_add_text_overlay(&org.x, studio->sub_model->name, 1, 1.0f, 1.0f, 1.0f, 1.0f);
-					game::debug_add_text_overlay(&org.x, utils::va("Checksum: %sf", utils::to_hex_string(studio->m_pStudioHdr->checksum).c_str()), 2, 1.0f, 1.0f, 1.0f, 1.0f);
+					game::debug_add_text_overlay(&org.x, utils::va("Checksum: %s", utils::to_hex_string(studio->m_pStudioHdr->checksum).c_str()), 2, 1.0f, 1.0f, 1.0f, 1.0f);
 					game::debug_add_text_overlay(&org.x, utils::va("NumBones: %d", studio->m_pStudioHdr->numbones), 3, 0.6f, 0.6f, 0.6f, 0.7f);
 				}
 			}
