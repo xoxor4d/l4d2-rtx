@@ -109,9 +109,9 @@ namespace l4d2
 		PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "83 C4 ? 80 7D ? ? 74 ? E8", 0, 0x1D3F1D);
 
 
-		PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "", 0, 0x0);
-		PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "", 0, 0x0);
-		PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "", 0, 0x0);
+		//PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "", 0, 0x0);
+		//PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "", 0, 0x0);
+		//PATTERN_OFFSET_SIMPLE(CLIENT_MOD, hk_addr__skyboxview_draw_internal, "", 0, 0x0);
 
 		
 		

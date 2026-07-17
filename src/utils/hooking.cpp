@@ -255,7 +255,7 @@ namespace utils
 
 						if (validate_patterns) 
 						{
-							if (place == inactive_offset + offset) {
+							if (place == module_info.handle + inactive_offset + offset) {
 								log("Hook", std::format("> Pattern offset validated!", place), LOG_TYPE::LOG_TYPE_GREEN, true);
 							}
 							else {
