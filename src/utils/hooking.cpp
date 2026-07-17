@@ -142,24 +142,21 @@ namespace utils
 			return 0;
 		}
 
-		DWORD find_pattern(const std::string_view& signature, const DWORD& offset, const char* description, const bool is_active, const DWORD& inactive_offset)
+		DWORD find_pattern(module_info& module_info, const std::string_view& signature, const DWORD& offset, const char* description, const bool is_active, const DWORD& inactive_offset)
 		{
 			if (!is_active) {
 				return inactive_offset + offset;
 			}
-		
-			uint8_t* base = (uint8_t*)GetModuleHandle(nullptr);
-			if (!base) {
-				throw std::runtime_error("Failed to get base module handle");
-			}
-		
-			if (!glob::exe_size) {
-				glob::setup_exe_module();
+
+			if (!module_info.handle) {
+				throw std::runtime_error("No base address for module: " + module_info.name);
 			}
 
-			if (!glob::exe_size) {
-				throw std::runtime_error("Invalid exe_size");
+			if (!module_info.size) {
+				throw std::runtime_error("No size for module: " + module_info.name);
 			}
+		
+			uint8_t* base = (uint8_t*)module_info.handle;
 		
 			static std::unordered_map<std::string_view, std::pair<std::vector<uint8_t>, std::vector<bool>>> pattern_cache;
 			auto& [pattern_bytes, mask] = pattern_cache[signature];
@@ -211,7 +208,7 @@ namespace utils
 			}
 		
 			const size_t pattern_length = pattern_bytes.size();
-			if (pattern_length == 0 || pattern_length > glob::exe_size || pattern_length != mask.size()) {
+			if (pattern_length == 0 || pattern_length != mask.size()) {
 				throw std::runtime_error("Invalid pattern length");
 			}
 		
@@ -221,7 +218,7 @@ namespace utils
 				++first_non_wildcard;
 			}
 		
-			for (size_t i = 0; i <= glob::exe_size - pattern_length; ++i)
+			for (size_t i = 0; i <= module_info.size - pattern_length; ++i)
 			{
 				if (first_non_wildcard < pattern_length && base[i + first_non_wildcard] != pattern_bytes[first_non_wildcard]) {
 					continue;

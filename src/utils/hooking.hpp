@@ -119,8 +119,15 @@ namespace utils
 
 		// ------
 
+		struct module_info
+		{
+			DWORD handle = 0u;
+			DWORD size = 0u;
+			std::string name;
+		};
+
 		DWORD find_pattern_in_module(const HMODULE module_name, const std::string_view& signature, DWORD offset = 0u, [[maybe_unused]] const char* description = nullptr);
-		DWORD find_pattern(const std::string_view& signature, const DWORD& offset, [[maybe_unused]] const char* description = nullptr, bool is_active = true, const DWORD& inactive_offset = 0u);
+		DWORD find_pattern(module_info& module_info, const std::string_view& signature, const DWORD& offset, [[maybe_unused]] const char* description = nullptr, bool is_active = true, const DWORD& inactive_offset = 0u);
 		DWORD find_import_addr(const HMODULE hmodule, const char* dll_name, const char* func_name);
 		uint32_t resolve_relative_call_address(uint32_t call_instruction_addr);
 		uint32_t resolve_relative_jump_address(uint32_t instruction_addr, uint32_t instruction_size, uint32_t bytes_until_relative_addr);

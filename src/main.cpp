@@ -1,4 +1,6 @@
 #include "std_include.hpp"
+
+#include <Psapi.h>
 #include <wincrypt.h>
 
 std::unordered_set<HWND> wnd_class_list; // so we don't print the same window strings over and over again
@@ -34,7 +36,7 @@ namespace l4d2
 	}
 
 
-#define GET_MODULE_HANDLE(HANDLE_OUT, NAME, T) \
+/*#define GET_MODULE_HANDLE(HANDLE_OUT, NAME, T) \
 	while (!(HANDLE_OUT)) { \
 		if ((HANDLE_OUT) = (DWORD)GetModuleHandleA(NAME); !(HANDLE_OUT)) { \
 			Sleep(100); (T) += 100u; \
@@ -43,6 +45,39 @@ namespace l4d2
 				return TRUE; \
 			} \
 		} \
+	}*/
+
+	BOOL get_module_handle_and_size(utils::mem::module_info& module_info, LPCSTR name, uint32_t& timeout)
+	{
+		while (!module_info.handle)
+		{
+			HMODULE module = GetModuleHandleA(name);
+			if (module)
+			{
+				MODULEINFO info{};
+				if (!GetModuleInformation(GetCurrentProcess(), module, &info, sizeof(info)))
+				{
+					utils::log("Main", std::format("Failed to get module information for {}. Error: (0x{:X})", name ? name : "<exe>", GetLastError()));
+					return TRUE;
+				}
+
+				module_info.handle = reinterpret_cast<DWORD>(module);
+				module_info.size = info.SizeOfImage;
+				module_info.name = name;
+				return FALSE;
+			}
+
+			Sleep(100);
+			timeout += 100;
+
+			if (timeout >= 30000)
+			{
+				utils::log("Main", "Failed to find module: "s + (name ? name : "<exe>"));
+				return TRUE;
+			}
+		}
+
+		return FALSE;
 	}
 
 	DWORD WINAPI find_game_window_by_class([[maybe_unused]] LPVOID lpParam)
@@ -73,25 +108,27 @@ namespace l4d2
 			Beep(523, 100);
 		}
 
-		GET_MODULE_HANDLE(game::shaderapidx9_module, "shaderapidx9.dll", T);
-		GET_MODULE_HANDLE(game::studiorender_module, "studiorender.dll", T);
-		//GET_MODULE_HANDLE(game::materialsystem_module, "materialsystem.dll", T);
-		GET_MODULE_HANDLE(game::engine_module, "engine.dll", T);
-		GET_MODULE_HANDLE(game::client_module, "client.dll", T);
-		GET_MODULE_HANDLE(game::server_module, "server.dll", T);
-		GET_MODULE_HANDLE(game::vstdlib_module, "vstdlib.dll", T);
+		get_module_handle_and_size(game::shaderapidx9_module, "shaderapidx9.dll", T);
+		get_module_handle_and_size(game::studiorender_module, "studiorender.dll", T);
+		//get_module_handle_and_size(game::materialsystem_module, "materialsystem.dll", T);
+		get_module_handle_and_size(game::engine_module, "engine.dll", T);
+		get_module_handle_and_size(game::client_module, "client.dll", T);
+		get_module_handle_and_size(game::server_module, "server.dll", T);
+		get_module_handle_and_size(game::vstdlib_module, "vstdlib.dll", T);
 
 		// Wait a little ..
 
 		T = 0u;
 		while (true)
 		{
-			if (T >= 2000) {
+			if (T >= 100) {
 				break;
 			}
 
 			Sleep(1u); T += 1u;
 		}
+
+		l4d2::init_game_addresses();
 
 		l4d2::main();
 		return 0;
@@ -134,9 +171,7 @@ BOOL APIENTRY DllMain(HMODULE hmodule, const DWORD ul_reason_for_call, LPVOID)
 		game::SetupDebugOutputHook();
 #endif
 
-		l4d2::init_game_addresses();
-
-		// init early modules here <>
+		// init early modules here <> (can not place hooks directly)
 
 		if (const auto t = CreateThread(nullptr, 0, l4d2::find_game_window_by_class, nullptr, 0, nullptr); t) {
 			CloseHandle(t);

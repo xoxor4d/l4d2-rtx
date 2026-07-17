@@ -5,13 +5,14 @@ namespace game
 {
 	std::vector<std::string> loaded_modules;
 	std::string root_path;
-	DWORD shaderapidx9_module = 0u;
-	DWORD studiorender_module = 0u;
-	DWORD materialsystem_module = 0u;
-	DWORD engine_module = 0u;
-	DWORD client_module = 0u;
-	DWORD server_module = 0u;
-	DWORD vstdlib_module = 0u;
+
+	utils::mem::module_info shaderapidx9_module = {};
+	utils::mem::module_info studiorender_module = {};
+	utils::mem::module_info materialsystem_module = {};
+	utils::mem::module_info engine_module = {};
+	utils::mem::module_info client_module = {};
+	utils::mem::module_info server_module = {};
+	utils::mem::module_info vstdlib_module = {};
 
 	const D3DXMATRIX IDENTITY =
 	{

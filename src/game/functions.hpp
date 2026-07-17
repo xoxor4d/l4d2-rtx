@@ -1,12 +1,21 @@
 #pragma once
 
-#define RENDERER_BASE			game::shaderapidx9_module
-#define STUDIORENDER_BASE		game::studiorender_module
-//#define MATERIALSTYSTEM_BASE	game::materialsystem_module
-#define ENGINE_BASE				game::engine_module
-#define CLIENT_BASE				game::client_module
-#define SERVER_BASE				game::server_module
-#define VSTDLIB_BASE			game::vstdlib_module
+#define RENDERER_MOD			game::shaderapidx9_module
+#define STUDIORENDER_MOD		game::studiorender_module
+//#define MATERIALSTYSTEM_MOD	game::materialsystem_module
+#define ENGINE_MOD				game::engine_module
+#define CLIENT_MOD				game::client_module
+#define SERVER_MOD				game::server_module
+#define VSTDLIB_MOD			game::vstdlib_module
+
+#define RENDERER_BASE			game::shaderapidx9_module.handle
+#define STUDIORENDER_BASE		game::studiorender_module.handle
+//#define MATERIALSTYSTEM_BASE	game::materialsystem_module.handle
+#define ENGINE_BASE				game::engine_module.handle
+#define CLIENT_BASE				game::client_module.handle
+#define SERVER_BASE				game::server_module.handle
+#define VSTDLIB_BASE			game::vstdlib_module.handle
+#include "utils/hooking.hpp"
 
 using namespace components;
 
@@ -14,13 +23,14 @@ namespace game
 {
 	extern std::vector<std::string> loaded_modules;
 	extern std::string root_path;
-	extern DWORD shaderapidx9_module;
-	extern DWORD studiorender_module;
-	extern DWORD materialsystem_module;
-	extern DWORD engine_module;
-	extern DWORD client_module;
-	extern DWORD server_module;
-	extern DWORD vstdlib_module;
+
+	extern utils::mem::module_info shaderapidx9_module;
+	extern utils::mem::module_info studiorender_module;
+	extern utils::mem::module_info materialsystem_module;
+	extern utils::mem::module_info engine_module;
+	extern utils::mem::module_info client_module;
+	extern utils::mem::module_info server_module;
+	extern utils::mem::module_info vstdlib_module;
 
 	extern const D3DXMATRIX IDENTITY;
 	extern const D3DXMATRIX TC_TRANSLATE_TO_CENTER;
@@ -112,7 +122,7 @@ namespace game
 	{
 		if (lpOutputString) 
 		{
-			utils::log("Game >", lpOutputString, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
+			utils::log(">", lpOutputString, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
 			fflush(stdout);
 		}
 
@@ -130,7 +140,7 @@ namespace game
 			char buffer[1024];
 			WideCharToMultiByte(CP_UTF8, 0, lpOutputString, -1, buffer, sizeof(buffer), NULL, NULL);
 
-			utils::log("Game >", buffer, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
+			utils::log(">", buffer, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
 			fflush(stdout); 
 		}
 

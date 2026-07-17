@@ -227,7 +227,7 @@ namespace components
 		p_this = this;
 
 		// CSceneEntity::StartEvent :: : can be used to detect the start of scene (vcd) entities
-		utils::hook(SERVER_BASE + 0x1C0765, scene_ent_on_start_event_stub).install()->quick(); // 2001
+		utils::hook(l4d2::hk_addr__scene_ent_on_start_event, scene_ent_on_start_event_stub).install()->quick();
 		HOOK_RETN_PLACE(scene_ent_on_start_event_retn, SERVER_BASE + 0x1C076A); // 2001
 
 		// CSceneEntity::OnSceneFinished
