@@ -1,4 +1,5 @@
 #pragma once
+#include "map_settings.hpp"
 
 namespace components
 {
@@ -14,7 +15,7 @@ namespace components
 	extern bool g_use_playershadow;
 	extern int  g_is_rendering_our_thirdperson_mesh;
 
-	class main_module : public component
+	class main_module final : public loader::component_module
 	{
 	public:
 		main_module();

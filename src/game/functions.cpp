@@ -1,10 +1,5 @@
 #include "std_include.hpp"
-
-namespace glob
-{
-	bool spawned_external_console = false;
-	HWND main_window = nullptr;
-}
+#include "components/modules/interfaces.hpp"
 
 namespace game
 {

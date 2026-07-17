@@ -385,7 +385,7 @@ namespace components
 		extern LPDIRECT3DTEXTURE9 white;
 	}
 
-	class model_render : public component
+	class model_render final : public loader::component_module
 	{
 	public:
 		model_render();

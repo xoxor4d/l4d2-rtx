@@ -1,46 +1,44 @@
 #pragma once
-#include<memory>
 
-namespace components
+namespace components::loader
 {
-	class component
+	class component_module
 	{
 	public:
-		component() {}
-		virtual ~component() {}
+
 	};
 
-	class loader
+	class module_loader final
 	{
 	public:
-		static void initialize();
-		static void uninitialize();
-
-		static utils::memory::allocator* get_allocator();
-
-	private:
-		static std::vector<std::unique_ptr<component>> components_;
-		static utils::memory::allocator mem_allocator_;
-
-		template<class ComponentType>
-		static void register_component()
+		template <typename T>
+		class installer final
 		{
-			components_.emplace_back(std::make_unique<ComponentType>());
+			static_assert(std::is_base_of<component_module, T>::value, "Module has invalid base class");
+
+		public:
+			installer() {
+				register_module(std::make_unique<T>());
+			}
+		};
+
+		template <typename T>
+		static T* get()
+		{
+			for (const auto& module_ : *modules_)
+			{
+				if (typeid(*module_.get()) == typeid(T)) {
+					return reinterpret_cast<T*>(module_.get());
+				}
+			}
+
+			return nullptr;
 		}
 
+		static void register_module(std::unique_ptr<component_module>&& component_module);
+
+	private:
+		static std::vector<std::unique_ptr<component_module>>* modules_;
+		static void destroy_modules();
 	};
 }
-
-#include "modules/interfaces.hpp"
-#include "modules/flags.hpp"
-#include "modules/game_settings.hpp"
-#include "modules/remix_api.hpp"
-#include "modules/choreo_events.hpp"
-#include "modules/sound_events.hpp"
-#include "modules/remix_lights.hpp"
-#include "modules/remix_vars.hpp"
-#include "modules/remix_markers.hpp"
-#include "modules/main_module.hpp"
-#include "modules/model_render.hpp"
-#include "modules/map_settings.hpp"
-#include "modules/imgui.hpp"

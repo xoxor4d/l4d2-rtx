@@ -1,42 +1,25 @@
 #include "std_include.hpp"
 
-namespace components
+namespace components::loader
 {
-	utils::memory::allocator loader::mem_allocator_;
-	std::vector<std::unique_ptr<component>> loader::components_;
+	std::vector<std::unique_ptr<component_module>>* module_loader::modules_ = nullptr;
 
-	void loader::initialize()
+	void module_loader::register_module(std::unique_ptr<component_module>&& module_)
 	{
-		mem_allocator_.clear();
-		register_component<interfaces>();
-		register_component<flags>();
-		register_component<game_settings>();
-		register_component<remix_api>();
-		register_component<choreo_events>();
-		register_component<sound_events>();
-		register_component<main_module>();
-		register_component<model_render>();
-		register_component<imgui>();
-		register_component<remix_vars>();
-		register_component<remix_markers>();
-		register_component<map_settings>();
-		register_component<remix_lights>();
+		if (!modules_)
+		{
+			modules_ = new std::vector<std::unique_ptr<component_module>>();
+			atexit(destroy_modules);
+		}
 
-
-		XASSERT(MH_EnableHook(MH_ALL_HOOKS) != MH_STATUS::MH_OK);
+		modules_->push_back(std::move(module_));
 	}
 
-	void loader::uninitialize()
+	void module_loader::destroy_modules()
 	{
+		if (!modules_) return;
 
-		components_.clear();
-		mem_allocator_.clear();
-		fflush(stdout);
-		fflush(stderr);
-	}
-
-
-	utils::memory::allocator* loader::get_allocator() {
-		return &loader::mem_allocator_;
+		delete modules_;
+		modules_ = nullptr;
 	}
 }

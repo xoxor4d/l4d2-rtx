@@ -7,7 +7,7 @@ namespace components
 		extern bool sound_debug_printing;
 	}
 
-	class sound_events : public component
+	class sound_events final : public loader::component_module
 	{
 	public:
 		sound_events();

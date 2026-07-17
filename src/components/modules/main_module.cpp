@@ -1,4 +1,14 @@
 #include "std_include.hpp"
+#include "main_module.hpp"
+
+#include "game_settings.hpp"
+#include "imgui.hpp"
+#include "interfaces.hpp"
+#include "map_settings.hpp"
+#include "model_render.hpp"
+#include "remix_api.hpp"
+#include "remix_lights.hpp"
+#include "remix_markers.hpp"
 #define USE_BUILD_WORLD_LIST_NOCULL 0
 
 namespace components
@@ -60,7 +70,7 @@ namespace components
 		remix_api::get()->on_renderview();
 
 		// fog
-		if (static bool allow_fog = !flags::has_flag("no_fog"); allow_fog)
+		if (static bool allow_fog = !utils::flags::has_flag("no_fog"); allow_fog)
 		{
 			const auto& s = map_settings::get_map_settings();
 			const bool has_dist = s.fog_dist > 0.0f;
@@ -1551,7 +1561,7 @@ namespace components
 		// ---------------
 		// # player shadow
 
-		if (g_use_playershadow = !flags::has_flag("disable_playershadow"); g_use_playershadow)
+		if (g_use_playershadow = !utils::flags::has_flag("disable_playershadow"); g_use_playershadow)
 		{
 			// helper var around C_BasePlayer_Draw so we know when we are drawing our player mesh
 			// we wrap around each of the three initial checks because we do not want to tag the player body 
@@ -1585,6 +1595,8 @@ namespace components
 		// commands
 
 		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
+
+		log("MainModule", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 
 	main_module::~main_module()

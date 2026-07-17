@@ -1,4 +1,9 @@
 #include "std_include.hpp"
+#include "remix_api.hpp"
+
+#include "game_settings.hpp"
+#include "main_module.hpp"
+#include "model_render.hpp"
 
 namespace components
 {
@@ -759,7 +764,10 @@ namespace components
 		{
 			get()->m_initialized = true;
 			remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, end_scene_callback, on_present_callback);
+			log("RemixApi", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 		}
-		else { game::console(); printf("[!][RemixApi] Failed to initialize the remixApi - Code: %d\n", status); }
+		else {
+			log("RemixApi", std::format("Failed to initialize the remixApi - Code: {:d}", static_cast<int>(status)), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
+		}
 	}
 }

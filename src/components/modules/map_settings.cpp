@@ -1,9 +1,17 @@
 #include "std_include.hpp"
+#include "map_settings.hpp"
+
+#include "game_settings.hpp"
+#include "imgui.hpp"
+#include "interfaces.hpp"
+#include "main_module.hpp"
+#include "remix_api.hpp"
+#include "remix_lights.hpp"
 #include "components/common/toml.hpp"
 
 namespace components
 {
-#define CATCH_ERR	catch (toml::type_error& err) { game::console(); printf("%s\n", err.what()); return; }
+#define CATCH_ERR	catch (toml::type_error& err) { utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true); return; }
 
 	void map_settings::set_settings_for_map(const std::string& map_name)
 	{
@@ -13,7 +21,7 @@ namespace components
 
 		parse_toml();
 
-		static bool disable_map_configs = flags::has_flag("xo_disable_map_conf");
+		static bool disable_map_configs = utils::flags::has_flag("xo_disable_map_conf");
 		if (remix_api::is_initialized())
 		{
 			if (!disable_map_configs)
@@ -221,7 +229,7 @@ namespace components
 						return static_cast<float>(entry.as_floating());
 					}
 					catch (toml::type_error& err) {
-						game::console(); printf("%s\n", err.what());
+						utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 					}
 
 					return default_val;
@@ -242,7 +250,7 @@ namespace components
 						return static_cast<int>(entry.as_integer());
 					}
 					catch (toml::type_error& err) {
-						game::console(); printf("%s\n", err.what());
+						utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 					}
 
 					return default_val;
@@ -262,7 +270,7 @@ namespace components
 						return static_cast<std::uint32_t>(entry.as_integer());
 					}
 					catch (toml::type_error& err) {
-						game::console(); printf("%s\n", err.what());
+						utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 					}
 
 					return default_val;
@@ -283,7 +291,7 @@ namespace components
 						return static_cast<bool>(entry.as_boolean());
 					}
 					catch (toml::type_error& err) {
-						game::console(); printf("%s\n", err.what());
+						utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 					}
 
 					return default_setting;
@@ -404,7 +412,7 @@ namespace components
 								auto m = to_uint(entry.at("cull"));
 								if (m >= AREA_CULL_INFO_COUNT) 
 								{
-									game::console(); printf("MapSettings: param 'cull' was out-of-range (%d)\n", m);
+									utils::log("MapSettings", "param 'cull' was out-of-range: " + std::to_string(m), utils::LOG_TYPE::LOG_TYPE_WARN, true);
 									m = 0u;
 								}
 								cmode = (AREA_CULL_MODE)(std::uint8_t)m;
@@ -660,6 +668,7 @@ namespace components
 						}
 						else
 						{
+
 							TOML_ERROR("[MARKER] #index", entry, "Marker did not define an index via 'marker' or 'nocull' -> skipping");
 							return;
 						}
@@ -895,7 +904,7 @@ namespace components
 							try { config_name = entry.at("conf").as_string(); }
 							catch (toml::type_error& err) 
 							{
-								game::console(); printf("%s\n", err.what());
+								utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 								return;
 							}
 
@@ -1070,7 +1079,7 @@ namespace components
 										m_map_settings.api_var_configs.emplace_back(conf.as_string());
 									}
 									catch (toml::type_error& err) {
-										game::console(); printf("%s\n", err.what());
+										utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 									}
 								}
 							}
@@ -1467,8 +1476,7 @@ namespace components
 
 		catch (const toml::syntax_error& err)
 		{
-			game::console();
-			printf("%s\n", err.what());
+			utils::log("MapSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 			return false;
 		}
 
@@ -1522,10 +1530,8 @@ namespace components
 
 			file.close();
 		}
-		else if (!no_error)
-		{
-			game::console();
-			printf("[MapSettings] Failed to find config: \"%s\" in %s \n", config.c_str(), custom_path ? custom_path : "\"" COMPMOD_ASSET_DIR "map_configs\"");
+		else if (!no_error) {
+			utils::log("MapSettings", "Failed to find config: '"s + config + "' in '"s + (custom_path ? custom_path : "\"" COMPMOD_ASSET_DIR "map_configs\"") + "'"s, utils::LOG_TYPE::LOG_TYPE_WARN, true);
 		}
 	}
 
@@ -1583,6 +1589,8 @@ namespace components
 	{
 		p_this = this;
 		game::con_add_command(&xo_mapsettings_update, "xo_mapsettings_update", map_settings::reload, "Reloads the map_settings.toml file + map.conf");
+
+		log("MapSettings", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 
 #undef CATCH_ERR

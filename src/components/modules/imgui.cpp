@@ -1,5 +1,9 @@
 #include "std_include.hpp"
 #include "std_include.hpp"
+#include "imgui.hpp"
+
+#include "choreo_events.hpp"
+#include "game_settings.hpp"
 #include "components/common/imgui/imgui_helper.hpp"
 #include "components/common/toml.hpp"
 #include "components/common/imgui/font_awesome_solid_900.hpp"
@@ -7,6 +11,12 @@
 #include "components/common/imgui/font_opensans.hpp"
 
 #include "imgui_internal.h"
+#include "interfaces.hpp"
+#include "main_module.hpp"
+#include "model_render.hpp"
+#include "remix_api.hpp"
+#include "remix_lights.hpp"
+#include "sound_events.hpp"
 
 // Allow us to directly call the ImGui WndProc function.
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
@@ -4210,7 +4220,7 @@ namespace components
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar(1);
 
-			bool show_dev = flags::has_flag("dev");
+			bool show_dev = utils::flags::has_flag("dev");
 //#ifdef DEBUG
 			show_dev = true; // always show for now
 //#endif
@@ -4483,6 +4493,8 @@ namespace components
 		const auto dev = game::get_d3d_device();
 		MH_CreateHook(reinterpret_cast<void*>(get_virtual(dev, 17)), present_hk, reinterpret_cast<void**>(&present_original));
 		MH_CreateHook(reinterpret_cast<void*>(get_virtual(dev, 16)), reset_hk, reinterpret_cast<void**>(&reset_original));
+
+		log("ImGui", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 
 	imgui::~imgui()

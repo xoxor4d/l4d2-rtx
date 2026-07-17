@@ -11,7 +11,7 @@ namespace components
 		extern bool show_mesh_bone_info;
 	}
 
-	class remix_lights : public component
+	class remix_lights final : public loader::component_module
 	{
 	public:
 		remix_lights();

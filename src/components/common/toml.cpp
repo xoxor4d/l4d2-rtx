@@ -1,5 +1,7 @@
 #include "std_include.hpp"
 
+#include "components/modules/map_settings.hpp"
+
 namespace common::toml
 {
 	// format 2 decimals

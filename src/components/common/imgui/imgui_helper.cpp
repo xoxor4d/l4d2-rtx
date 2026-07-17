@@ -2,6 +2,9 @@
 #include "imgui_internal.h"
 #include "imgui_helper.hpp"
 
+#include "components/modules/interfaces.hpp"
+#include "components/modules/main_module.hpp"
+
 namespace common::imgui
 {
 	bool world2screen(const Vector& in, Vector& out)

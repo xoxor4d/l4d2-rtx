@@ -7,7 +7,7 @@ namespace components
 		extern bool scene_print;
 	}
 
-	class choreo_events : public component
+	class choreo_events final : public loader::component_module
 	{
 	public:
 		choreo_events();

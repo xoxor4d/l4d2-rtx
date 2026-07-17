@@ -1,6 +1,8 @@
 #pragma once
 #include <random>
 
+#include "game/structs.hpp"
+
 #define ARR_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 namespace utils

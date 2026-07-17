@@ -1,4 +1,5 @@
 #include "std_include.hpp"
+#include "interfaces.hpp"
 
 namespace components
 {
@@ -15,10 +16,10 @@ namespace components
 		return static_cast<m_interface*>(fn(interface_name.c_str(), {}));
 	}
 
-#define GET_INTERFACE(DEST, T, MODULE_NAME, VERSION_STR)																									\
-		if((DEST) = get_interface<T>((MODULE_NAME), (VERSION_STR)); !(DEST)) {																			\
-			Beep(300, 100); Sleep(100); Beep(200, 100);															\
-			game::console(); std::cout << "[!][Interfaces] Failed to get interface: '" << (VERSION_STR) << "' in: '" << (MODULE_NAME) << "'" << std::endl;	\
+#define GET_INTERFACE(DEST, T, MODULE_NAME, VERSION_STR)								\
+		if((DEST) = get_interface<T>((MODULE_NAME), (VERSION_STR)); !(DEST)) {			\
+			Beep(300, 100); Sleep(100); Beep(200, 100);									\
+			utils::log("Interfaces", "Failed to get interface: "s + (VERSION_STR) + "' in: '"s + (MODULE_NAME) + "'"s, utils::LOG_TYPE::LOG_TYPE_ERROR, true); \
 		}
 
 	interfaces::interfaces()
@@ -32,5 +33,7 @@ namespace components
 		m_globals = m_player_manager->get_global_vars();
 
 		GET_INTERFACE(m_surface, sdk::surface, "vguimatsurface.dll", VGUI_MAT_SURFACE_INTERFACE_VERSION);
+
+		log("Interfaces", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

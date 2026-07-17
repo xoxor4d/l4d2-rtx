@@ -1,4 +1,10 @@
 #include "std_include.hpp"
+#include "remix_lights.hpp"
+
+#include "game_settings.hpp"
+#include "imgui.hpp"
+#include "interfaces.hpp"
+#include "remix_api.hpp"
 
 namespace components
 {
@@ -36,8 +42,7 @@ namespace components
 
 		if (points.size() > 1 && m_total_duration == 0.0f)
 		{
-			game::console();
-			std::cout << "[RemixLights][light_interpolator::init] Encountered a light were the last point has no defined timepoint! Placeholder in-use, please fix!" << std::endl;
+			utils::log("RemixLights", "light_interpolator::init - Encountered a light were the last point has no defined timepoint! Placeholder in-use, please fix!", utils::LOG_TYPE::LOG_TYPE_WARN, true);
 
 			// use timepoint of prev. point + 1.0
 			m_total_duration = (m_points)[m_points.size() - 2].timepoint + 1.0f;
@@ -1093,5 +1098,7 @@ namespace components
 		game::con_add_command(&xo_debug_toggle_show_api_lights_cmd, "xo_debug_toggle_show_api_lights", xo_debug_toggle_show_api_lights_fn, "Toggle debug vis for lights added via the remixapi");
 		game::con_add_command(&xo_debug_show_mesh_bone_info_attached_cmd, "xo_debug_show_mesh_bone_info_attached", xo_debug_show_mesh_bone_info_attached_fn, "Edit Mode + Attached to mesh only: Show bone information of mesh with an attached remixApi light (names/indices)");
 		game::con_add_command(&xo_debug_show_mesh_bone_info_cmd, "xo_debug_show_mesh_bone_info", xo_debug_show_mesh_bone_info_fn, "Show bone information for all nearby meshes (names/indices + entity indices)");
+
+		log("RemixLights", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

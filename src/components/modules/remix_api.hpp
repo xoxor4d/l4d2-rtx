@@ -2,7 +2,7 @@
 
 namespace components
 {
-	class remix_api : public component
+	class remix_api final : public loader::component_module
 	{
 	public:
 		remix_api();

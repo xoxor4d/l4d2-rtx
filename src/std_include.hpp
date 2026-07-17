@@ -8,6 +8,13 @@
 #define COMPMOD_ASSET_DIR "l4d2-rtx\\"
 #define WINDOW_TITLE_STR "Left 4 Dead 2 - Direct3D 9"
 
+constexpr auto COMP_MOD_VERSION_MAJOR = 1;
+constexpr auto COMP_MOD_VERSION_MINOR = 2;
+constexpr auto COMP_MOD_VERSION_PATCH = 0;
+
+// adjust for pre-release builds
+constexpr auto COMP_MOD_PRE_RELEASE_NUM = 0;
+
 // enable/disable benchmark logic
 //#define BENCHMARK
 
@@ -52,6 +59,7 @@
 
 #include "MinHook.h"
 #include "toml.hpp"
+#include "bridge_remix_api.h"
 
 #pragma warning(push)
 #pragma warning(disable: 6011)
@@ -63,12 +71,22 @@
 #include <misc/cpp/imgui_stdlib.h>
 #pragma warning(pop)
 
-#include "bridge_remix_api.h"
-
+#include "game/globals.hpp"
 #include "game/structs.hpp"
 #include "utils/fnv.hpp"
 #include "utils/utils.hpp"
 #include "utils/vector.hpp"
+#include "utils/console.hpp"
+#include "utils/flags.hpp"
+#include "utils/hooking.hpp"
+#include "utils/function.hpp"
+#include "utils/memory.hpp"
+
+#include "components/loader.hpp"
+#include "components/common/toml.hpp"
+
+#include "game/functions.hpp"
+#include "game/l4d2.hpp"
 
 #include "sdk/netvar/netvar.hpp"
 #include "sdk/client/c_base_client.hpp"
@@ -78,12 +96,5 @@
 #include "sdk/entity/c_base_entity.hpp"
 #include "sdk/entity/c_entity_list.hpp"
 #include "sdk/vgui/surface/c_surface_mgr.hpp"
-
-#include "utils/hooking.hpp"
-#include "utils/memory.hpp"
-#include "utils/function.hpp"
-#include "game/functions.hpp"
-
-#include "components/loader.hpp"
 
 using namespace std::literals;

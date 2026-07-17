@@ -1,4 +1,12 @@
 #include "std_include.hpp"
+#include "model_render.hpp"
+
+#include "game_settings.hpp"
+#include "imgui.hpp"
+#include "main_module.hpp"
+#include "map_settings.hpp"
+#include "remix_lights.hpp"
+#include "remix_markers.hpp"
 
 namespace components
 {
@@ -2065,6 +2073,8 @@ namespace components
 
 		game::con_add_command(&xo_debug_toggle_unbake_model_info_cmd, "xo_debug_toggle_unbake_model_info", xo_debug_toggle_unbake_model_info_fn, "Draw model name checksums for [UNBAKE] (mapsettings)");
 		game::con_add_command(&xo_mapsettings_get_unbake_info_cmd, "xo_mapsettings_get_unbake_info", xo_mapsettings_get_unbake_info_fn, "This log names of drawn models in the current frame to a logfile in portal2-rtx/logs/. Useful for MapSettings : [UNBAKE]");
+	
+		log("ModelRender", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }
 

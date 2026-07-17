@@ -1,9 +1,8 @@
 #pragma once
-#include "map_settings.hpp"
 
 namespace components
 {
-	class remix_markers : public component
+	class remix_markers final : public loader::component_module
 	{
 	public:
 		remix_markers();

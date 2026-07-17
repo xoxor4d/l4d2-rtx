@@ -2,7 +2,7 @@
 
 namespace components
 {
-	class interfaces : public component
+	class interfaces final : public loader::component_module
 	{
 	public:
 		interfaces();

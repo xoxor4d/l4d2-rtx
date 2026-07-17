@@ -1,6 +1,10 @@
 #include "std_include.hpp"
 #include "remix_vars.hpp"
 
+#include "interfaces.hpp"
+#include "map_settings.hpp"
+#include "remix_api.hpp"
+
 namespace components
 {
 	// checks if str is made up of numbers only
@@ -337,10 +341,8 @@ namespace components
 
 			file.close();
 		}
-		else
-		{
-			game::console();
-			printf("[RemixVars] Failed to find config: \"%s\" in \"" COMPMOD_ASSET_DIR "map_configs\"\n", conf_name.c_str());
+		else {
+			utils::log("RemixVars", "Failed to find config: '"s + conf_name, utils::LOG_TYPE::LOG_TYPE_WARN, false);
 		}
 	}
 
@@ -802,5 +804,7 @@ namespace components
 		game::con_add_command(&xo_vars_parse_options_cmd, "xo_vars_parse_options", xo_vars_parse_options_fn, "Re-parse the rtx.conf and resets everything (incl. runtime settings - ignoring tex hashes)");
 		game::con_add_command(&xo_vars_reset_all_options_cmd, "xo_vars_reset_all_options", xo_vars_reset_all_options_fn, "Reset all options (modified by .conf files) to the rtx.conf level");
 		game::con_add_command(&xo_vars_clear_transitions_cmd, "xo_vars_clear_transitions", xo_vars_clear_transitions_fn, "Clear all ongoing transitions");
+
+		log("RemixVars", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

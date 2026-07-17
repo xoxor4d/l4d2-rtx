@@ -6,13 +6,131 @@
 #define HOOK_RETN_PLACE_DEF(NAME)		DWORD (NAME) = 0u
 #define HOOK_RETN_PLACE(NAME, OFFSET)	(NAME) = (OFFSET)
 
+// creates typdef for detour - creates var NAME_og
+#define DETOUR_TYPEDEF(NAME, RETN_TYPE, CALLING_CONV, ...) \
+		typedef RETN_TYPE (CALLING_CONV* NAME##_t)(__VA_ARGS__); \
+		NAME##_t NAME##_og = nullptr;
+
+#define DETOUR_CAST(FN) reinterpret_cast<LPVOID*>(&(FN))
+
 namespace utils
 {
+	namespace mem
+	{
+		template <typename ptr_type = std::uintptr_t>
+		struct memory_address_t
+		{
+		public:
+			//
+			// constructors etc...
+			memory_address_t() : m_ptr(ptr_type(0)) {};
+			memory_address_t(ptr_type v) : m_ptr(v) {};
+			memory_address_t(void* v) : m_ptr(ptr_type(v)) {};
+			memory_address_t(const void* v) : m_ptr(ptr_type(v)) {};
+			~memory_address_t() = default;
+
+			//
+			// operators
+			//
+			inline operator ptr_type() {
+				return m_ptr;
+			}
+
+			inline operator void* () {
+				return static_cast<void*>(m_ptr);
+			}
+
+			inline memory_address_t& operator+=(ptr_type offset) {
+				m_ptr += offset;
+				return *this;
+			}
+
+			inline memory_address_t& operator-=(ptr_type offset) {
+				m_ptr -= offset;
+				return *this;
+			}
+
+			inline memory_address_t operator-(ptr_type offset) {
+				return memory_address_t<ptr_type>(m_ptr - offset);
+			}
+
+			inline memory_address_t operator+(ptr_type offset) {
+				return memory_address_t<ptr_type>(m_ptr + offset);
+			}
+
+			//
+			// utils
+			//
+			memory_address_t<ptr_type> offset(ptrdiff_t off) {
+				if (!m_ptr)
+					return m_ptr;
+				return memory_address_t<ptr_type>(m_ptr + off);
+			}
+
+			template <typename T>
+			T read() {
+				return *ptr<T>();
+			}
+
+			template <typename T>
+			T* ptr() {
+				return reinterpret_cast<T*>(m_ptr);
+			}
+
+			template <typename T>
+			T cast() {
+				return reinterpret_cast<T>(m_ptr);
+			}
+
+			memory_address_t<ptr_type>& self_get(ptr_type count = 1) {
+				if (!m_ptr)
+					return *this;
+
+				for (ptr_type i = 0; i < count; i++)
+					m_ptr = *reinterpret_cast<ptr_type*>(m_ptr);
+				return *this;
+			}
+
+			template <typename T = std::int32_t>
+			__forceinline memory_address_t<ptr_type> jmp(ptrdiff_t offset = 0x1) const {
+				if (!m_ptr)
+					return ptr_type(0);
+
+				ptr_type base = m_ptr + offset;
+				auto disp = *reinterpret_cast<T*>(base);
+
+				base += sizeof(T);
+				base += disp;
+
+				return ptr_type(base);
+			}
+		private:
+			ptr_type m_ptr;
+		};
+		using addr_t = mem::memory_address_t<std::uintptr_t>;
+
+
+		void** virtual_table(mem::addr_t inst);
+
+		template <typename Fn>
+		Fn virtual_function(void* inst, size_t index) {
+			return reinterpret_cast<Fn>(virtual_table(inst)[index]);
+		}
+
+		// ------
+
+		DWORD find_pattern_in_module(const HMODULE module_name, const std::string_view& signature, DWORD offset = 0u, [[maybe_unused]] const char* description = nullptr);
+		DWORD find_pattern(const std::string_view& signature, const DWORD& offset, [[maybe_unused]] const char* description = nullptr, bool is_active = true, const DWORD& inactive_offset = 0u);
+		DWORD find_import_addr(const HMODULE hmodule, const char* dll_name, const char* func_name);
+		uint32_t resolve_relative_call_address(uint32_t call_instruction_addr);
+		uint32_t resolve_relative_jump_address(uint32_t instruction_addr, uint32_t instruction_size, uint32_t bytes_until_relative_addr);
+	}
+
 	class hook
 	{
 	public:
 
-		hook() : initialized(false), installed(false), place(nullptr), stub(nullptr), original(nullptr), useJump(false), protection(0) { ZeroMemory(this->buffer, sizeof(this->buffer)); }
+		hook() : initialized(false), installed(false), place(nullptr), stub(nullptr), original(nullptr), trampoline(nullptr), useJump(false), protection(0) { ZeroMemory(this->buffer, sizeof(this->buffer)); }
 
 		hook(void* place, void* stub, bool useJump = true) : hook() { this->initialize(place, stub, useJump); }
 		hook(void* place, void(*stub)(), bool useJump = true) : hook(place, reinterpret_cast<void*>(stub), useJump) {}
@@ -29,7 +147,10 @@ namespace utils
 		hook* uninstall(bool unprotect = true);
 
 		void* get_address();
-		void quick();
+		hook* quick();
+
+		DWORD create_trampoline();
+		void* get_trampoline() { return this->trampoline; }
 
 		template <typename T> static std::function<T> call(DWORD function)
 		{
@@ -46,6 +167,11 @@ namespace utils
 			return call<T>(reinterpret_cast<DWORD>(function));
 		}
 
+		static void set_wstring(void* place, const wchar_t* string, size_t length);
+		static void set_wstring(DWORD place, const wchar_t* string, size_t length);
+		static void set_wstring(void* place, const wchar_t* string);
+		static void set_wstring(DWORD place, const wchar_t* string);
+
 		static void set_string(void* place, const char* string, size_t length);
 		static void set_string(DWORD place, const char* string, size_t length);
 
@@ -61,6 +187,9 @@ namespace utils
 		static void redirect_jump(void* place, void* stub);
 		static void redirect_jump(DWORD place, void* stub);
 
+		static bool conditional_jump_to_jmp(DWORD place);
+		static bool detour(const DWORD& offset, void* stub, void** original);
+
 		template <typename T> static void set(void* place, T value)
 		{
 			DWORD oldProtect;
@@ -75,6 +204,30 @@ namespace utils
 		template <typename T> static void set(DWORD place, T value)
 		{
 			return set<T>(reinterpret_cast<void*>(place), value);
+		}
+
+		// set multiple bytes
+		static void set(void* place, const BYTE* bytes, size_t size)
+		{
+			DWORD oldProtect;
+			VirtualProtect(place, size, PAGE_EXECUTE_READWRITE, &oldProtect);
+			memcpy(place, bytes, size);
+			VirtualProtect(place, size, oldProtect, &oldProtect);
+			FlushInstructionCache(GetCurrentProcess(), place, size);
+		}
+
+		// Variadic template to accept multiple BYTE arguments
+		template <typename... Args>
+		static void set(void* place, BYTE first, Args... rest)
+		{
+			BYTE bytes[] = { first, static_cast<BYTE>(rest)... };
+			set(place, bytes, sizeof(bytes));
+		}
+
+		template <typename... Args>
+		static void set(DWORD place, BYTE first, Args... rest)
+		{
+			set(reinterpret_cast<void*>(place), first, rest...);
 		}
 
 		template <std::size_t Index, typename ReturnType, typename... Args>
@@ -93,6 +246,7 @@ namespace utils
 		void* place;
 		void* stub;
 		void* original;
+		void* trampoline;
 		char buffer[5];
 		bool useJump;
 

@@ -2,7 +2,7 @@
 
 namespace components
 {
-	class game_settings : public component
+	class game_settings final : public loader::component_module
 	{
 	public:
 		game_settings();

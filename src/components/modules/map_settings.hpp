@@ -3,7 +3,7 @@
 
 namespace components
 {
-	class map_settings : public component
+	class map_settings final : public loader::component_module
 	{
 	public:
 		map_settings();

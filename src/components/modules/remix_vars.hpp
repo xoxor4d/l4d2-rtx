@@ -2,7 +2,7 @@
 
 namespace components
 {
-	class remix_vars : public component
+	class remix_vars final : public loader::component_module
 	{
 	public:
 		remix_vars();

@@ -1,14 +1,21 @@
 #include "std_include.hpp"
+#include "flags.hpp"
 
-namespace components
+namespace utils
 {
-	std::vector<std::string> flags::enabled_flags;
+	std::vector<std::string> flags::m_enabled_flags;
+
+	// gets the singleton instance
+	flags& flags::get()
+	{
+		static flags instance;
+		return instance;
+	}
 
 	bool flags::has_flag(const std::string& flag)
 	{
-		parse_flags();
-
-		for (const auto& entry : enabled_flags)
+		get().parse_flags();
+		for (const auto& entry : m_enabled_flags)
 		{
 			if (utils::str_to_lower(entry) == utils::str_to_lower(flag)) {
 				return true;
@@ -36,7 +43,9 @@ namespace components
 					if (wide_flag[0] == L'-')
 					{
 						wide_flag.erase(wide_flag.begin());
-						enabled_flags.emplace_back(utils::convert_wstring(wide_flag));
+						auto str = utils::convert_wstring(wide_flag);
+						log("Flags", std::format("Found flag: {}", str), LOG_TYPE::LOG_TYPE_STATUS, true);
+						m_enabled_flags.emplace_back(std::move(str));
 					}
 				}
 

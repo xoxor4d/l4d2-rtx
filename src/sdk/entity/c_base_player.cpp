@@ -1,5 +1,7 @@
 #include <std_include.hpp>
 
+#include "components/modules/interfaces.hpp"
+
 namespace sdk
 {
 	Vector c_base_player::get_eye_pos()

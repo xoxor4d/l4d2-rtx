@@ -2,7 +2,7 @@
 
 namespace components
 {
-	class imgui : public component
+	class imgui final : public loader::component_module
 	{
 	public:
 		imgui();

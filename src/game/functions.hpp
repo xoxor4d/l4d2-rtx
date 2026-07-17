@@ -10,12 +10,6 @@
 
 using namespace components;
 
-namespace glob
-{
-	extern bool spawned_external_console;
-	extern HWND main_window;
-}
-
 namespace game
 {
 	extern std::vector<std::string> loaded_modules;
@@ -118,7 +112,7 @@ namespace game
 	{
 		if (lpOutputString) 
 		{
-			printf("[>] %s", lpOutputString);
+			utils::log("Game >", lpOutputString, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
 			fflush(stdout);
 		}
 
@@ -136,7 +130,7 @@ namespace game
 			char buffer[1024];
 			WideCharToMultiByte(CP_UTF8, 0, lpOutputString, -1, buffer, sizeof(buffer), NULL, NULL);
 
-			printf("[>] %s", buffer);
+			utils::log("Game >", buffer, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
 			fflush(stdout); 
 		}
 
@@ -150,41 +144,20 @@ namespace game
 	{
 		if (MH_CreateHook(&OutputDebugStringA, &HookedOutputDebugStringA, reinterpret_cast<LPVOID*>(&OriginalOutputDebugStringA)) != MH_OK) 
 		{
-			std::cout << "[!][ERROR] Failed to create hook for OutputDebugStringA\n";
+			utils::log("Functions >", "Failed to create hook for OutputDebugStringA", utils::LOG_TYPE::LOG_TYPE_ERROR);
 			return;
 		}
 
 		if (MH_CreateHook(&OutputDebugStringW, &HookedOutputDebugStringW, reinterpret_cast<LPVOID*>(&OriginalOutputDebugStringW)) != MH_OK) 
 		{
-			std::cout << "[!][ERROR] Failed to create hook for OutputDebugStringW\n";
+			utils::log("Functions >", "Failed to create hook for OutputDebugStringW", utils::LOG_TYPE::LOG_TYPE_ERROR);
 			return;
 		}
 
 		if (MH_EnableHook(&OutputDebugStringA) != MH_OK || MH_EnableHook(&OutputDebugStringW) != MH_OK) 
 		{
-			std::cout << "[!][ERROR] Failed to enable hooks for OutputDebugStringA & OutputDebugStringW\n";
+			utils::log("Functions >", "Failed to enable hooks for OutputDebugStringA & OutputDebugStringW", utils::LOG_TYPE::LOG_TYPE_ERROR);
 			return;
-		}
-	}
-
-	/**
-	 * Creates an external console
-	 */
-	inline void console()
-	{
-		if (!glob::spawned_external_console)
-		{
-			glob::spawned_external_console = true;
-			setvbuf(stdout, nullptr, _IONBF, 0);
-
-			if (AllocConsole())
-			{
-				FILE* file = nullptr;
-				freopen_s(&file, "CONIN$", "r", stdin);
-				freopen_s(&file, "CONOUT$", "w", stdout);
-				freopen_s(&file, "CONOUT$", "w", stderr);
-				SetConsoleTitleA(COMPMOD_NAME " Comp Debug Console");
-			}
 		}
 	}
 }

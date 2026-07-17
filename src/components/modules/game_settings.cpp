@@ -1,4 +1,7 @@
 #include "std_include.hpp"
+#include "game_settings.hpp"
+
+#include "main_module.hpp"
 #include "components/common/toml.hpp"
 
 namespace components
@@ -50,7 +53,7 @@ namespace components
 							return static_cast<bool>(entry.as_boolean());
 						}
 						catch (toml::type_error& err) {
-							game::console(); printf("%s\n", err.what());
+							utils::log("GameSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 						}
 
 						return default_setting;
@@ -75,7 +78,7 @@ namespace components
 							return static_cast<int>(entry.as_integer());
 						}
 						catch (toml::type_error& err) {
-							game::console(); printf("%s\n", err.what());
+							utils::log("GameSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 						}
 
 						return default_setting;
@@ -96,7 +99,7 @@ namespace components
 							return static_cast<float>(entry.as_floating());
 						}
 						catch (toml::type_error& err) {
-							game::console(); printf("%s\n", err.what());
+							utils::log("GameSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
 						}
 
 						return default_setting;
@@ -201,9 +204,8 @@ namespace components
 
 			catch (const toml::syntax_error& err)
 			{
-				game::console();
-				printf("%s\n", err.what());
-				printf("[GameSettings] Not writing defaults! Please check 'game_settings.toml' or remove the file to re-generate it on next startup!\n");
+				utils::log("GameSettings", err.what(), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
+				utils::log("GameSettings", "Not writing defaults! Please check 'game_settings.toml' or remove the file to re-generate it on next startup!", utils::LOG_TYPE::LOG_TYPE_STATUS, true);
 				return false;
 			}
 		}
@@ -226,5 +228,7 @@ namespace components
 
 		// ----
 		game::con_add_command(&xo_gamesettings_update, "xo_gamesettings_update", xo_gamesettings_update_fn, "Reloads the game_settings.toml file");
+
+		log("GameSettings", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

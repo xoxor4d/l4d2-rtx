@@ -1,4 +1,9 @@
 #include "std_include.hpp"
+#include "remix_markers.hpp"
+
+#include "interfaces.hpp"
+#include "map_settings.hpp"
+#include "model_render.hpp"
 
 namespace components
 {
@@ -254,5 +259,7 @@ namespace components
 	remix_markers::remix_markers()
 	{
 		p_this = this;
+
+		log("RemixMarkers", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }
