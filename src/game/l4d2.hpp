@@ -6,6 +6,7 @@ namespace l4d2
 	// game variables
 
 	// - server
+	extern void* mdl_cache;
 
 	// - engine
 
@@ -23,6 +24,9 @@ namespace l4d2
 	// - engine
 	typedef	bool (__cdecl* R_CullNode_t)(mnode_t*);
 	extern R_CullNode_t R_CullNode;
+
+	typedef	bool(__cdecl* CM_LeafArea_t)(int leaf_num);
+	extern CM_LeafArea_t CM_LeafArea;
 
 
 	// -------------------------------------------

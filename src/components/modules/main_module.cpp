@@ -56,7 +56,7 @@ namespace components
 		main_module::force_cvars();
 
 		// TODO - find better spot to call this
-		map_settings::spawn_markers_once();
+		//map_settings::spawn_markers_once();
 		// nocull markers handled in 'model_renderer::DrawModelExecute::Detour'
 
 		// CM_PointLeafnum :: get current leaf
@@ -1594,6 +1594,7 @@ namespace components
 
 		game::con_add_command(&xo_debug_toggle_node_vis_cmd, "xo_debug_toggle_node_vis", xo_debug_toggle_node_vis_fn, "Toggle bsp node/leaf debug visualization using the remix api");
 
+		m_initialized = true;
 		log("MainModule", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 

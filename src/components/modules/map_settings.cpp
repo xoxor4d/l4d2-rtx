@@ -110,8 +110,11 @@ namespace components
 		m_loaded = true;
 	}
 
+	// #### Deprecated - not useful - use no-cull markers
+
 	// cannot be called in the current on_map_load stub (too early)
 	// called from 'once_per_frame_cb()' instead
+	/*
 	void map_settings::spawn_markers_once()
 	{
 		// only spawn markers once
@@ -137,8 +140,9 @@ namespace components
 			//const auto skin_num = 1; 
 			//const auto model_name = "models/extras/info_speech.mdl";
 
-			void* mdlcache = reinterpret_cast<void*>(*(DWORD*)(SERVER_BASE + 0x897AE0)); // #OFFS 2501
-
+			//void* mdlcache = reinterpret_cast<void*>(*(DWORD*)(SERVER_BASE + 0x897AE0)); // #OFFS 2501
+			void* mdlcache = reinterpret_cast<void*>(*(DWORD*)l4d2::mdl_cache);
+			
 			// mdlcache->BeginLock
 			utils::hook::call_virtual<26, void>(mdlcache);
 
@@ -207,6 +211,7 @@ namespace components
 		m_map_settings.map_markers.clear();
 		m_spawned_markers = false;
 	}
+	*/
 
 	bool map_settings::parse_toml()
 	{
@@ -1567,7 +1572,7 @@ namespace components
 		m_map_settings.unbake_models.checksums.clear();
 		m_map_settings.remix_transitions.clear();
 
-		destroy_markers();
+		//destroy_markers();
 		m_map_settings.map_markers.clear();
 
 		m_map_settings.api_var_configs.clear();
@@ -1590,6 +1595,7 @@ namespace components
 		p_this = this;
 		game::con_add_command(&xo_mapsettings_update, "xo_mapsettings_update", map_settings::reload, "Reloads the map_settings.toml file + map.conf");
 
+		m_initialized = true;
 		log("MapSettings", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 

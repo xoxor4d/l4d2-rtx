@@ -17,6 +17,7 @@ namespace l4d2
 	// game variables
 
 	// - server
+	void* mdl_cache = nullptr;
 
 	// - engine
 
@@ -105,6 +106,7 @@ namespace l4d2
 		PATTERN_OFFSET_SIMPLE(SERVER_MOD, hk_addr__scene_ent_on_start_event, "8B 7D ? 8B F1 68 ? ? ? ? 8B CF 89 45", 0, 0x1C0765);
 		PATTERN_OFFSET_SIMPLE(SERVER_MOD, hk_addr__scene_ent_on_finish_event, "8B 86 ?? ?? ?? ?? 85 C0 75 ?? B8 ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 53", 0, 0x1C7813);
 		PATTERN_OFFSET_SIMPLE_CAST(SERVER_MOD, GetCurrentSkyCamera, GetCurrentSkyCamera_t, "A1 ? ? ? ? 83 F8 ? 74 ? 8B 15 ? ? ? ? 8B C8 81 E1 ? ? ? ? 03 C9 8D 4C CA ? 85 C9 74 ? 8B D0", 0, 0x1D0D10);
+		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(SERVER_MOD, mdl_cache, void*, "8B 0D ?? ?? ?? ?? ?? ?? 50 8B 82 ?? ?? ?? ?? FF D0 8B F8 8B 83", 2, 0x31251);
 
 		
 

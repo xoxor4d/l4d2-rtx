@@ -12,6 +12,14 @@ namespace components
 		static inline map_settings* p_this = nullptr;
 		static map_settings* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		enum TRANSITION_MODE : uint8_t
 		{
 			ONCE_ON_ENTER = 0,
@@ -251,8 +259,8 @@ namespace components
 		static const std::string& get_map_name() { return m_map_settings.mapname; }
 
 		void set_settings_for_map(const std::string& map_name);
-		static void spawn_markers_once();
-		static void destroy_markers();
+		//static void spawn_markers_once();
+		//static void destroy_markers();
 		static void on_map_load(const std::string& map_name);
 		static void on_map_unload();
 		static void clear_map_settings();
@@ -352,6 +360,8 @@ namespace components
 		static inline std::vector<std::string> m_args;
 		static inline bool m_spawned_markers = false;
 		static inline bool m_loaded = false;
+
+		bool m_initialized = false;
 
 		bool parse_toml();
 		bool matches_map_name();

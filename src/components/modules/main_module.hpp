@@ -24,6 +24,14 @@ namespace components
 		static inline main_module* p_this = nullptr;
 		static main_module* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		static inline std::uint64_t framecount = 0u;
 		static inline LPD3DXFONT d3d_font = nullptr;
 
@@ -43,6 +51,9 @@ namespace components
 
 		int  m_hud_debug_node_vis_pos[2] = { 250, 135 };
 		bool m_hud_debug_node_vis_has_forced_leafs = false;
-		bool m_hud_debug_node_vis_has_forced_arealeafs = false;
+		bool m_hud_debug_node_vis_has_forced_arealeafs = false;#
+
+	private:
+		bool m_initialized = false;
 	};
 }
