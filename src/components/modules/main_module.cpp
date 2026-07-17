@@ -65,7 +65,8 @@ namespace components
 		g_current_leaf = current_leaf;
 
 		// CM_LeafArea :: get current area the camera is in
-		g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); // #OFFS 2501
+		//g_current_area = utils::hook::call<int(__cdecl)(int leafnum)>(ENGINE_BASE + 0x14C2C0)(g_current_leaf); // #OFFS 2501
+		g_current_area = l4d2::CM_LeafArea(g_current_leaf);
 
 		remix_api::get()->on_renderview();
 
@@ -119,7 +120,7 @@ namespace components
 			// not really req. rn
 			if (game::get_viewid() == VIEW_3DSKY)
 			{
-				const auto vec = *reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
+				const auto vec = *l4d2::g_vecCurrentRenderOrigin; //*reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A52A0);
 				main_module::get()->m_sky3d_camera_origin = vec;
 			}
 
@@ -295,7 +296,7 @@ namespace components
 							if (game_settings::get()->enable_3d_sky.get_as<bool>())
 							{
 								// GetCurrentSkyCamera #OFFS
-								if (const auto sky = utils::hook::call<CSkyCamera * (__cdecl)()>(SERVER_BASE + 0x1D0D10)();
+								if (const auto sky = l4d2::GetCurrentSkyCamera(); //utils::hook::call<CSkyCamera * (__cdecl)()>(SERVER_BASE + 0x1D0D10)();
 									sky)
 								{
 									const auto main = get();
@@ -445,7 +446,8 @@ namespace components
 	int r_cullnode_wrapper(mnode_t* node)
 	{
 		if (game::get_viewid() == VIEW_3DSKY || game::get_viewid() == VIEW_MONITOR) {
-			return utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node); // #OFFS 2501
+			return l4d2::R_CullNode(node); // return utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node); // #OFFS 2501
+			
 		}
 
 		// default culling mode or no culling if cmd was used
@@ -559,7 +561,8 @@ namespace components
 		}
 
 		// R_CullNode - uses area frustums if avail. and not in a solid - uses player frustum otherwise
-		if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(ENGINE_BASE + 0xFC490)(node)) { // #OFFS
+		//if (!utils::hook::call<bool(__cdecl)(mnode_t*)>(l4d2::fn_addr__r_cullnode)(node)) {
+		if (!l4d2::R_CullNode(node)) {
 			return 0;
 		}
 
@@ -1144,7 +1147,7 @@ namespace components
 
 				// og
 				mov     cl, 1;
-				test[ebx + 0x24], cl;
+				test	[ebx + 0x24], cl;
 				jmp		impact_og_retn;
 
 			SKIP:
@@ -1529,25 +1532,25 @@ namespace components
 		HOOK_RETN_PLACE(r_cullnode_skip_retn, l4d2::retn_addr__cullnode_skip);
 
 		// ^ :: backface check -> je to jl
-		utils::hook::nop(l4d2::nop_addr_cullnode_backface_check01, 2); // okay - draws a little more but not so heavy on perf.
+		utils::hook::nop(l4d2::nop_addr__cullnode_backface_check01, 2); // okay - draws a little more but not so heavy on perf.
 
 		// ^ :: backface check -> jnz to je
-		utils::hook::set<BYTE>(l4d2::nop_addr_cullnode_backface_check02, 0x74); // ^
+		utils::hook::set<BYTE>(l4d2::nop_addr__cullnode_backface_check02, 0x74); // ^
 
 		// R_DrawLeaf :: backface check (emissive lamps) plane normal >= -0.00999f
-		utils::hook::nop(l4d2::nop_addr_drawleaf_backface_check, 6); // ^ 
+		utils::hook::nop(l4d2::nop_addr__drawleaf_backface_check, 6); // ^ 
 #endif
 
 		// CBrushBatchRender::DrawOpaqueBrushModel :: :: backface check - nop 'if ( bShadowDepth )' to disable culling
-		utils::hook::nop(l4d2::nop_addr_draw_opaque_bmodel_backface_check, 2);
+		utils::hook::nop(l4d2::nop_addr__draw_opaque_bmodel_backface_check, 2);
 
 		// CClientLeafSystem::ExtractCulledRenderables :: disable 'engine->CullBox' check to disable entity culling in leafs
 		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)
-		utils::hook::set<BYTE>(CLIENT_BASE + 0xBDA76, 0xEB);
+		utils::hook::conditional_jump_to_jmp(l4d2::jmp_addr__extract_culled_renderables);
 
 		// ~ always show geometry below water surface
 		// CSimpleWorldView::Setup :: nop 'DoesViewPlaneIntersectWater' check
-		utils::hook::nop(CLIENT_BASE + 0x1CF46F, 2);
+		utils::hook::nop(l4d2::nop_addr__simple_world_view_intersect_water_check, 2);
 		// ^ next instruction :: OR m_DrawFlags with 0x60 instead of 0x30
 		//utils::hook::set<BYTE>(CLIENT_BASE + 0x1CF471 + 6, 0x60); ...... not needed in l4d2?
 
@@ -1563,27 +1566,27 @@ namespace components
 			// if the game is rendering in third person or when doing intro cinematics
 
 			// GetLocalPlayer check
-			utils::hook(CLIENT_BASE + 0x223371, playershadow::draw_player_thirdperson_mesh_check01_stub, HOOK_JUMP).install()->quick();
-			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_check01_retn, CLIENT_BASE + 0x22337C);
+			utils::hook(l4d2::hk_addr__draw_player_thirdperson_mesh_check01, playershadow::draw_player_thirdperson_mesh_check01_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_check01_retn, l4d2::hk_addr__draw_player_thirdperson_mesh_check01 + 11u);
 
 			// CAM_IsThirdPerson check
-			utils::hook::nop(CLIENT_BASE + 0x223387, 6);
-			utils::hook(CLIENT_BASE + 0x223387, playershadow::draw_player_thirdperson_mesh_check02_stub, HOOK_JUMP).install()->quick();
-			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_check02_retn, CLIENT_BASE + 0x223393);
+			utils::hook::nop(l4d2::hk_addr__draw_player_thirdperson_mesh_check02, 6);
+			utils::hook(l4d2::hk_addr__draw_player_thirdperson_mesh_check02, playershadow::draw_player_thirdperson_mesh_check02_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_check02_retn, l4d2::hk_addr__draw_player_thirdperson_mesh_check02 + 12u);
 
 			// intro cam / "scripted third person" (eg. jockey on player) check
-			utils::hook::nop(CLIENT_BASE + 0x22339F, 6);
-			utils::hook(CLIENT_BASE + 0x22339F, playershadow::draw_player_thirdperson_mesh_check03_stub, HOOK_JUMP).install()->quick();
-			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_draw_retn, CLIENT_BASE + 0x22341F); // addr of draw func
+			utils::hook::nop(l4d2::hk_addr__draw_player_thirdperson_mesh_check03, 6);
+			utils::hook(l4d2::hk_addr__draw_player_thirdperson_mesh_check03, playershadow::draw_player_thirdperson_mesh_check03_stub, HOOK_JUMP).install()->quick();
+			HOOK_RETN_PLACE(playershadow::draw_player_thirdperson_mesh_draw_retn, l4d2::retn_addr__draw_player_thirdperson_mesh); // addr of draw func
 
 			// reset helper var after drawing
-			utils::hook(CLIENT_BASE + 0x223431, playershadow::post_draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
+			utils::hook(l4d2::retn_addr__draw_player_thirdperson_mesh + 18u, playershadow::post_draw_player_thirdperson_mesh_stub, HOOK_JUMP).install()->quick();
 
 			// 
 			// F890E disable impact marks on ourselfs
-			utils::hook(CLIENT_BASE + 0xF890E, playershadow::impact_stub, HOOK_JUMP).install()->quick();
-			HOOK_RETN_PLACE(playershadow::impact_og_retn, CLIENT_BASE + 0xF8913);
-			HOOK_RETN_PLACE(playershadow::impact_skip_retn, CLIENT_BASE + 0xF89C0);
+			utils::hook(l4d2::hk_addr__impact_marks_pshadow, playershadow::impact_stub, HOOK_JUMP).install()->quick(); // 0726 offs changed
+			HOOK_RETN_PLACE(playershadow::impact_og_retn, l4d2::hk_addr__impact_marks_pshadow + 5u);
+			HOOK_RETN_PLACE(playershadow::impact_skip_retn, l4d2::retn_addr__impact_marks_pshadow_skip);
 		}
 
 		// #

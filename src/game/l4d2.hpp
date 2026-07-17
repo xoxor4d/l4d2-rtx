@@ -2,16 +2,30 @@
 
 namespace l4d2
 {
-	// --------------
+	// -------------------------------------------
 	// game variables
 
+	// - server
+
+	// - engine
+
+	// - client
+	extern Vector* g_vecCurrentRenderOrigin;
 	
 
-	// --------------
+	// -------------------------------------------
 	// game functions
 
+	// - server
+	typedef	CSkyCamera*(__cdecl* GetCurrentSkyCamera_t)();
+	extern GetCurrentSkyCamera_t GetCurrentSkyCamera;
 
-	// --------------
+	// - engine
+	typedef	bool (__cdecl* R_CullNode_t)(mnode_t*);
+	extern R_CullNode_t R_CullNode;
+
+
+	// -------------------------------------------
 	// game asm offsets
 
 	// - server
@@ -27,24 +41,24 @@ namespace l4d2
 	extern uint32_t jmp_addr__cullnode01;
 	extern uint32_t retn_addr__cullnode_cull;
 	extern uint32_t retn_addr__cullnode_skip;
-	extern uint32_t nop_addr_cullnode_backface_check01;
-	extern uint32_t nop_addr_cullnode_backface_check02;
-	extern uint32_t nop_addr_drawleaf_backface_check;
-	extern uint32_t nop_addr_draw_opaque_bmodel_backface_check;
-	
+	extern uint32_t nop_addr__cullnode_backface_check01;
+	extern uint32_t nop_addr__cullnode_backface_check02;
+	extern uint32_t nop_addr__drawleaf_backface_check;
+	extern uint32_t nop_addr__draw_opaque_bmodel_backface_check;
+
 	// - client
 	extern uint32_t hk_addr__cviewrenderer_renderview;
 	extern uint32_t hk_addr__skyboxview_draw_internal;
-	
-	extern uint32_t hk_addr__01;
+	extern uint32_t jmp_addr__extract_culled_renderables;
+	extern uint32_t nop_addr__simple_world_view_intersect_water_check;
+	extern uint32_t hk_addr__draw_player_thirdperson_mesh_check01;
+	extern uint32_t hk_addr__draw_player_thirdperson_mesh_check02;
+	extern uint32_t hk_addr__draw_player_thirdperson_mesh_check03;
+	extern uint32_t retn_addr__draw_player_thirdperson_mesh;
+	extern uint32_t hk_addr__impact_marks_pshadow;
+	extern uint32_t retn_addr__impact_marks_pshadow_skip;
 
-	extern uint32_t retn_addr__01;
-
-	extern uint32_t jmp_addr__01;
-
-	extern uint32_t nop_addr__01;
-
-	// ---
+	// -------------------------------------------
 
 	void init_game_addresses();
 	void main();
