@@ -11,10 +11,21 @@ namespace components
 		static inline game_settings* p_this = nullptr;
 		static auto get() { return &vars; }
 
+		static bool is_initialized()
+		{
+			if (p_this && p_this->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		static void write_toml();
 		static bool parse_toml();
 
 		static void xo_gamesettings_update_fn();
+
+	private:
+		bool m_initialized = false;
 
 	private:
 		union var_value

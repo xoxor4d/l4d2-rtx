@@ -229,6 +229,7 @@ namespace components
 		// ----
 		game::con_add_command(&xo_gamesettings_update, "xo_gamesettings_update", xo_gamesettings_update_fn, "Reloads the game_settings.toml file");
 
+		m_initialized = true;
 		log("GameSettings", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

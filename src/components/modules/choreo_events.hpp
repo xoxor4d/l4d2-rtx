@@ -15,6 +15,14 @@ namespace components
 		static inline choreo_events* p_this = nullptr;
 		static choreo_events* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		static void on_client_frame();
 
 
@@ -59,13 +67,14 @@ namespace components
 		};
 
 		// resets all choreo events
-		static void reset_all()
-		{
+		static void reset_all() {
 			ev_sample.reset();
 		}
 
 		static inline event_single ev_sample = {};
-
 		static inline std::vector<event_single> events = {};
+
+	private:
+		bool m_initialized = false;
 	};
 }

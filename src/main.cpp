@@ -117,18 +117,7 @@ namespace l4d2
 		get_module_handle_and_size(game::vstdlib_module, "vstdlib.dll", T);
 
 		// Wait a little ..
-
-		T = 0u;
-		while (true)
-		{
-			if (T >= 100) {
-				break;
-			}
-
-			Sleep(1u); T += 1u;
-		}
-
-		l4d2::init_game_addresses();
+		Sleep(50u);
 
 		l4d2::main();
 		return 0;

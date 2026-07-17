@@ -1,6 +1,5 @@
 #include "std_include.hpp"
 #include "main_module.hpp"
-
 #include "game_settings.hpp"
 #include "imgui.hpp"
 #include "interfaces.hpp"
@@ -9,7 +8,8 @@
 #include "remix_api.hpp"
 #include "remix_lights.hpp"
 #include "remix_markers.hpp"
-#define USE_BUILD_WORLD_LIST_NOCULL 0
+
+#define USE_BUILD_WORLD_LIST_NOCULL 0 // no patterns
 
 namespace components
 {
@@ -1447,11 +1447,6 @@ namespace components
 	{
 		p_this = this;
 
-		{ // init filepath var
-			char path[MAX_PATH]; GetModuleFileNameA(nullptr, path, MAX_PATH);
-			game::root_path = path; utils::erase_substring(game::root_path, "left4dead2.exe");
-		}
-
 		{ // init d3d font
 			D3DXFONT_DESC desc =
 			{
@@ -1475,32 +1470,32 @@ namespace components
 		// events
 
 		// CModelLoader::Map_LoadModel :: called on map load
-		utils::hook(ENGINE_BASE + 0xEE05C, on_map_load_stub).install()->quick();
-		HOOK_RETN_PLACE(on_map_load_stub_retn, ENGINE_BASE + 0xEE061);
+		utils::hook(l4d2::hk_addr__on_map_load, on_map_load_stub).install()->quick();
+		HOOK_RETN_PLACE(on_map_load_stub_retn, l4d2::hk_addr__on_map_load + 5u);
 
 		// Host_Disconnect :: called on map unload
-		utils::hook(ENGINE_BASE + 0x192F11, on_host_disconnect_stub).install()->quick();
-		HOOK_RETN_PLACE(on_host_disconnect_retn, ENGINE_BASE + 0x192F16);
+		utils::hook(l4d2::hk_addr__on_host_disconnect, on_host_disconnect_stub).install()->quick();
+		HOOK_RETN_PLACE(on_host_disconnect_retn, l4d2::hk_addr__on_host_disconnect + 5u);
 
-		utils::hook(ENGINE_BASE + 0x18D048, on_host_change_level_stub).install()->quick();
-		HOOK_RETN_PLACE(on_host_change_level_retn, ENGINE_BASE + 0x18D04D);
+		utils::hook(l4d2::hk_addr__on_host_change_level, on_host_change_level_stub).install()->quick();
+		HOOK_RETN_PLACE(on_host_change_level_retn, l4d2::hk_addr__on_host_change_level + 5u);
 
 		// --
 
 		// CViewRender::RenderView :: "start" of current frame (after CViewRender::DrawMonitors)
-		utils::hook(CLIENT_BASE + 0x1D7113, cviewrenderer_renderview_stub).install()->quick(); // 2501
-		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, CLIENT_BASE + 0x1D7118);
+		utils::hook(l4d2::hk_addr__cviewrenderer_renderview, cviewrenderer_renderview_stub).install()->quick(); // 2501
+		HOOK_RETN_PLACE(cviewrenderer_renderview_retn, l4d2::hk_addr__cviewrenderer_renderview + 5u);
 
 		// not really req. rn
-		utils::hook::nop(CLIENT_BASE + 0x1D3F1D, 7);
-		utils::hook(CLIENT_BASE + 0x1D3F1D, skyboxview_draw_internal_stub).install()->quick();
-		HOOK_RETN_PLACE(skyboxview_draw_internal_retn, CLIENT_BASE + 0x1D3F24);
+		utils::hook::nop(l4d2::hk_addr__skyboxview_draw_internal, 7);
+		utils::hook(l4d2::hk_addr__skyboxview_draw_internal, skyboxview_draw_internal_stub).install()->quick();
+		HOOK_RETN_PLACE(skyboxview_draw_internal_retn, l4d2::hk_addr__skyboxview_draw_internal + 7u);
 
 		// #
 		// culling
 
 		// CDispInfo::Render :: disable 'Frustum_t::CullBox' check
-		utils::hook::nop(ENGINE_BASE + 0xB13E5, 2);
+		utils::hook::nop(l4d2::nop_addr__cdispinfo_render, 2);
 
 #if USE_BUILD_WORLD_LIST_NOCULL
 		// R_RecursiveWorldNodeNoCull:: use 'R_BuildWorldListNoCull' instead of 'R_RecursiveWorldNode'
@@ -1522,29 +1517,29 @@ namespace components
 
 #else
 		// stub before calling 'R_RecursiveWorldNode' to override node/leaf vis
-		utils::hook(ENGINE_BASE + 0xD1648, pre_recursive_world_node_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(pre_recursive_world_node_retn, ENGINE_BASE + 0xD164D);
+		utils::hook(l4d2::hk_addr__pre_recursive_world_node, pre_recursive_world_node_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(pre_recursive_world_node_retn, l4d2::hk_addr__pre_recursive_world_node + 5u);
 
 		// ^ :: while( ... node->contents < -1 .. ) -> jl to jle .. to jmp to cull less
-		utils::hook::set<BYTE>(ENGINE_BASE + 0xCD7E5, 0x7E);
+		utils::hook::set<BYTE>(l4d2::jmp_addr__cullnode01, 0x7E);
 
 		// ^ :: while( ... !R_CullNode) - wrapper function to impl. additional culling control (force areas/leafs + use frustum culling when needed)
-		utils::hook(ENGINE_BASE + 0xCD7E8, r_cullnode_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(r_cullnode_cull_retn, ENGINE_BASE + 0xCD935);
-		HOOK_RETN_PLACE(r_cullnode_skip_retn, ENGINE_BASE + 0xCD7F8);
+		utils::hook(l4d2::jmp_addr__cullnode01 + 3u, r_cullnode_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(r_cullnode_cull_retn, l4d2::retn_addr__cullnode_cull);
+		HOOK_RETN_PLACE(r_cullnode_skip_retn, l4d2::retn_addr__cullnode_skip);
 
 		// ^ :: backface check -> je to jl
-		utils::hook::nop(ENGINE_BASE + 0xCD8C1, 2); // okay - draws a little more but not so heavy on perf.
+		utils::hook::nop(l4d2::nop_addr_cullnode_backface_check01, 2); // okay - draws a little more but not so heavy on perf.
 
 		// ^ :: backface check -> jnz to je
-		utils::hook::set<BYTE>(ENGINE_BASE + 0xCD8CB, 0x74); // ^
+		utils::hook::set<BYTE>(l4d2::nop_addr_cullnode_backface_check02, 0x74); // ^
 
 		// R_DrawLeaf :: backface check (emissive lamps) plane normal >= -0.00999f
-		utils::hook::nop(ENGINE_BASE + 0xCD4E7, 6); // ^ 
+		utils::hook::nop(l4d2::nop_addr_drawleaf_backface_check, 6); // ^ 
 #endif
 
 		// CBrushBatchRender::DrawOpaqueBrushModel :: :: backface check - nop 'if ( bShadowDepth )' to disable culling
-		utils::hook::nop(ENGINE_BASE + 0xD2250, 2);
+		utils::hook::nop(l4d2::nop_addr_draw_opaque_bmodel_backface_check, 2);
 
 		// CClientLeafSystem::ExtractCulledRenderables :: disable 'engine->CullBox' check to disable entity culling in leafs
 		// needs r_PortalTestEnts to be 0 -> je to jmp (0xEB)

@@ -228,16 +228,17 @@ namespace components
 
 		// CSceneEntity::StartEvent :: : can be used to detect the start of scene (vcd) entities
 		utils::hook(l4d2::hk_addr__scene_ent_on_start_event, scene_ent_on_start_event_stub).install()->quick();
-		HOOK_RETN_PLACE(scene_ent_on_start_event_retn, SERVER_BASE + 0x1C076A); // 2001
+		HOOK_RETN_PLACE(scene_ent_on_start_event_retn, l4d2::hk_addr__scene_ent_on_start_event + 5u);
 
 		// CSceneEntity::OnSceneFinished
-		utils::hook::nop(SERVER_BASE + 0x1C7813, 6); // 2001
-		utils::hook(SERVER_BASE + 0x1C7813, scene_ent_on_finish_event_stub).install()->quick(); // 2001
-		HOOK_RETN_PLACE(scene_ent_on_finish_event_retn, SERVER_BASE + 0x1C7819); // 2001
+		utils::hook::nop(l4d2::hk_addr__scene_ent_on_finish_event, 6);
+		utils::hook(l4d2::hk_addr__scene_ent_on_finish_event, scene_ent_on_finish_event_stub).install()->quick();
+		HOOK_RETN_PLACE(scene_ent_on_finish_event_retn, l4d2::hk_addr__scene_ent_on_finish_event + 6u);
 
 		// ----
 		game::con_add_command(&xo_debug_scene_print_cmd, "xo_debug_scene_print", xo_debug_scene_print_fn, "Print choreography (vcd) infos (similar to scene_info cvar but only showing relevant data)");
 
+		m_initialized = true;
 		log("ChoreoEvents", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

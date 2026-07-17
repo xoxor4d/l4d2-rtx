@@ -10,6 +10,14 @@ namespace components
 		static inline interfaces* p_this = nullptr;
 		static interfaces* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		sdk::base_client* m_client = nullptr;
 		sdk::engine_client* m_engine = nullptr;
 		sdk::entity_list* m_entity_list = nullptr;
@@ -20,5 +28,7 @@ namespace components
 private:
 		template <typename m_interface>
 		static m_interface* get_interface(const std::string& module_name, const std::string& interface_name);
+
+		bool m_initialized = false;
 	};
 }

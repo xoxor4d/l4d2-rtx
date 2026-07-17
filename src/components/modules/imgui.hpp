@@ -11,6 +11,14 @@ namespace components
 		static inline imgui* p_this = nullptr;
 		static imgui* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		static void endscene_stub();
 		static void on_map_load();
 
@@ -57,6 +65,8 @@ namespace components
 		bool m_im_window_hovered = false;
 		bool m_im_allow_game_input = false;
 		std::string m_devgui_custom_footer_content;
+
+		bool m_initialized = false;
 
 		static void questionmark(const char* desc)
 		{
