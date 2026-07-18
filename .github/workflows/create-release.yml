@@ -1,0 +1,379 @@
+name: Create Release
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Check out files
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+          lfs: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Extract version from std_include.hpp
+        id: version
+        shell: pwsh
+        run: |
+          $content = Get-Content -Path "src/std_include.hpp" -Raw
+          $major = [regex]::Match($content, 'COMP_MOD_VERSION_MAJOR\s*=\s*(\d+)').Groups[1].Value
+          $minor = [regex]::Match($content, 'COMP_MOD_VERSION_MINOR\s*=\s*(\d+)').Groups[1].Value
+          $patch = [regex]::Match($content, 'COMP_MOD_VERSION_PATCH\s*=\s*(\d+)').Groups[1].Value
+          
+          $version = "$major.$minor.$patch"
+          $tag = "v$version"
+          $zipName = "L4D2-Remix-CompatibilityMod-$version.zip"
+          
+          Write-Host "Version: $version"
+          Write-Host "Tag: $tag"
+          Write-Host "Zip Name: $zipName"
+          
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Generate project files
+        run: tools/premake5 vs2022
+
+      - name: Set up problem matching
+        uses: ammaraskar/msvc-problem-matcher@master
+
+      - name: Build Release binaries
+        run: msbuild /m /v:minimal /p:Configuration=Release /p:Platform=Win32 build/l4d2-rtx.sln
+
+      - name: Extract d3d9 runtime
+        shell: pwsh
+        run: |
+          if (Test-Path "assets/.trex/d3d9_runtime.zip") {
+            Expand-Archive `
+              -Path assets/.trex/d3d9_runtime.zip `
+              -DestinationPath assets/.trex `
+              -Force
+            Remove-Item assets/.trex/d3d9_runtime.zip
+          }
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          # Create temporary directory structure
+          $tempDir = "release_temp"
+          New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+          
+          # Create L4D2-Remix-CompatibilityMod folder and copy assets
+          $modFolder = Join-Path $tempDir "L4D2-Remix-CompatibilityMod"
+          New-Item -ItemType Directory -Path $modFolder -Force | Out-Null
+          
+          # Copy all files from assets folder
+          Copy-Item -Path "assets\*" -Destination $modFolder -Recurse -Force
+          
+          # Copy the built l4d2-rtx.dll to the mod folder
+          $dllPath = "build\bin\Release\l4d2-rtx.dll"
+          if (Test-Path $dllPath) {
+            Copy-Item -Path $dllPath -Destination $modFolder -Force
+            Write-Host "Copied l4d2-rtx.dll to mod folder"
+          } else {
+            Write-Host "Error: l4d2-rtx.dll not found at $dllPath"
+            Write-Host "Listing build/bin/Release contents:"
+            if (Test-Path "build\bin\Release") {
+              Get-ChildItem -Path "build\bin\Release" | ForEach-Object { Write-Host "  $($_.Name)" }
+            }
+            exit 1
+          }
+          
+          # Create _installer_options folder and copy assets_installer
+          $installerOptionsFolder = Join-Path $tempDir "_installer_options"
+          New-Item -ItemType Directory -Path $installerOptionsFolder -Force | Out-Null
+          
+          # Copy all files from assets_installer folder
+          Copy-Item -Path "assets_installer\*" -Destination $installerOptionsFolder -Recurse -Force
+          
+          Write-Host "Release files prepared in $tempDir"
+
+      - name: Create zip file
+        shell: pwsh
+        run: |
+          $zipName = "${{ steps.version.outputs.zip_name }}"
+          $tempDir = "release_temp"
+          
+          # Create zip file
+          Compress-Archive -Path "$tempDir\*" -DestinationPath $zipName -Force
+          
+          Write-Host "Created zip file: $zipName"
+          
+          # Verify zip was created
+          if (Test-Path $zipName) {
+            $zipSize = (Get-Item $zipName).Length
+            Write-Host "Zip file size: $([math]::Round($zipSize / 1MB, 2)) MB"
+          } else {
+            Write-Host "Error: Zip file was not created"
+            exit 1
+          }
+
+      - name: Generate changelog
+        id: changelog
+        shell: pwsh
+        run: |
+          # Fetch all tags first
+          git fetch --tags --force
+          
+          # Get the latest tag, or use initial commit if no tags exist
+          $latestTag = $null
+          try {
+            $latestTag = git describe --tags --abbrev=0 2>&1 | Out-String
+            $latestTag = $latestTag.Trim()
+            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($latestTag)) {
+              $latestTag = $null
+            }
+          } catch {
+            $latestTag = $null
+          }
+          
+          # Get commit messages since the latest tag
+          if ($latestTag) {
+            Write-Host "Generating changelog from tag: $latestTag"
+            $commits = git log --pretty=format:"- %s" "$latestTag..HEAD" 2>&1 | Out-String
+            $commits = $commits.Trim()
+            
+            # Check if there are actually commits
+            if ([string]::IsNullOrWhiteSpace($commits) -or $commits -match "fatal:") {
+              $commits = "- No changes since last release"
+            }
+          } else {
+            # Get all commits if no tags exist
+            Write-Host "No previous tags found, using last 50 commits"
+            $commits = git log --pretty=format:"- %s" --max-count=50 2>&1 | Out-String
+            $commits = $commits.Trim()
+            
+            if ([string]::IsNullOrWhiteSpace($commits)) {
+              $commits = "- No changes since last release"
+            }
+          }
+          
+          $changelog = "## Changelog`n`n$commits"
+          
+          # Save to file for later use
+          $changelog | Out-File -FilePath "changelog.txt" -Encoding utf8
+          
+          # Output as multiline for GitHub Actions
+          echo "changelog<<EOF" >> $env:GITHUB_OUTPUT
+          echo "$changelog" >> $env:GITHUB_OUTPUT
+          echo "EOF" >> $env:GITHUB_OUTPUT
+          
+          Write-Host "Generated changelog:"
+          Write-Host $changelog
+
+      - name: Prepare release body
+        id: release_body
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $zipName = "${{ steps.version.outputs.zip_name }}"
+          # Note: We'll use the final tag from check_tag step, but we need to prepare the body before checking tags
+          # So we'll use the base tag here and update links later if needed
+          $baseTag = "${{ steps.version.outputs.tag }}"
+          $modZipLink = "https://github.com/${{ github.repository }}/releases/download/$baseTag/$zipName"
+          $installerLink = "https://github.com/${{ github.repository }}/releases/download/$baseTag/L4D2-Remix-CompMod-Installer.exe"
+
+          $readmePath = ".github/README_INSTALL.md"
+          if (-not (Test-Path $readmePath)) {
+            Write-Host "README_INSTALL.md not found"
+            exit 1
+          }
+
+          $readme = Get-Content -Raw -Path $readmePath
+
+          # Replace placeholders with simple markdown links [Name](url) - no backticks
+          $zipLinkReplacement = '[' + $zipName + '](' + $modZipLink + ')'
+          $readme = $readme -replace '<LINK_TO_MOD_ZIP>', $zipLinkReplacement
+          
+          # Replace installer link placeholder
+          $installerLinkReplacement = '[L4D2-Remix-CompMod-Installer.exe](' + $installerLink + ')'
+          $readme = $readme -replace '<LINK_TO_INSTALLER>', $installerLinkReplacement
+
+          $changelog = Get-Content -Raw -Path "changelog.txt"
+
+          # Write body to file to avoid PowerShell parsing backticks when passing between steps
+          $bodyFile = "release_body.txt"
+          $changelog | Out-File -FilePath $bodyFile -Encoding utf8 -NoNewline
+          "`n`n---`n`n" | Out-File -FilePath $bodyFile -Append -Encoding utf8 -NoNewline
+          $readme | Out-File -FilePath $bodyFile -Append -Encoding utf8 -NoNewline
+          
+          Write-Host "Release body written to $bodyFile"
+
+      - name: Check if tag exists and generate unique tag
+        id: check_tag
+        shell: pwsh
+        run: |
+          $baseTag = "${{ steps.version.outputs.tag }}"
+          $tag = $baseTag
+          $tagExists = $false
+          $suffix = 1
+          
+          # Check if base tag exists
+          try {
+            $ErrorActionPreference = "Stop"
+            $output = git rev-parse --verify "refs/tags/$baseTag" 2>&1
+            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($output)) {
+              $tagExists = $true
+              Write-Host "Tag $baseTag already exists, will append suffix"
+            }
+          } catch {
+            $tagExists = $false
+          } finally {
+            $ErrorActionPreference = "Continue"
+          }
+          
+          # If tag exists, find a unique suffix
+          if ($tagExists) {
+            do {
+              $tag = "$baseTag-$suffix"
+              $ErrorActionPreference = "SilentlyContinue"
+              $output = git rev-parse --verify "refs/tags/$tag" 2>&1
+              $currentTagExists = ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($output))
+              
+              if ($currentTagExists) {
+                $suffix++
+                Write-Host "Tag $tag also exists, trying next suffix..."
+              }
+            } while ($currentTagExists)
+            
+            Write-Host "Will create tag: $tag (original tag $baseTag already exists)"
+          } else {
+            Write-Host "Tag $tag does not exist, will create it"
+          }
+          
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "exists=$tagExists" >> $env:GITHUB_OUTPUT
+          
+          # Always exit successfully
+          exit 0
+
+      - name: Create Git tag
+        if: steps.check_tag.outputs.tag != ''
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.check_tag.outputs.tag }}"
+          $version = "${{ steps.version.outputs.version }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $version"
+          
+          # Configure git credential helper to use the token from environment variable
+          # Using $env:GITHUB_TOKEN directly to avoid storing in a variable
+          $repo = "${{ github.repository }}"
+          
+          # Set up credential helper
+          git config --global credential.helper store
+          "https://x-access-token:$env:GITHUB_TOKEN@github.com" | Out-File -FilePath "$env:USERPROFILE\.git-credentials" -Encoding ascii -NoNewline
+          
+          # Update remote URL
+          git remote set-url origin "https://github.com/$repo.git"
+          
+          # Push the tag
+          git push origin "$tag"
+          
+          Write-Host "Created and pushed tag: $tag"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Find installer executable
+        id: find_installer
+        shell: pwsh
+        run: |
+          $installerPaths = @(
+            "bin\L4D2-Remix-CompMod-Installer.exe",
+            "build\bin\Release\L4D2-Remix-CompMod-Installer.exe",
+            "bin\Release\L4D2-Remix-CompMod-Installer.exe"
+          )
+          
+          $foundPath = $null
+          foreach ($path in $installerPaths) {
+            if (Test-Path $path) {
+              $foundPath = $path
+              Write-Host "Found installer at: $path"
+              break
+            }
+          }
+          
+          if (-not $foundPath) {
+            Write-Host "Error: Installer executable not found in expected locations"
+            Get-ChildItem -Path "bin" -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found exe: $($_.FullName)" }
+            Get-ChildItem -Path "build\bin" -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Found exe: $($_.FullName)" }
+            exit 1
+          }
+          
+          # Convert to forward slashes for cross-platform compatibility
+          $foundPath = $foundPath -replace '\\', '/'
+          Write-Host "Using installer path: $foundPath"
+          
+          echo "installer_path=$foundPath" >> $env:GITHUB_OUTPUT
+
+      - name: Update release body with final tag
+        id: final_release_body
+        shell: pwsh
+        run: |
+          $finalTag = "${{ steps.check_tag.outputs.tag }}"
+          $baseTag = "${{ steps.version.outputs.tag }}"
+          $bodyFile = "release_body.txt"
+          $finalBodyFile = "release_body_final.txt"
+          
+          # Read body from file (written in previous step) to avoid PowerShell parsing backticks
+          $body = Get-Content -Raw -Path $bodyFile
+          
+          # If tag was modified (suffix added), update the download links
+          if ($finalTag -ne $baseTag) {
+            Write-Host "Tag was modified from $baseTag to $finalTag, updating download links"
+            # Replace old tag in download links with new tag
+            $body = $body -replace [regex]::Escape("releases/download/$baseTag/"), "releases/download/$finalTag/"
+          }
+          
+          # Write final body to file
+          $body | Out-File -FilePath $finalBodyFile -Encoding utf8 -NoNewline
+          
+          Write-Host "Final release body written to $finalBodyFile"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.check_tag.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: release_body_final.txt
+          files: |
+            ${{ steps.version.outputs.zip_name }}
+            ${{ steps.find_installer.outputs.installer_path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup
+        shell: pwsh
+        if: always()
+        run: |
+          if (Test-Path "release_temp") {
+            Remove-Item -Path "release_temp" -Recurse -Force
+          }
+          if (Test-Path "changelog.txt") {
+            Remove-Item -Path "changelog.txt" -Force
+          }
+          if (Test-Path "release_body.txt") {
+            Remove-Item -Path "release_body.txt" -Force
+          }
+          if (Test-Path "release_body_final.txt") {
+            Remove-Item -Path "release_body_final.txt" -Force
+          }
+
