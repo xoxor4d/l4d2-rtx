@@ -28,11 +28,10 @@ namespace components
 		GET_INTERFACE(m_client, sdk::base_client, "client.dll", CLIENT_INTERFACE_VERSION);
 		GET_INTERFACE(m_engine, sdk::engine_client, "engine.dll", ENGINE_INTERFACE_VERSION);
 		GET_INTERFACE(m_entity_list, sdk::entity_list, "client.dll", CLIENT_ENTITY_INTERFACE_VERSION);
-
 		GET_INTERFACE(m_player_manager, sdk::player_info_manager, "server.dll", PLAYER_INFO_MANAGER_INTERFACE_VERSION);
-		m_globals = m_player_manager->get_global_vars();
-
 		GET_INTERFACE(m_surface, sdk::surface, "vguimatsurface.dll", VGUI_MAT_SURFACE_INTERFACE_VERSION);
+		GET_INTERFACE(m_cvar, sdk::CCvar, "vstdlib.dll", CVAR_INTERFACE_VERSION);
+		m_globals = m_player_manager->get_global_vars();
 
 		m_initialized = true;
 		log("Interfaces", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);

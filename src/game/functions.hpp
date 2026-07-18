@@ -37,7 +37,7 @@ namespace game
 	extern const D3DXMATRIX TC_TRANSLATE_TO_CENTER;
 	extern const D3DXMATRIX TC_TRANSLATE_FROM_CENTER_TO_TOP_LEFT;
 
-	inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
+	//inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
 	inline IVModelInfo* get_modelinfo() { return reinterpret_cast<IVModelInfo*>(*(DWORD*)(CLIENT_BASE + 0x735E58)); }
 
 	extern ConVar* find_cvar(const char* name);

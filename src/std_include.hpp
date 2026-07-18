@@ -96,5 +96,6 @@ constexpr auto COMP_MOD_PRE_RELEASE_NUM = 0;
 #include "sdk/entity/c_base_entity.hpp"
 #include "sdk/entity/c_entity_list.hpp"
 #include "sdk/vgui/surface/c_surface_mgr.hpp"
+#include "sdk/cvar/cvar.hpp"
 
 using namespace std::literals;

@@ -3020,7 +3020,7 @@ namespace components
 		//m_fnChangeCallbacks;
 	};
 
-	struct CCvar_vtbl;
+	/*struct CCvar_vtbl;
 	struct CCvar
 	{
 		CCvar_vtbl* vftable;
@@ -3039,7 +3039,7 @@ namespace components
 		ConVar* (__thiscall* FindVar)(CCvar*, const char*);
 		const ConCommand* (__thiscall* FindCommand_const)(CCvar*, const char*);
 		ConCommand* (__thiscall* FindCommand)(CCvar*, const char*);
-	};
+	};*/
 
 	struct CUtlString
 	{

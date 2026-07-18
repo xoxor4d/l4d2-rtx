@@ -40,16 +40,16 @@ namespace game
 
 	ConVar* find_cvar(const char* name)
 	{
-		if (const auto icvar = game::get_icvar(); icvar) {
-			return icvar->vftable->FindVar(icvar, name);
+		if (const auto ivar = interfaces::get()->m_cvar; ivar) {
+			return ivar->find_var(name);
 		}
 		return nullptr;
 	}
 
 	const ConVar* find_cvar_const(const char* name)
 	{
-		if (const auto icvar = game::get_icvar(); icvar) {
-			return icvar->vftable->FindVar(icvar, name);
+		if (const auto ivar = interfaces::get()->m_cvar; ivar) {
+			return ivar->find_var(name);
 		}
 		return nullptr;
 	}
@@ -103,9 +103,9 @@ namespace game
 
 	void cvar_uncheat(const char* name)
 	{
-		if (const auto ivar = game::get_icvar(); ivar)
+		if (const auto ivar = interfaces::get()->m_cvar; ivar)
 		{
-			if (auto var = ivar->vftable->FindVar(ivar, name); var) 
+			if (auto var = ivar->find_var(name); var)
 			{
 				var->m_nFlags &= ~(1 << 1); // FCVAR_DEVELOPMENTONLY
 				var->m_nFlags &= ~(1 << 4); // FCVAR_HIDDEN
@@ -116,9 +116,9 @@ namespace game
 
 	void cvar_uncheat_and_set_int(const char* name, const int val)
 	{
-		if (const auto ivar = game::get_icvar(); ivar)
+		if (const auto ivar = interfaces::get()->m_cvar; ivar)
 		{
-			if (auto var = ivar->vftable->FindVar(ivar, name); var)
+			if (auto var = ivar->find_var(name); var)
 			{
 				var->vtbl->SetValue_Int(var, val);
 				var->m_nFlags &= ~(1 << 1); // FCVAR_DEVELOPMENTONLY
@@ -130,9 +130,9 @@ namespace game
 
 	void cvar_uncheat_and_set_float(const char* name, const float val)
 	{
-		if (const auto ivar = game::get_icvar(); ivar)
+		if (const auto ivar = interfaces::get()->m_cvar; ivar)
 		{
-			if (auto var = ivar->vftable->FindVar(ivar, name); var)
+			if (auto var = ivar->find_var(name); var)
 			{
 				var->vtbl->SetValue_Float(var, val);
 				var->m_nFlags &= ~(1 << 1); // FCVAR_DEVELOPMENTONLY
