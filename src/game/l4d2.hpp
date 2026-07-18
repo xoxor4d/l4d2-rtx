@@ -11,11 +11,15 @@ namespace l4d2
 	// - engine
 	extern CRender* engine_renderer;
 	extern DWORD* hoststate_worldbrush_data_ptr;
+	extern Vector* current_view_origin;
+	extern Vector* current_view_forward;
 
 	// - client
 	extern Vector* g_vecCurrentRenderOrigin;
 	extern Vector4D* s_viewFadeColor;
 	extern DWORD* material_system_ptr;
+	extern DWORD* modelinfo_ptr;
+	extern Vector* camera_forward_vector;
 
 	// - shaderapidx9
 	extern DWORD* d3d_device_ptr;
@@ -100,4 +104,15 @@ namespace game
 	inline IShaderAPIDX8* get_shaderapi() { return reinterpret_cast<IShaderAPIDX8*>(*l4d2::shaderapi_ptr /*(RENDERER_BASE + 0xC9C50)*/); }
 	inline IMaterialSystem* get_material_system() { return reinterpret_cast<IMaterialSystem*>(*l4d2::material_system_ptr /*(CLIENT_BASE + 0x88B7F0)*/); }
 	inline worldbrushdata_t* get_hoststate_worldbrush_data() { return reinterpret_cast<worldbrushdata_t*>(*l4d2::hoststate_worldbrush_data_ptr /*(DWORD*)(ENGINE_BASE + 0x42FFB8)*/); }
+	inline IVModelInfo* get_modelinfo() { return reinterpret_cast<IVModelInfo*>(*l4d2::modelinfo_ptr /*(DWORD*)(CLIENT_BASE + 0x735E58)*/); }
+
+	inline Vector* get_current_view_origin() { return l4d2::current_view_origin; /*reinterpret_cast<Vector*>(ENGINE_BASE + 0x501344);*/ }
+	
+	// we read past the vector size since this is actually a 3x3 axis
+	inline Vector* get_current_view_forward() { return l4d2::current_view_forward; /*reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A30);*/ }
+	inline Vector* get_current_view_right() { return &l4d2::current_view_forward[3]; /*return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A3C);*/ }
+	inline Vector* get_current_view_up() { return &l4d2::current_view_forward[6]; /*return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A48);*/ }
+
+	inline Vector* get_camera_forward_vector() { return l4d2::camera_forward_vector; /*return reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A2638);*/ } // same as engine one above?
+
 }

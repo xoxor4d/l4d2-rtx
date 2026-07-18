@@ -22,11 +22,15 @@ namespace l4d2
 	// - engine
 	CRender* engine_renderer = nullptr;
 	DWORD* hoststate_worldbrush_data_ptr = nullptr;
+	Vector* current_view_origin = nullptr;
+	Vector* current_view_forward = nullptr;
 
 	// - client
 	Vector* g_vecCurrentRenderOrigin = nullptr;
 	Vector4D* s_viewFadeColor = nullptr;
 	DWORD* material_system_ptr = nullptr;
+	DWORD* modelinfo_ptr = nullptr;
+	Vector* camera_forward_vector = nullptr;
 
 	// - shaderapidx9
 	DWORD* d3d_device_ptr = nullptr;
@@ -151,6 +155,9 @@ namespace l4d2
 		} total_pattern_count++;
 
 		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(ENGINE_MOD, hoststate_worldbrush_data_ptr, DWORD*, "A1 ? ? ? ? 8B 50 ? 53 56", 1, 0x5DB53);
+		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(ENGINE_MOD, current_view_origin, Vector*, "F3 0F 10 05 ? ? ? ? F3 0F 10 0D ? ? ? ? F3 0F 10 15 ? ? ? ? 53", 4, 0xB9843);
+		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(ENGINE_MOD, current_view_forward, Vector*, "68 ? ? ? ? 68 ? ? ? ? E8 ? ? ? ? 83 C4 ? 56", 1, 0xC3DE9);
+
 
 		// - engine - functions
 		PATTERN_OFFSET_SIMPLE_CAST(ENGINE_MOD, R_CullNode, R_CullNode_t, "55 8B EC 80 3D ? ? ? ? ? 8B 4D", 0, 0xFC490);
@@ -185,6 +192,10 @@ namespace l4d2
 		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(CLIENT_MOD, g_vecCurrentRenderOrigin, Vector*, "F3 0F 11 05 ? ? ? ? F3 0F 10 40 ? 68 ? ? ? ? F3 0F 11 05", 4, 0x1CCF5A);
 		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(CLIENT_MOD, s_viewFadeColor, Vector4D*, "81 C1 ? ? ? ? ? ? ? ? 0F 57 C9", 2, 0x1C44F3);
 		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(CLIENT_MOD, material_system_ptr, DWORD*, "A1 ? ? ? ? 53 56 57 89 4D ? 89 45", 1, 0x11B76);
+		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(CLIENT_MOD, modelinfo_ptr, DWORD*, "8B 0D ? ? ? ? ? ? 50 8B 42 ? FF D0 85 C0 74 ? 8B 0D ? ? ? ? ? ? 50 8B 82", 2, 0x19236);
+		PATTERN_OFFSET_DWORD_PTR_CAST_TYPE(CLIENT_MOD, camera_forward_vector, Vector*, "8D 93 ? ? ? ? 89 4D", 2, 0x1BAB58);
+
+		
 
 		// - client - functions
 

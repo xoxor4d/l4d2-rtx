@@ -38,17 +38,9 @@ namespace game
 	extern const D3DXMATRIX TC_TRANSLATE_FROM_CENTER_TO_TOP_LEFT;
 
 	//inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
-	inline IVModelInfo* get_modelinfo() { return reinterpret_cast<IVModelInfo*>(*(DWORD*)(CLIENT_BASE + 0x735E58)); }
 
 	extern ConVar* find_cvar(const char* name);
 	extern const ConVar* find_cvar_const(const char* name);
-
-	inline Vector* get_current_view_origin() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x501344); }
-	inline Vector* get_current_view_forward() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A30); }
-	inline Vector* get_current_view_right() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A3C); }
-	inline Vector* get_current_view_up() { return reinterpret_cast<Vector*>(ENGINE_BASE + 0x427A48); }
-
-	inline Vector* get_camera_forward_vector() { return reinterpret_cast<Vector*>(CLIENT_BASE + 0x7A2638); } // same as engine one above?
 
 	// returns C_BaseAnimating class pointer for a given IClientRenderable
 	C_BaseAnimating* get_base_animating_for_client_renderable(IClientRenderable* pRenderable);
