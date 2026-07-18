@@ -51,7 +51,7 @@ namespace components
 
 		int  m_hud_debug_node_vis_pos[2] = { 250, 135 };
 		bool m_hud_debug_node_vis_has_forced_leafs = false;
-		bool m_hud_debug_node_vis_has_forced_arealeafs = false;#
+		bool m_hud_debug_node_vis_has_forced_arealeafs = false;
 
 	private:
 		bool m_initialized = false;

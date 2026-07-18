@@ -9,10 +9,14 @@ namespace l4d2
 	extern void* mdl_cache;
 
 	// - engine
+	// 
 
 	// - client
 	extern Vector* g_vecCurrentRenderOrigin;
-	
+	extern Vector4D* s_viewFadeColor;
+
+	// - shaderapidx9
+	// 
 
 	// -------------------------------------------
 	// game functions
@@ -28,6 +32,7 @@ namespace l4d2
 	typedef	bool(__cdecl* CM_LeafArea_t)(int leaf_num);
 	extern CM_LeafArea_t CM_LeafArea;
 
+	// - shaderapidx9
 
 	// -------------------------------------------
 	// game asm offsets
@@ -61,6 +66,11 @@ namespace l4d2
 	extern uint32_t retn_addr__draw_player_thirdperson_mesh;
 	extern uint32_t hk_addr__impact_marks_pshadow;
 	extern uint32_t retn_addr__impact_marks_pshadow_skip;
+
+	// - shaderapidx9
+	extern uint32_t kh_addr__cmeshdx8_renderpass_pre_draw;
+	extern uint32_t kh_addr__cmeshdx8_renderpass_post_draw;
+	extern uint32_t retn_addr__cmeshdx8_renderpass_post_draw;
 
 	// -------------------------------------------
 

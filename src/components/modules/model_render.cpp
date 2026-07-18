@@ -619,7 +619,7 @@ namespace components
 				// do not fog HUD elements :D
 				dev->SetRenderState(D3DRS_FOGENABLE, FALSE);
 
-				const auto s_viewFadeColor = l4d2::s_viewFadeColor; //reinterpret_cast<Vector4D*>(CLIENT_BASE + 0x7A3D68); // #OFFS 2501
+				const auto s_viewFadeColor = l4d2::s_viewFadeColor; //reinterpret_cast<Vector4D*>(CLIENT_BASE + 0x7A3D68);
 
 				ctx.save_vs(dev);
 				dev->SetVertexShader(nullptr);
@@ -2035,36 +2035,36 @@ namespace components
 		// init addon textures
 		init_texture_addons();
 
-		utils::hook(RENDERER_BASE + 0xBEFA, cmeshdx8_renderpass_pre_draw_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(cmeshdx8_renderpass_pre_draw_retn_addr, RENDERER_BASE + 0xBEFF);
+		utils::hook(l4d2::kh_addr__cmeshdx8_renderpass_pre_draw, cmeshdx8_renderpass_pre_draw_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(cmeshdx8_renderpass_pre_draw_retn_addr, l4d2::kh_addr__cmeshdx8_renderpass_pre_draw + 5u);
 
-		utils::hook(RENDERER_BASE + 0xC05A, cmeshdx8_renderpass_post_draw_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(cmeshdx8_renderpass_post_draw_retn_addr, RENDERER_BASE + 0xC0E1);
+		utils::hook(l4d2::kh_addr__cmeshdx8_renderpass_post_draw, cmeshdx8_renderpass_post_draw_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(cmeshdx8_renderpass_post_draw_retn_addr, l4d2::retn_addr__cmeshdx8_renderpass_post_draw);
 
 		// C_OP_RenderSprites::Render :: fix SpriteCard UV's
-		utils::hook::nop(CLIENT_BASE + 0x3C9F1F, 6);
-		utils::hook(CLIENT_BASE + 0x3C9F1F, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, CLIENT_BASE + 0x3C9F25);
+		utils::hook::nop(l4d2::hk_addr__render_spritecard_new, 6);
+		utils::hook(l4d2::hk_addr__render_spritecard_new, RenderSpriteCardNew_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(RenderSpriteCardNew_retn_addr, l4d2::hk_addr__render_spritecard_new + 6u);
 
 		// Fix actual ropes
-		utils::hook::nop(CLIENT_BASE + 0x93A3D, 6);
-		utils::hook(CLIENT_BASE + 0x93A3D, RopeManager_DrawRenderCache_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(RopeManager_DrawRenderCache_retn_addr, CLIENT_BASE + 0x93A43);
+		utils::hook::nop(l4d2::hk_addr__rope_mgr_draw_render_cache, 6);
+		utils::hook(l4d2::hk_addr__rope_mgr_draw_render_cache, RopeManager_DrawRenderCache_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(RopeManager_DrawRenderCache_retn_addr, l4d2::hk_addr__rope_mgr_draw_render_cache + 6u);
 
 		// CGlowOverlay::Draw :: grab sun overlay color to apply color via TFACTOR instead of vertex colors (as that fails - search for "sprites/light_glow02_add_noz")
-		utils::hook::nop(CLIENT_BASE + 0x108090, 8);
-		utils::hook(CLIENT_BASE + 0x108090, grab_glowoverlay_color_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(grab_glowoverlay_color_retn_addr, CLIENT_BASE + 0x108098);
+		utils::hook::nop(l4d2::hk_addr__glow_overlay_draw, 8); // offs changed 0726
+		utils::hook(l4d2::hk_addr__glow_overlay_draw, grab_glowoverlay_color_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(grab_glowoverlay_color_retn_addr, l4d2::hk_addr__glow_overlay_draw + 8u);
 
 		// C_FuncAreaPortalWindow::DrawModel :: disable drawing Area Portal Brushmodels
-		utils::hook::nop(CLIENT_BASE + 0x7690E, 2); // 2501
+		utils::hook::nop(l4d2::nop_addr__func_area_portal_window_draw_mdl, 2);
 
 		// --
 		// Remove transforms from prop vertices (UNBAKE)
-		utils::hook::nop(STUDIORENDER_BASE + 0xEF7B, 7);
-		utils::hook(STUDIORENDER_BASE + 0xEF7B, unbake_transform::R_StudioDrawStaticMesh_stub, HOOK_JUMP).install()->quick();
-		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_og_retn_addr, STUDIORENDER_BASE + 0xEF82);
-		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_nop_retn_addr, STUDIORENDER_BASE + 0xEF84);
+		utils::hook::nop(l4d2::hk_addr__studio_draw_static_mesh, 7);
+		utils::hook(l4d2::hk_addr__studio_draw_static_mesh, unbake_transform::R_StudioDrawStaticMesh_stub, HOOK_JUMP).install()->quick();
+		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_og_retn_addr, l4d2::hk_addr__studio_draw_static_mesh + 7u); // 0xEF82
+		HOOK_RETN_PLACE(unbake_transform::R_StudioDrawStaticMesh_nop_retn_addr, l4d2::hk_addr__studio_draw_static_mesh + 9u); // 0xEF84
 
 		// #
 		// commands
