@@ -259,7 +259,7 @@ namespace components
 	remix_markers::remix_markers()
 	{
 		p_this = this;
-
+		m_initialized = true;
 		log("RemixMarkers", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

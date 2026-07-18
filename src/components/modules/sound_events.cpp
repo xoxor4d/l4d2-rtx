@@ -111,12 +111,13 @@ namespace components
 	sound_events::sound_events()
 	{
 		// S_StartSound
-		utils::hook(ENGINE_BASE + 0x1C0B6, on_start_sound_stub).install()->quick(); // 2001
-		HOOK_RETN_PLACE(on_start_sound_stub_retn, ENGINE_BASE + 0x1C0BB); // 2001
+		utils::hook(l4d2::hk_addr__start_sound, on_start_sound_stub).install()->quick();
+		HOOK_RETN_PLACE(on_start_sound_stub_retn, l4d2::hk_addr__start_sound + 5u);
 
 		// ----
 		game::con_add_command(&xo_debug_sound_print_cmd, "xo_debug_sound_print", xo_debug_sound_print_fn, "Toggle sound debug prints (HASH for map_settings)");
 
+		m_initialized = true;
 		log("SoundEvents", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }

@@ -10,8 +10,15 @@ namespace components
 		static inline remix_api* p_this = nullptr;
 		static remix_api* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		void on_renderview();
-		static bool is_initialized() { return get()->m_initialized; }
 
 		static constexpr std::uint32_t M_MAX_DEBUG_LINES = 512u;
 		enum DEBUG_REMIX_LINE_COLOR

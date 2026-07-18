@@ -19,6 +19,15 @@ namespace components
 		static inline remix_lights* p_this = nullptr;
 		static remix_lights* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
+
 		static void on_draw_model_exec(const ModelRenderInfo_t& info);
 		static void on_event_start(const std::string_view& name, const std::string_view& actor, const std::string_view& event, const std::string_view& param1);
 		static void on_event_finish(const std::string_view& name);
@@ -198,6 +207,8 @@ namespace components
 		Vector m_dbgpos_last_pos = {};
 		bool m_dbgpos_on_steady_once = false;
 		float m_dbgpos_last_curtime = 0.0f;
+
+		bool m_initialized = false;
 
 	};
 }

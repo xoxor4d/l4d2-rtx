@@ -762,7 +762,7 @@ namespace components
 		if (const auto status = remixapi::bridge_initRemixApi(&m_bridge); 
 			status == REMIXAPI_ERROR_CODE_SUCCESS)
 		{
-			get()->m_initialized = true;
+			m_initialized = true;
 			remixapi::bridge_setRemixApiCallbacks(begin_scene_callback, end_scene_callback, on_present_callback);
 			log("RemixApi", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 		}

@@ -11,6 +11,14 @@ namespace components
 		static inline remix_vars* p_this = nullptr;
 		static remix_vars* get() { return p_this; }
 
+		static bool is_initialized()
+		{
+			if (const auto mod = get(); mod && mod->m_initialized) {
+				return true;
+			}
+			return false;
+		}
+
 		static void xo_vars_parse_options_fn();
 
 		static constexpr const char* EASE_TYPE_STR[] =
@@ -139,5 +147,8 @@ namespace components
 		//static bool add_progressive_interpolate_entry(option_handle handle, const option_value& goal, float speed, const std::string& remix_var_name = "");
 
 		bool add_interpolate_entry(const std::uint64_t& identifier, option_handle handle, const option_value& goal, float duration, float delay, float delay_transition_back, EASE_TYPE ease, const std::string& remix_var_name = "");
+	
+		private:
+			bool m_initialized = false;
 	};
 }

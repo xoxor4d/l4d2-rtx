@@ -805,6 +805,7 @@ namespace components
 		game::con_add_command(&xo_vars_reset_all_options_cmd, "xo_vars_reset_all_options", xo_vars_reset_all_options_fn, "Reset all options (modified by .conf files) to the rtx.conf level");
 		game::con_add_command(&xo_vars_clear_transitions_cmd, "xo_vars_clear_transitions", xo_vars_clear_transitions_fn, "Clear all ongoing transitions");
 
+		m_initialized = true;
 		log("RemixVars", "Module initialized.", utils::LOG_TYPE::LOG_TYPE_DEFAULT, false);
 	}
 }
