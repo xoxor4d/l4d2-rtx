@@ -35,8 +35,23 @@
 #define REMIXAPI_ASSERT(mustBeTrue) assert(mustBeTrue)
 #endif
 
+
 namespace remix {
   namespace detail {
+    template<typename T, std::size_t Expected>
+    struct StaticSizeCheck {
+      static constexpr std::size_t expected = Expected;
+      static constexpr std::size_t actual = sizeof(T);
+
+      // When this fails, most compilers will print both `expected` and `actual`
+      // in the error message, so you see the real sizeof(T) in the build log.
+      static_assert(actual == expected,
+        "Static size check failed: sizeof(T) != Expected; "
+        "see StaticSizeCheck<T,Expected>::actual in this diagnostic.");
+    };
+
+#define STATIC_ASSERT_SIZEOF(Type, Expected) using StaticSizeCheck_##Type = remix::detail::StaticSizeCheck<Type, (Expected)>
+
     template< typename T >
     struct Result {
       Result(T&& value)
@@ -156,7 +171,7 @@ namespace remix {
   }
 
   struct Interface {
-    HMODULE            m_RemixDLL { nullptr };
+    remixapi_HMODULE   m_RemixDLL { nullptr };
     remixapi_Interface m_CInterface {};
 
     // Functions
@@ -168,6 +183,7 @@ namespace remix {
     Result< remixapi_MeshHandle >     CreateMesh(const remixapi_MeshInfo& info);
     Result< void >                    DestroyMesh(remixapi_MeshHandle handle);
     Result< void >                    SetupCamera(const remixapi_CameraInfo& info);
+    Result< void >                    SetCameraMediumMaterial(remixapi_MaterialHandle medium);
     Result< void >                    DrawInstance(const remixapi_InstanceInfo& info);
     Result< remixapi_LightHandle >    CreateLight(const remixapi_LightInfo& info);
     Result< void >                    DestroyLight(remixapi_LightHandle handle);
@@ -191,13 +207,14 @@ namespace remix {
                                                                    uint8_t colorR, uint8_t colorG, uint8_t colorB);
   };
 
+#ifndef REMIX_WINAPI_NO_LIBRARY_LOADER
   namespace lib {
     // Helper function to load a .dll of Remix, and initialize it.
     // pRemixD3D9DllPath is a path to .dll file, e.g. "C:\dxvk-remix-nv\public\bin\d3d9.dll"
     [[nodiscard]] inline Result< Interface > loadRemixDllAndInitialize(const std::filesystem::path& remixD3D9DllPath) {
 
       remixapi_Interface interfaceInC = {};
-      HMODULE remixDll = nullptr;
+      remixapi_HMODULE remixDll = nullptr;
 
       remixapi_ErrorCode status =
         remixapi_lib_loadRemixDllAndInitialize(remixD3D9DllPath.c_str(),
@@ -208,7 +225,7 @@ namespace remix {
         return status;
       }
 
-      static_assert(sizeof(remixapi_Interface) == 168,
+      static_assert(sizeof(remixapi_Interface) == 176,
                     "Change version, update C++ wrapper when adding new functions");
 
       remix::Interface interfaceInCpp = {};
@@ -227,6 +244,7 @@ namespace remix {
       return remixapi_lib_shutdownAndUnloadRemixDll(&interfaceInCpp.m_CInterface, interfaceInCpp.m_RemixDLL);
     }
   }
+#endif // !REMIX_WINAPI_NO_LIBRARY_LOADER
 
 
 
@@ -283,7 +301,7 @@ namespace remix {
       alphaTestType = 7;
       alphaReferenceValue = 0;
       displaceOut = 0.0f;
-      static_assert(sizeof remixapi_MaterialInfoOpaqueEXT == 112);
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoOpaqueEXT, 112);
     }
 
     MaterialInfoOpaqueEXT(const MaterialInfoOpaqueEXT& other)
@@ -347,7 +365,7 @@ namespace remix {
       roughnessTexture = cpp_roughnessTexture.c_str();
       metallicTexture = cpp_metallicTexture.c_str();
       heightTexture = cpp_heightTexture.c_str();
-      static_assert(sizeof remixapi_MaterialInfoOpaqueEXT == 112, "Recheck pointers");
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoOpaqueEXT, 112);
     }
 
     std::filesystem::path cpp_roughnessTexture {};
@@ -372,7 +390,7 @@ namespace remix {
       subsurfaceRadiusScale = 0.0f;
       subsurfaceMaxSampleRadius = 0.0f;
       subsurfaceRadiusTexture = {};
-      static_assert(sizeof remixapi_MaterialInfoOpaqueSubsurfaceEXT == 104);
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoOpaqueSubsurfaceEXT, 104);
     }
 
     MaterialInfoOpaqueSubsurfaceEXT(const MaterialInfoOpaqueSubsurfaceEXT& other)
@@ -439,7 +457,7 @@ namespace remix {
       subsurfaceThicknessTexture = cpp_subsurfaceThicknessTexture.c_str();
       subsurfaceSingleScatteringAlbedoTexture = cpp_subsurfaceSingleScatteringAlbedoTexture.c_str();
       subsurfaceRadiusTexture = cpp_subsurfaceRadiusTexture.c_str();
-      static_assert(sizeof remixapi_MaterialInfoOpaqueSubsurfaceEXT == 104, "Recheck pointers");
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoOpaqueSubsurfaceEXT, 104);
     }
 
     std::filesystem::path cpp_subsurfaceTransmittanceTexture {};
@@ -459,7 +477,7 @@ namespace remix {
       thinWallThickness_hasvalue = false;
       thinWallThickness_value = 0.001f;
       useDiffuseLayer = false;
-      static_assert(sizeof remixapi_MaterialInfoTranslucentEXT == 56);
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoTranslucentEXT, 56);
     }
 
     MaterialInfoTranslucentEXT(const MaterialInfoTranslucentEXT& other)
@@ -502,7 +520,7 @@ namespace remix {
   private:
     void cpp_fixPointers() {
       transmittanceTexture = cpp_transmittanceTexture.c_str();
-      static_assert(sizeof remixapi_MaterialInfoTranslucentEXT == 56, "Recheck pointers");
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoTranslucentEXT, 56);
     }
 
     std::filesystem::path cpp_transmittanceTexture {};
@@ -514,7 +532,7 @@ namespace remix {
       pNext = nullptr;
       rayPortalIndex = 0;
       rotationSpeed = 0.0f;
-      static_assert(sizeof remixapi_MaterialInfoPortalEXT == 24);
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfoPortalEXT, 24);
     }
   };
 
@@ -535,7 +553,7 @@ namespace remix {
       filterMode = 1; // Linear
       wrapModeU = 1; // Repeat
       wrapModeV = 1; // Repeat
-      static_assert(sizeof remixapi_MaterialInfo == 80);
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfo, 80);
     }
 
     MaterialInfo(const MaterialInfo& other)
@@ -602,7 +620,7 @@ namespace remix {
       normalTexture = cpp_normalTexture.c_str();
       tangentTexture = cpp_tangentTexture.c_str();
       emissiveTexture = cpp_emissiveTexture.c_str();
-      static_assert(sizeof remixapi_MaterialInfo == 80, "Recheck pointers");
+      STATIC_ASSERT_SIZEOF(remixapi_MaterialInfo, 80);
     }
 
     std::filesystem::path cpp_albedoTexture {};
@@ -633,7 +651,7 @@ namespace remix {
       hash = 0;
       surfaces_values = {};
       surfaces_count = 0;
-      static_assert(sizeof remixapi_MeshInfo == 40);
+      STATIC_ASSERT_SIZEOF(remixapi_MeshInfo, 40);
     }
   };
 
@@ -668,7 +686,7 @@ namespace remix {
       aspect = 16.f / 9.f;
       nearPlane = 0.1f;
       farPlane = 1000.f;
-      static_assert(sizeof remixapi_CameraInfoParameterizedEXT == 80);
+      STATIC_ASSERT_SIZEOF(remixapi_CameraInfoParameterizedEXT, 80);
     }
   };
 
@@ -679,12 +697,24 @@ namespace remix {
       type = { REMIXAPI_CAMERA_TYPE_WORLD };
       view[0][0] = view[1][1] = view[2][2] = view[3][3] = 1.f;
       projection[0][0] = projection[1][1] = projection[2][2] = projection[3][3] = 1.f;
-      static_assert(sizeof remixapi_CameraInfo == 152);
+      STATIC_ASSERT_SIZEOF(remixapi_CameraInfo, 152);
     }
   };
 
   inline Result< void > Interface::SetupCamera(const remixapi_CameraInfo& info) {
     return m_CInterface.SetupCamera(&info);
+  }
+
+  inline Result< void > Interface::SetCameraMediumMaterial(remixapi_MaterialHandle medium) {
+    if (!m_CInterface.SetCameraMediumMaterial) {
+      return REMIXAPI_ERROR_CODE_NOT_INITIALIZED;
+    }
+
+    remixapi_CameraMediumInfo info {};
+    info.sType = REMIXAPI_STRUCT_TYPE_CAMERA_MEDIUM_INFO;
+    info.pNext = nullptr;
+    info.medium = medium;
+    return m_CInterface.SetCameraMediumMaterial(&info);
   }
 
 
@@ -695,7 +725,7 @@ namespace remix {
       pNext = nullptr;
       boneTransforms_count = 0;
       boneTransforms_values = {};
-      static_assert(sizeof remixapi_InstanceInfoBoneTransformsEXT == 32);
+      STATIC_ASSERT_SIZEOF(remixapi_InstanceInfoBoneTransformsEXT, 32);
     }
   };
 
@@ -710,6 +740,10 @@ namespace remix {
       srcColorBlendFactor = 1 /* VK_BLEND_FACTOR_ONE */;
       dstColorBlendFactor = 0 /* VK_BLEND_FACTOR_ZERO */;
       colorBlendOp = 0 /* VK_BLEND_OP_ADD */;
+      srcAlphaBlendFactor = 1 /* VK_BLEND_FACTOR_ONE */;
+      dstAlphaBlendFactor = 0 /* VK_BLEND_FACTOR_ZERO */;
+      alphaBlendOp = 0 /* VK_BLEND_OP_ADD */;
+      writeMask = 0xFFFFFFFF;
       textureColorArg1Source = 1 /* RtTextureArgSource::Texture */;
       textureColorArg2Source = 0 /* RtTextureArgSource::None */;
       textureColorOperation = 3 /* DxvkRtTextureOperation::Modulate */;
@@ -718,7 +752,8 @@ namespace remix {
       textureAlphaOperation = 1 /* DxvkRtTextureOperation::SelectArg1 */;
       tFactor = 0XFFFFFFFF;
       isTextureFactorBlend = false;
-      static_assert(sizeof remixapi_InstanceInfoBlendEXT == 80);
+      isVertexColorBakedLighting = true;
+      STATIC_ASSERT_SIZEOF(remixapi_InstanceInfoBlendEXT, 96);
     }
   };
 
@@ -727,6 +762,62 @@ namespace remix {
       sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO_OBJECT_PICKING_EXT;
       pNext = nullptr;
       objectPickingValue = 0;
+    }
+  };
+
+  struct InstanceInfoParticleSystemEXT : remixapi_InstanceInfoParticleSystemEXT {
+    InstanceInfoParticleSystemEXT() {
+      sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO_PARTICLE_SYSTEM_EXT;
+      pNext = nullptr;
+      maxNumParticles = 10000;
+      useTurbulence = false;
+      alignParticlesToVelocity = false;
+      useSpawnTexcoords = false;
+      enableCollisionDetection = false;
+      enableMotionTrail = false;
+      hideEmitter = false;
+      restrictVelocityX = false;
+      restrictVelocityY = false;
+      restrictVelocityZ = false;
+      minColor = { nullptr, 0 };
+      maxColor = { nullptr, 0 };
+      minRotationSpeed = { nullptr, 0 };
+      maxRotationSpeed = { nullptr, 0 };
+      minSize = { nullptr, 0 };
+      maxSize = { nullptr, 0 };
+      maxVelocity = { nullptr, 0 };
+      attractorPosition = { 0, 0, 0 };
+      minTimeToLive = 1.0f;
+      maxTimeToLive = 1.0f;
+      initialVelocityFromNormal = 0.0f;
+      initialVelocityConeAngleDegrees = 0.0f;
+      dragCoefficient = 0.0f;
+      initialRotationDeviationDegrees = 0.0f;
+      gravityForce = -0.98f;
+      turbulenceFrequency = 0.05f;
+      turbulenceForce = 5.0f;
+      spawnRatePerSecond = 0.f;
+      collisionThickness = 5.0f;
+      collisionRestitution = 0.5f;
+      motionTrailMultiplier = 1.0f;
+      initialVelocityFromMotion = 0.0f;
+      spawnBurstDuration = 0.0f;
+      attractorRadius = 0.0f;
+      attractorForce = 0.0f;
+      billboardType = 0;
+      spriteSheetMode = 0;
+      collisionMode = 0;
+      randomFlipAxis = 0;
+    }
+  };
+
+  struct InstanceInfoGpuInstancingEXT : remixapi_InstanceInfoGpuInstancingEXT {
+    InstanceInfoGpuInstancingEXT() {
+      sType = REMIXAPI_STRUCT_TYPE_INSTANCE_INFO_GPU_INSTANCING_EXT;
+      pNext = nullptr;
+      instanceTransforms_values = nullptr;
+      instanceTransforms_count = 0;
+      static_assert(sizeof remixapi_InstanceInfoGpuInstancingEXT == 32);
     }
   };
 
@@ -741,7 +832,7 @@ namespace remix {
       mesh = 0;
       transform = {};
       doubleSided = false;
-      static_assert(sizeof remixapi_InstanceInfo == 88);
+      STATIC_ASSERT_SIZEOF(remixapi_InstanceInfo, 88);
     }
   };
 
@@ -775,7 +866,7 @@ namespace remix {
       shaping_hasvalue = false;
       shaping_value = detail::defaultLightShaping();
       volumetricRadianceScale = 1.0f;
-      static_assert(sizeof remixapi_LightInfoSphereEXT == 64);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoSphereEXT, 64);
     }
 
     void set_shaping(const std::optional< remixapi_LightInfoLightShaping >& v) {
@@ -796,7 +887,7 @@ namespace remix {
       shaping_hasvalue = false;
       shaping_value = detail::defaultLightShaping();
       volumetricRadianceScale = 1.0f;
-      static_assert(sizeof remixapi_LightInfoRectEXT == 104);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoRectEXT, 104);
     }
 
     void set_shaping(const std::optional< remixapi_LightInfoLightShaping >& v) {
@@ -817,7 +908,7 @@ namespace remix {
       shaping_hasvalue = false;
       shaping_value = detail::defaultLightShaping();
       volumetricRadianceScale = 1.0f;
-      static_assert(sizeof remixapi_LightInfoDiskEXT == 104);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoDiskEXT, 104);
     }
 
     void set_shaping(const std::optional< remixapi_LightInfoLightShaping >& v) {
@@ -834,7 +925,7 @@ namespace remix {
       axis = { 1.0f, 0.0f, 0.0f };
       axisLength = 1.0f;
       volumetricRadianceScale = 1.0f;
-      static_assert(sizeof remixapi_LightInfoCylinderEXT == 56);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoCylinderEXT, 56);
     }
   };
 
@@ -845,7 +936,7 @@ namespace remix {
       direction = { 0.0f, -1.0f, 0.0f };
       angularDiameterDegrees = 0.5f;
       volumetricRadianceScale = 1.0f;
-      static_assert(sizeof remixapi_LightInfoDistantEXT == 40);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoDistantEXT, 40);
     }
   };
 
@@ -855,7 +946,7 @@ namespace remix {
       pNext = nullptr;
       transform = {};
       colorTexture = {};
-      static_assert(sizeof remixapi_LightInfoDomeEXT == 72);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoDomeEXT, 72);
     }
 
     LightInfoDomeEXT(const LightInfoDomeEXT& other)
@@ -895,7 +986,7 @@ namespace remix {
   private:
     void cpp_fixPointers() {
       colorTexture = cpp_colorTexture.c_str();
-      static_assert(sizeof remixapi_LightInfoDomeEXT == 72, "Recheck pointers");
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfoDomeEXT, 72);
     }
 
     std::filesystem::path cpp_colorTexture {};
@@ -907,7 +998,7 @@ namespace remix {
       pNext = nullptr;
       hash = 0;
       radiance = { 1.0f, 1.0f, 1.0f };
-      static_assert(sizeof remixapi_LightInfo == 40);
+      STATIC_ASSERT_SIZEOF(remixapi_LightInfo, 40);
     }
   };
 
