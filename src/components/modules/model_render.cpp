@@ -472,8 +472,8 @@ namespace components
 				}
 
 				// normal boost & roughness boost - pack two floats into one RS
-				ctx.save_rs(dev, (D3DRENDERSTATETYPE)169);
-				dev->SetRenderState((D3DRENDERSTATETYPE)169, utils::pack_2f_in_dword(normal_boost, roughness_boost));
+				ctx.save_rs(dev, (D3DRENDERSTATETYPE)211);
+				dev->SetRenderState((D3DRENDERSTATETYPE)211, utils::pack_2f_in_dword(normal_boost, roughness_boost));
 				
 
 				// $skintintgradient - $colortintgradient
