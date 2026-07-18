@@ -622,7 +622,7 @@ namespace utils
 		};
 
 #ifndef DEBUG
-		const auto debug_prints = common::flags::has_flag("debug");
+		const auto debug_prints = flags::has_flag("debug");
 #else
 		const auto debug_prints = true;
 #endif
