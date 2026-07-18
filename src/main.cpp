@@ -1,5 +1,4 @@
 #include "std_include.hpp"
-
 #include <Psapi.h>
 #include <wincrypt.h>
 
@@ -110,16 +109,57 @@ namespace l4d2
 
 		get_module_handle_and_size(game::shaderapidx9_module, "shaderapidx9.dll", T);
 		get_module_handle_and_size(game::studiorender_module, "studiorender.dll", T);
-		//get_module_handle_and_size(game::materialsystem_module, "materialsystem.dll", T);
+		// get_module_handle_and_size(game::materialsystem_module, "materialsystem.dll", T);
 		get_module_handle_and_size(game::engine_module, "engine.dll", T);
 		get_module_handle_and_size(game::client_module, "client.dll", T);
 		get_module_handle_and_size(game::server_module, "server.dll", T);
 		get_module_handle_and_size(game::vstdlib_module, "vstdlib.dll", T);
 
-		// Wait a little ..
+		// wait a little ..
 		Sleep(50u);
 
 		l4d2::main();
+		return 0;
+	}
+}
+
+namespace tier0
+{
+	void(__cdecl* OriginalMsg)(const char*, ...) = nullptr;
+	int Msg_hk(const char* fmt, ...)
+	{
+		char buffer[4096];
+
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buffer, sizeof(buffer), fmt, args);
+		va_end(args);
+
+		utils::log("Game:Msg >", buffer, utils::LOG_TYPE::LOG_TYPE_DEFAULT, true, false, true);
+
+		glob::detoured_msg_fn_origin = true;
+		OriginalMsg(buffer);
+		glob::detoured_msg_fn_origin = false;
+		
+		return 0;
+	}
+
+	void(__cdecl* OriginalWarning)(const char*, ...) = nullptr;
+	int Warning_hk(const char* fmt, ...)
+	{
+		char buffer[4096];
+
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buffer, sizeof(buffer), fmt, args);
+		va_end(args);
+
+		utils::log("Game:Warning >", buffer, utils::LOG_TYPE::LOG_TYPE_WARN, true, false, true);
+
+		glob::detoured_warning_fn_origin = true;
+		OriginalWarning(buffer);
+		glob::detoured_warning_fn_origin = false;
+		
 		return 0;
 	}
 }
@@ -136,17 +176,17 @@ BOOL APIENTRY DllMain(HMODULE hmodule, const DWORD ul_reason_for_call, LPVOID)
 		glob::setup_homepath();
 
 		utils::set_console_color_blue(true);
-		std::cout << "Launching L4D2 RTX Remix Compatiblity Mod Version [" << COMP_MOD_VERSION_MAJOR << "." << COMP_MOD_VERSION_MINOR << "." << COMP_MOD_VERSION_PATCH << "]";
+
+		utils::console_out << "\n  Launching L4D2 RTX Remix Compatiblity Mod Version [" << COMP_MOD_VERSION_MAJOR << "." << COMP_MOD_VERSION_MINOR << "." << COMP_MOD_VERSION_PATCH << "]";
 
 		if constexpr (COMP_MOD_PRE_RELEASE_NUM != 0) {
-			std::cout << " - Pre-Release " << std::to_string(COMP_MOD_PRE_RELEASE_NUM) << "\n";
-		}
-		else {
-			std::cout << "\n";
+			utils::console_out << "   - Pre-Release " << std::to_string(COMP_MOD_PRE_RELEASE_NUM) << "\n";
+		} else {
+			utils::console_out << "\n";
 		}
 
-		std::cout << "> Compiled On : " + std::string(__DATE__) + " " + std::string(__TIME__) + "\n";
-		std::cout << "> https://github.com/xoxor4d/l4d2-rtx\n\n";
+		utils::console_out << "  > Compiled On : " + std::string(__DATE__) + " " + std::string(__TIME__) + "\n";
+		utils::console_out << "  > https://github.com/xoxor4d/l4d2-rtx\n\n";
 		utils::set_console_color_default();
 
 		if (const auto MH_INIT_STATUS = MH_Initialize(); MH_INIT_STATUS != MH_STATUS::MH_OK)
@@ -155,12 +195,16 @@ BOOL APIENTRY DllMain(HMODULE hmodule, const DWORD ul_reason_for_call, LPVOID)
 			return TRUE;
 		}
 
-#if DEBUG
+//#if DEBUG
 		// hook OutputDebugString
 		game::SetupDebugOutputHook();
-#endif
+//#endif
 
-		// init early modules here <> (can not place hooks directly)
+		MH_CreateHookApi(L"tier0.dll", "Warning", tier0::Warning_hk, (LPVOID*)&tier0::OriginalWarning);
+		MH_CreateHookApi(L"tier0.dll", "Msg", tier0::Msg_hk, (LPVOID*)&tier0::OriginalMsg);
+		MH_EnableHook(MH_ALL_HOOKS);
+
+		// init early modules here <>
 
 		if (const auto t = CreateThread(nullptr, 0, l4d2::find_game_window_by_class, nullptr, 0, nullptr); t) {
 			CloseHandle(t);

@@ -33,4 +33,7 @@ namespace glob
 
 	extern std::chrono::high_resolution_clock::time_point last_frame_time;
 	extern float frame_time_ms;
+
+	extern bool detoured_warning_fn_origin;
+	extern bool detoured_msg_fn_origin;
 }

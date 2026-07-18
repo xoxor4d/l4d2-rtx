@@ -37,8 +37,6 @@ namespace game
 	extern const D3DXMATRIX TC_TRANSLATE_TO_CENTER;
 	extern const D3DXMATRIX TC_TRANSLATE_FROM_CENTER_TO_TOP_LEFT;
 
-	//inline CCvar* get_icvar() { return reinterpret_cast<CCvar*>((VSTDLIB_BASE + 0x2C0D0)); }
-
 	extern ConVar* find_cvar(const char* name);
 	extern const ConVar* find_cvar_const(const char* name);
 
@@ -64,10 +62,9 @@ namespace game
 
 	inline void WINAPI HookedOutputDebugStringA(LPCSTR lpOutputString)
 	{
-		if (lpOutputString) 
-		{
-			utils::log(">", lpOutputString, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
-			fflush(stdout);
+		// guard against messages that came through the detoured "Warning/Msg" funcs as these were already printed to the console
+		if (lpOutputString && !glob::detoured_warning_fn_origin && !glob::detoured_msg_fn_origin) {
+			utils::log("Game:Dbg >", lpOutputString, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
 		}
 
 		// og func
@@ -80,12 +77,13 @@ namespace game
 	{
 		if (lpOutputString) 
 		{
-			// Convert wide string to multibyte string for printf
 			char buffer[1024];
 			WideCharToMultiByte(CP_UTF8, 0, lpOutputString, -1, buffer, sizeof(buffer), NULL, NULL);
 
-			utils::log(">", buffer, utils::LOG_TYPE::LOG_TYPE_DEFAULT, false, false, true);
-			fflush(stdout); 
+			// guard against messages that came through the detoured "Warning/Msg" funcs as these were already printed to the console
+			if (!glob::detoured_warning_fn_origin && !glob::detoured_msg_fn_origin) {
+				utils::log("Game:Dbg >", buffer, utils::LOG_TYPE::LOG_TYPE_DEFAULT, true, false, true);
+			}
 		}
 
 		// og func

@@ -3,40 +3,90 @@
 namespace utils
 {
 	inline bool g_external_console_created = false;
+	inline HANDLE g_console_handle = nullptr;
+
+	inline void console_write(std::string_view text)
+	{
+		if (!g_console_handle) {
+			return;
+		}
+			
+
+		DWORD written = 0;
+		WriteConsoleA(g_console_handle, text.data(), text.size(), &written, nullptr);
+	}
+
+	class ConsoleStreamBuf : public std::streambuf
+	{
+	protected:
+		std::string buffer;
+
+		int overflow(int ch) override
+		{
+			if (ch != EOF) {
+				buffer.push_back(static_cast<char>(ch));
+			}
+
+			flush();
+			return ch;
+		}
+
+		int sync() override
+		{
+			flush();
+			return 0;
+		}
+
+		void flush()
+		{
+			if (!buffer.empty())
+			{
+				console_write(buffer);
+				buffer.clear();
+			}
+		}
+
+	public:
+		~ConsoleStreamBuf() override {
+			flush();
+		}
+	};
+
+	inline ConsoleStreamBuf console_buf;
+	inline std::ostream console_out(&console_buf);
+
     inline void console()
     {
         if (!g_external_console_created)
         {
 			g_external_console_created = true;
-            
-            setvbuf(stdout, nullptr, _IONBF, 0);
-            if (AllocConsole())
-            {
-                FILE* file = nullptr;
-                freopen_s(&file, "CONIN$", "r", stdin);
-                freopen_s(&file, "CONOUT$", "w", stdout);
-                freopen_s(&file, "CONOUT$", "w", stderr);
-                SetConsoleTitleA("RTX-Comp Debug Console");
-            }
+			AllocConsole();
 
-			HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+			// create our own screen buffer because we dont want to use STD_OUTPUT_HANDLE
+			g_console_handle = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, CONSOLE_TEXTMODE_BUFFER, nullptr);
+			if (g_console_handle == INVALID_HANDLE_VALUE) {
+				return;
+			}
+
+			SetConsoleActiveScreenBuffer(g_console_handle);
+
 			CONSOLE_SCREEN_BUFFER_INFO info;
-			GetConsoleScreenBufferInfo(hOut, &info);
+			GetConsoleScreenBufferInfo(g_console_handle, &info);
 
 			const SHORT new_width = 500;
 			const SHORT new_height = std::max((SHORT)(info.srWindow.Bottom + 1), (SHORT)300);
 
 			// shrink window temporarily to avoid SetConsoleScreenBufferSize failure
 			SMALL_RECT rect = { 0, 0, 1, 1 };
-			SetConsoleWindowInfo(hOut, TRUE, &rect);
+			SetConsoleWindowInfo(g_console_handle, TRUE, &rect);
 
 			// apply buffer size
 			COORD new_size = { new_width, new_height };
-			SetConsoleScreenBufferSize(hOut, new_size);
+			SetConsoleScreenBufferSize(g_console_handle, new_size);
 
 			// resize visible window
 			rect = { 0, 0, (SHORT)(120 - 1), (SHORT)(40 - 1) };
-			SetConsoleWindowInfo(hOut, TRUE, &rect);
+			SetConsoleWindowInfo(g_console_handle, TRUE, &rect);
         }
     }
 
@@ -48,7 +98,7 @@ namespace utils
 			if (highlight) {
 				color |= FOREGROUND_INTENSITY;
 			}
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+			SetConsoleTextAttribute(g_console_handle, color);
 		}
 	}
 
@@ -60,7 +110,7 @@ namespace utils
 			if (highlight) {
 				color |= FOREGROUND_INTENSITY;
 			}
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+			SetConsoleTextAttribute(g_console_handle, color);
 		}
 	}
 
@@ -72,7 +122,7 @@ namespace utils
 			if (highlight) {
 				color |= FOREGROUND_INTENSITY;
 			}
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+			SetConsoleTextAttribute(g_console_handle, color);
 		}
 	}
 
@@ -84,7 +134,7 @@ namespace utils
 			if (highlight) {
 				color |= FOREGROUND_INTENSITY;
 			}
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+			SetConsoleTextAttribute(g_console_handle, color);
 		}
 	}
 
@@ -96,7 +146,7 @@ namespace utils
 			if (highlight) {
 				color |= FOREGROUND_INTENSITY;
 			}
-			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+			SetConsoleTextAttribute(g_console_handle, color);
 		}
 	}
 
@@ -139,6 +189,9 @@ namespace utils
 	{
 		std::lock_guard<std::mutex> lock(log_mutex);
 
+		// width of the inner module field
+		constexpr int inner_width = 14;
+
 		auto colorize = [](const LOG_TYPE& t, const bool h)
 			{
 				switch (t)
@@ -163,24 +216,43 @@ namespace utils
 				}
 			};
 
-		// width of the inner module field
-		constexpr int inner_width = 14;
+		auto print_prefix = [&] 
+			{
+				console_out << std::setw(2) << (type == LOG_TYPE::LOG_TYPE_ERROR ? "!" : " ") << "[ ";
 
-		std::cout << (newline_infront ? "\n" : "")
-			<< std::setw(2) << (type == LOG_TYPE::LOG_TYPE_ERROR ? "!" : " ") << "[ ";
+				colorize(type, true);
+				console_out << std::format("{:>{}}", module_str, inner_width);
+				set_console_color_default();
 
-		colorize(type, true);
-		std::cout << std::format("{:>{}}", module_str, inner_width);
-		set_console_color_default();
+				console_out << " ]  ";
+				colorize(type, highlight);
+			};
 
-		std::cout << " ]  ";
-
-		colorize(type, highlight);
-		std::cout << msg;
-		
-		if (!no_newline_at_end) {
-			std::cout << '\n';
+		if (newline_infront) {
+			console_out << '\n';
 		}
+
+		std::string_view remaining = msg;
+
+		while (!remaining.empty() && remaining != "\n")
+		{
+			print_prefix();
+
+			const size_t newline = remaining.find('\n');
+			if (newline == std::string_view::npos)
+			{
+				console_out << remaining;
+				break;
+			}
+
+			console_out << remaining.substr(0, newline) << '\n';
+			remaining.remove_prefix(newline + 1);
+		}
+
+		if (!no_newline_at_end && (msg.empty() || msg.back() != '\n')) {
+			console_out << '\n';
+		}
+
 		set_console_color_default();
 
 		init_log_file();
