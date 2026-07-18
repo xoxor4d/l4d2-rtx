@@ -58,7 +58,7 @@ namespace game
 	void con_add_command(ConCommand* cmd, const char* name, void(__cdecl* callback)(), const char* desc)
 	{
 		// ConCommand *this, const char *pName, void (__cdecl *callback)(), const char *pHelpString, int flags, int (__cdecl *completionFunc)(const char *, char (*)[64]
-		utils::hook::call<void(__fastcall)(ConCommand* this_ptr, void* null, const char*, void(__cdecl*)(), const char*, int, int(__cdecl*)(const char*, char(*)[64]))>(CLIENT_BASE + 0x3D36F0)
+		utils::hook::call<void(__fastcall)(ConCommand* this_ptr, void* null, const char*, void(__cdecl*)(), const char*, int, int(__cdecl*)(const char*, char(*)[64]))>(l4d2::fn_addr__add_console_cmd)
 			(cmd, nullptr, name, callback, desc, 0x20000, nullptr);
 	}
 
@@ -70,7 +70,7 @@ namespace game
 	 */
 	void debug_add_text_overlay(const float* pos, float duration, const char* text)
 	{
-		utils::hook::call<void(__cdecl)(const float*, float, const char*)>(ENGINE_BASE + 0xA8620)
+		utils::hook::call<void(__cdecl)(const float*, float, const char*)>(l4d2::fn_addr__debug_overlay_add_text)
 			(pos, duration, text);
 	}
 
@@ -86,17 +86,18 @@ namespace game
 	 */
 	void debug_add_text_overlay(const float* pos, const char* text, const int line_offset, const float r, const float g, const float b, const float a)
 	{
-		utils::hook::call<void(__cdecl)(const float*, int, float, float, float, float, float, const char*)>(ENGINE_BASE + 0xA8AA0)
+		utils::hook::call<void(__cdecl)(const float*, int, float, float, float, float, float, const char*)>(l4d2::fn_addr__debug_overlay_add_text_colored)
 			(pos, line_offset, 0.0f, r, g, b, a, text);
 	}
 
 	// remove/destroy a given CBaseEntity
 	void cbaseentity_remove(void* cbaseentity_ptr)
 	{
-		if (cbaseentity_ptr)
+		if (cbaseentity_ptr) 
 		{
 			// UTIL_Remove
-			utils::hook::call<void(__cdecl)(void* cbaseentity)>(SERVER_BASE + 0x2071E0)(cbaseentity_ptr); // #OFFS 2501
+			utils::hook::call<void(__cdecl)(void* cbaseentity)>(l4d2::fn_addr__util_remove)
+				(cbaseentity_ptr);
 		}
 	}
 
