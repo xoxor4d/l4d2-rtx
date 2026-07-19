@@ -57,12 +57,12 @@ jobs:
       - name: Extract d3d9 runtime
         shell: pwsh
         run: |
-          if (Test-Path "assets/.trex/d3d9_runtime.zip") {
+          if (Test-Path "assets/bin/.trex/d3d9_runtime.zip") {
             Expand-Archive `
-              -Path assets/.trex/d3d9_runtime.zip `
-              -DestinationPath assets/.trex `
+              -Path assets/bin/.trex/d3d9_runtime.zip `
+              -DestinationPath assets/bin/.trex `
               -Force
-            Remove-Item assets/.trex/d3d9_runtime.zip
+            Remove-Item assets/bin/.trex/d3d9_runtime.zip
           }
 
       - name: Prepare release files
@@ -92,13 +92,6 @@ jobs:
             }
             exit 1
           }
-          
-          # Create _installer_options folder and copy assets_installer
-          $installerOptionsFolder = Join-Path $tempDir "_installer_options"
-          New-Item -ItemType Directory -Path $installerOptionsFolder -Force | Out-Null
-          
-          # Copy all files from assets_installer folder
-          Copy-Item -Path "assets_installer\*" -Destination $installerOptionsFolder -Recurse -Force
           
           Write-Host "Release files prepared in $tempDir"
 
