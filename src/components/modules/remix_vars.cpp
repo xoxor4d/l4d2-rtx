@@ -101,7 +101,7 @@ namespace components
 		{
 			std::unique_lock lock(get()->mutex_);
 
-			if (!always && o->second.current.compare(o->second.type, v, 0.01f)) {
+			if (!always && o->second.current.compare(o->second.type, v, 0.001f)) {
 				return false;
 			}
 
@@ -724,7 +724,7 @@ namespace components
 					}
 
 					if (!ip.option->second.not_a_remix_var) {
-						remix_vars::get()->set_option(ip.option, ip.option->second.current, false);
+						remix_vars::get()->set_option(ip.option, ip.option->second.current, false, true);
 					}
 
 					// detect completion of first transition - check / setup backwards transition
