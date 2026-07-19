@@ -50,6 +50,7 @@ namespace l4d2
 	extern uint32_t hk_addr__scene_ent_on_start_event;
 	extern uint32_t hk_addr__scene_ent_on_finish_event;
 	extern uint32_t fn_addr__util_remove;
+	extern uint32_t nop_addr__unreachable_nav_msg_print;
 
 	// - engine
 	extern uint32_t hk_addr__on_map_load;

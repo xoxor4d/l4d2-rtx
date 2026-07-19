@@ -63,6 +63,7 @@ namespace l4d2
 	uint32_t hk_addr__scene_ent_on_start_event = 0u;
 	uint32_t hk_addr__scene_ent_on_finish_event = 0u;
 	uint32_t fn_addr__util_remove = 0u;
+	uint32_t nop_addr__unreachable_nav_msg_print = 0u;
 
 	// - engine
 	uint32_t hk_addr__on_map_load = 0u;
@@ -153,7 +154,7 @@ namespace l4d2
 		PATTERN_OFFSET_SIMPLE(SERVER_MOD, hk_addr__scene_ent_on_start_event, "8B 7D ? 8B F1 68 ? ? ? ? 8B CF 89 45", 0, 0x1C0765);
 		PATTERN_OFFSET_SIMPLE(SERVER_MOD, hk_addr__scene_ent_on_finish_event, "8B 86 ?? ?? ?? ?? 85 C0 75 ?? B8 ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 53", 0, 0x1C7813);
 		PATTERN_OFFSET_SIMPLE(SERVER_MOD, fn_addr__util_remove, "55 8B EC 8B 45 ? 85 C0 74 ? 83 C0", 0, 0x2071E0);
-
+		PATTERN_OFFSET_SIMPLE(SERVER_MOD, nop_addr__unreachable_nav_msg_print, "FF 15 ? ? ? ? 8B 4E ? 83 C4 ? 57", 0, 0x3A6469);
 
 		// --------------------------
 		// - engine - variables

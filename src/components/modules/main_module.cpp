@@ -1587,6 +1587,13 @@ namespace components
 			HOOK_RETN_PLACE(playershadow::impact_skip_retn, l4d2::retn_addr__impact_marks_pshadow_skip);
 		}
 
+		// ---------------
+		// misc
+
+		// disable "SURVIVORBOT .. will not help incap .. UNREACHABLE via NAV" log spam
+		utils::hook::nop(l4d2::nop_addr__unreachable_nav_msg_print, 6);
+
+
 		// #
 		// commands
 
