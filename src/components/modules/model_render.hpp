@@ -24,6 +24,130 @@ namespace components
 		}
 	}
 
+	enum class RemixModifier : std::uint16_t
+	{
+		None = 0,
+		InfectedShader = 1 << 0,
+		EmissiveScalar = 1 << 1,
+		Free02 = 1 << 2,
+		Free03 = 1 << 3,
+		Free04 = 1 << 4,
+		Free05 = 1 << 5,
+		Free06 = 1 << 6,
+		Free07 = 1 << 7,
+		Free08 = 1 << 8,
+		Free09 = 1 << 9,
+		Free10 = 1 << 10,
+		Free11 = 1 << 11,
+		Free12 = 1 << 12,
+		Free13 = 1 << 13,
+		Free14 = 1 << 14,
+		Free15 = 1 << 15,
+	};
+
+	enum remix_custom_rs
+	{
+		RS_42_TEXTURE_CATEGORY = 42,
+		RS_149_REMIX_MODIFIER = 149,
+		RS_150_TEXTURE_HASH = 150,
+		RS_169_EMISSIVE_SCALE = 169,
+		RS_177_INFECTED_SHEET_UV = 177, // uint16 + uint16
+		RS_196_INFECTED_SKIN_GRAD = 196, // uint32 -> float
+		RS_197_INFECTED_GRAD_SELECT = 197, // uint16 + uint16
+		RS_210_PARAMS_PACKED = 210,
+		RS_211_INFECTED_NORMAL_ROUGH_BOOST = 211, // uint16 + uint16
+		RS_212_FREE = 212,
+		RS_213_FREE = 213,
+		RS_214_FREE = 214,
+		RS_215_FREE = 215,
+		RS_216_FREE = 216,
+		RS_217_FREE = 217,
+		RS_218_FREE = 218,
+		RS_219_FREE = 219,
+		RS_220_HASH_MODIFIER_SEED = 220,
+	};
+
+	enum remix_hash_seed
+	{
+		ZERO_EMISSION_SEED = 1337,
+	};
+
+	constexpr RemixModifier operator|(RemixModifier lhs, RemixModifier rhs) {
+		return static_cast<RemixModifier>(static_cast<std::uint32_t>(lhs) | static_cast<std::uint32_t>(rhs));
+	}
+
+	constexpr RemixModifier& operator|=(RemixModifier& lhs, RemixModifier rhs) {
+		lhs = static_cast<RemixModifier>(static_cast<std::uint32_t>(lhs) | static_cast<std::uint32_t>(rhs));
+		return lhs;
+	}
+
+	constexpr RemixModifier operator&(RemixModifier lhs, RemixModifier rhs) {
+		return static_cast<RemixModifier>(static_cast<std::uint32_t>(lhs) & static_cast<std::uint32_t>(rhs));
+	}
+
+	constexpr RemixModifier& operator&=(RemixModifier& lhs, RemixModifier rhs) {
+		lhs = static_cast<RemixModifier>(static_cast<std::uint32_t>(lhs) & static_cast<std::uint32_t>(rhs));
+		return lhs;
+	}
+
+	constexpr RemixModifier operator~(RemixModifier e) {
+		return static_cast<RemixModifier>(~static_cast<std::uint32_t>(e));
+	}
+
+	// can't use remixapi_InstanceCategoryFlags as they don't match up with InstanceCategories
+	enum class InstanceCategories : uint32_t
+	{
+		WorldUI = 1 << 0,
+		WorldMatte = 1 << 1,
+		Sky = 1 << 2,
+		Ignore = 1 << 3,
+		IgnoreLights = 1 << 4,
+		IgnoreAntiCulling = 1 << 5,
+		IgnoreMotionBlur = 1 << 6,
+		IgnoreOpacityMicromap = 1 << 7,
+		IgnoreAlphaChannel = 1 << 8,
+		Hidden = 1 << 9,
+		Particle = 1 << 10,
+		Beam = 1 << 11,
+		DecalStatic = 1 << 12,
+		DecalDynamic = 1 << 13,
+		DecalSingleOffset = 1 << 14,
+		DecalNoOffset = 1 << 15,
+		AlphaBlendToCutout = 1 << 16,
+		Terrain = 1 << 17,
+		AnimatedWater = 1 << 18,
+		ThirdPersonPlayerModel = 1 << 19,
+		ThirdPersonPlayerBody = 1 << 20,
+		IgnoreBakedLighting = 1 << 21,
+		IgnoreTransparencyLayer = 1 << 22,
+		ParticleEmitter = 1 << 23,
+		DisableBackfaceCulling = 1 << 24,
+		Count = 24,
+		None = 0u
+	};
+
+	constexpr InstanceCategories operator|(InstanceCategories lhs, InstanceCategories rhs) {
+		return static_cast<InstanceCategories>(static_cast<std::uint32_t>(lhs) | static_cast<std::uint32_t>(rhs));
+	}
+
+	constexpr InstanceCategories& operator|=(InstanceCategories& lhs, InstanceCategories rhs) {
+		lhs = static_cast<InstanceCategories>(static_cast<std::uint32_t>(lhs) | static_cast<std::uint32_t>(rhs));
+		return lhs;
+	}
+
+	constexpr InstanceCategories operator&(InstanceCategories lhs, InstanceCategories rhs) {
+		return static_cast<InstanceCategories>(static_cast<std::uint32_t>(lhs) & static_cast<std::uint32_t>(rhs));
+	}
+
+	constexpr InstanceCategories& operator&=(InstanceCategories& lhs, InstanceCategories rhs) {
+		lhs = static_cast<InstanceCategories>(static_cast<std::uint32_t>(lhs) & static_cast<std::uint32_t>(rhs));
+		return lhs;
+	}
+
+	constexpr InstanceCategories operator~(InstanceCategories e) {
+		return static_cast<InstanceCategories>(~static_cast<std::uint32_t>(e));
+	}
+
 	class prim_fvf_context
 	{
 	public:
@@ -92,15 +216,21 @@ namespace components
 		}
 
 		// save render state (e.g. D3DRS_TEXTUREFACTOR)
-		void save_rs(IDirect3DDevice9* device, const D3DRENDERSTATETYPE& state)
+		bool save_rs(IDirect3DDevice9* device, const D3DRENDERSTATETYPE& state)
 		{
 			if (saved_render_state_.contains(state)) {
-				return;
+				return false;
 			}
 
 			DWORD temp;
 			device->GetRenderState(state, &temp);
 			saved_render_state_[state] = temp;
+			return true;
+		}
+
+		bool save_rs(IDirect3DDevice9* device, const uint32_t& state)
+		{
+			return save_rs(device, (D3DRENDERSTATETYPE)state);
 		}
 
 		// save sampler state (D3DSAMPLERSTATETYPE)
@@ -151,14 +281,6 @@ namespace components
 			device->GetTransform(D3DTS_PROJECTION, &projection_transform_);
 			projection_transform_set_ = true;
 		}
-
-		//// save steamsource data
-		//void save_streamsource_data(IDirect3DVertexBuffer9* buffer, UINT offset, UINT stride)
-		//{
-		//	streamsource_ = buffer;
-		//	streamsource_offset_ = offset;
-		//	streamsource_stride_ = stride;
-		//}
 
 		// restore vertex shader
 		void restore_vs(IDirect3DDevice9* device)
@@ -309,6 +431,9 @@ namespace components
 			IDirect3DBaseTexture9* dual_render_texture = nullptr;
 			float dual_render_texture_z_offset = 0.0f;
 
+			InstanceCategories remix_instance_categories = InstanceCategories::None;
+			RemixModifier remix_modifier = RemixModifier::None;
+
 			void reset()
 			{
 				do_not_render = false;
@@ -322,6 +447,9 @@ namespace components
 				dual_render_with_specified_texture = false;
 				dual_render_texture = nullptr;
 				dual_render_texture_z_offset = 0.0f;
+
+				remix_instance_categories = InstanceCategories::None;
+				remix_modifier = RemixModifier::None;
 			}
 		};
 
@@ -399,6 +527,13 @@ namespace components
 		static void on_present();
 
 		static void init_texture_addons(bool release = false);
+
+		static void set_remix_modifier(IDirect3DDevice9* dev, RemixModifier mod, bool remove_mod = false);
+		static void set_remix_emissive_intensity(IDirect3DDevice9* dev, float intensity);
+		static void set_remix_texture_categories(IDirect3DDevice9* dev, const InstanceCategories& cat, bool remove_category = false);
+		static void set_remix_texture_hash(IDirect3DDevice9* dev, const std::uint32_t& hash);
+		static void set_remix_texture_hash_modifier(IDirect3DDevice9* dev, const std::uint32_t& seed);
+
 		static inline prim_fvf_context primctx {};
 
 		bool m_drew_model = false;

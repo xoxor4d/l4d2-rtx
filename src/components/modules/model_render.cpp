@@ -96,38 +96,62 @@ namespace components
 		}
 	}
 
-	enum REMIX_MODIFIER : std::uint32_t
-	{
-		NONE = 0,
-		INFECTED = 1 << 0,
-		EMISSIVE_TWEAK = 1 << 1,
-	};
 
-	// uses unused Renderstate 149 & 164 to tweak the emissive intensity of remix materials (legacy/opaque)
-	// ~ currently req. runtime changes
-	void set_remix_emissive_intensity(IDirect3DDevice9* dev, prim_fvf_context& ctx, float intensity)
+	// Uses unused Renderstate 149 to set per drawcall modifiers
+	// ~ req. runtime changes
+	void model_render::set_remix_modifier(IDirect3DDevice9* dev, RemixModifier mod, bool remove_mod)
 	{
-		ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
-		dev->SetRenderState((D3DRENDERSTATETYPE)149, EMISSIVE_TWEAK);
+		primctx.save_rs(dev, RS_149_REMIX_MODIFIER);
 
-		ctx.save_rs(dev, (D3DRENDERSTATETYPE)164);
-		dev->SetRenderState((D3DRENDERSTATETYPE)164, *reinterpret_cast<DWORD*>(&intensity));
+		if (remove_mod) {
+			primctx.modifiers.remix_modifier &= ~mod;
+		} else {
+			primctx.modifiers.remix_modifier |= mod;
+		}
+
+		dev->SetRenderState((D3DRENDERSTATETYPE)RS_149_REMIX_MODIFIER, static_cast<DWORD>(primctx.modifiers.remix_modifier));
 	}
 
-	// uses unused Renderstate 42 to set remix texture categories - RemixInstanceCategories
+	// uses unused Renderstate 149 (mod) & 169 to tweak the emissive intensity of remix materials (legacy/opaque)
 	// ~ currently req. runtime changes
-	void set_remix_texture_categories(IDirect3DDevice9* dev, prim_fvf_context& ctx, const std::uint32_t& cat)
+	// ~ req. runtime changes --> remixTempFloat01FromD3D
+	void model_render::set_remix_emissive_intensity(IDirect3DDevice9* dev, float intensity)
 	{
-		ctx.save_rs(dev, (D3DRENDERSTATETYPE)42);
-		dev->SetRenderState((D3DRENDERSTATETYPE)42, cat);
+		set_remix_modifier(dev, RemixModifier::EmissiveScalar);
+
+		primctx.save_rs(dev, RS_169_EMISSIVE_SCALE);
+		dev->SetRenderState((D3DRENDERSTATETYPE)RS_169_EMISSIVE_SCALE, *reinterpret_cast<DWORD*>(&intensity));
 	}
 
-	// uses unused Renderstate 150 to set custom remix hash
-	// ~ currently req. runtime changes
-	void set_remix_texture_hash(IDirect3DDevice9* dev, prim_fvf_context& ctx, const std::uint32_t& hash)
+	// Uses unused Renderstate 42 to set remix texture categories
+	// ~ req. runtime changes
+	void model_render::set_remix_texture_categories(IDirect3DDevice9* dev, const InstanceCategories& cat, bool remove_category)
 	{
-		ctx.save_rs(dev, (D3DRENDERSTATETYPE)150);
-		dev->SetRenderState((D3DRENDERSTATETYPE)150, hash);
+		primctx.save_rs(dev, RS_42_TEXTURE_CATEGORY);
+
+		if (remove_category) {
+			primctx.modifiers.remix_instance_categories &= ~cat;
+		} else {
+			primctx.modifiers.remix_instance_categories |= cat;
+		}
+
+		dev->SetRenderState((D3DRENDERSTATETYPE)RS_42_TEXTURE_CATEGORY, static_cast<DWORD>(primctx.modifiers.remix_instance_categories));
+	}
+
+	// Uses unused Renderstate 150 to set custom remix hash
+	// ~ req. runtime changes
+	void model_render::set_remix_texture_hash(IDirect3DDevice9* dev, const std::uint32_t& hash)
+	{
+		primctx.save_rs(dev, RS_150_TEXTURE_HASH);
+		dev->SetRenderState((D3DRENDERSTATETYPE)RS_150_TEXTURE_HASH, hash);
+	}
+
+	// Uses unused Renderstate 220 re-hash the original hash with a given seed
+	// ~ req. runtime changes
+	void model_render::set_remix_texture_hash_modifier(IDirect3DDevice9* dev, const std::uint32_t& seed)
+	{
+		primctx.save_rs(dev, RS_220_HASH_MODIFIER_SEED);
+		dev->SetRenderState((D3DRENDERSTATETYPE)RS_220_HASH_MODIFIER_SEED, seed);
 	}
 
 
@@ -214,7 +238,7 @@ namespace components
 
 		for (const auto& hide_mdl_with_radius : hmsettings.radii)
 		{
-			if (pInfo.pModel->radius == hide_mdl_with_radius)
+			if (utils::float_equal(pInfo.pModel->radius, hide_mdl_with_radius))
 			{
 				ignore = true;
 				break;
@@ -417,8 +441,7 @@ namespace components
 					dev->SetTexture(2, tex);
 				}
 
-				ctx.save_rs(dev, (D3DRENDERSTATETYPE)149);
-				dev->SetRenderState((D3DRENDERSTATETYPE)149, INFECTED);
+				model_render::set_remix_modifier(dev, RemixModifier::InfectedShader);
 
 				float uv_transform[4] = {}; // xy = sprite, zw = gradient z:skin - w:cloth
 				dev->GetPixelShaderConstantF(10, uv_transform, 1); // g_vGradSelect
@@ -443,18 +466,18 @@ namespace components
 
 				// pack into single RS
 				// 0/1/2..7: skin --- 00/10/20...70: cloth
-				ctx.save_rs(dev, (D3DRENDERSTATETYPE)196);
-				dev->SetRenderState((D3DRENDERSTATETYPE)196, skin_index + (cloth_index * 10));
+				ctx.save_rs(dev, RS_196_INFECTED_SKIN_GRAD);
+				dev->SetRenderState((D3DRENDERSTATETYPE)RS_196_INFECTED_SKIN_GRAD, skin_index + (cloth_index * 10));
 
 
 				// g_vGradSelect - pack two floats into one RS
-				ctx.save_rs(dev, (D3DRENDERSTATETYPE)197);
-				dev->SetRenderState((D3DRENDERSTATETYPE)197, utils::pack_2f_in_dword(grad_select[0], grad_select[1]));
+				ctx.save_rs(dev, RS_197_INFECTED_GRAD_SELECT);
+				dev->SetRenderState((D3DRENDERSTATETYPE)RS_197_INFECTED_GRAD_SELECT, utils::pack_2f_in_dword(grad_select[0], grad_select[1]));
 
 
 				// sprite index - pack two floats into one RS
-				ctx.save_rs(dev, (D3DRENDERSTATETYPE)177);
-				dev->SetRenderState((D3DRENDERSTATETYPE)177, utils::pack_2f_in_dword(uv_transform[0], uv_transform[1]));
+				ctx.save_rs(dev, RS_177_INFECTED_SHEET_UV);
+				dev->SetRenderState((D3DRENDERSTATETYPE)RS_177_INFECTED_SHEET_UV, utils::pack_2f_in_dword(uv_transform[0], uv_transform[1]));
 
 				float roughness_boost = 1.0f; // less = more reflections
 				float normal_boost = 3.0f;
@@ -472,8 +495,8 @@ namespace components
 				}
 
 				// normal boost & roughness boost - pack two floats into one RS
-				ctx.save_rs(dev, (D3DRENDERSTATETYPE)211);
-				dev->SetRenderState((D3DRENDERSTATETYPE)211, utils::pack_2f_in_dword(normal_boost, roughness_boost));
+				ctx.save_rs(dev, RS_211_INFECTED_NORMAL_ROUGH_BOOST);
+				dev->SetRenderState((D3DRENDERSTATETYPE)RS_211_INFECTED_NORMAL_ROUGH_BOOST, utils::pack_2f_in_dword(normal_boost, roughness_boost));
 				
 
 				// $skintintgradient - $colortintgradient
@@ -530,7 +553,7 @@ namespace components
 				//if (!playermodel_str.empty() && playermodel_str != "INVALID")
 				//{
 				//	if (ctx.info.material_name.starts_with(playermodel_str)) {
-						set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_THIRD_PERSON_PLAYER_BODY | REMIXAPI_INSTANCE_CATEGORY_BIT_THIRD_PERSON_PLAYER_MODEL);
+						model_render::set_remix_texture_categories(dev, InstanceCategories::ThirdPersonPlayerBody | InstanceCategories::ThirdPersonPlayerModel);
 				//	}
 				//}
 			}
@@ -765,7 +788,7 @@ namespace components
 				bool is_world_ui_text = ctx.info.buffer_state.m_Transform[0].m[3][0] != 0.0f && ctx.info.material_name == "__fontpage";
 
 				if (is_world_ui_text) {
-					set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_WORLD_UI);
+					model_render::set_remix_texture_categories(dev, InstanceCategories::WorldUI);
 				}
 				else if (is_world_ui_text)
 				{
@@ -910,7 +933,7 @@ namespace components
 			}*/
 
 			if (ctx.info.shader_name.starts_with("Spr")) {
-				set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_PARTICLE);
+				model_render::set_remix_texture_categories(dev, InstanceCategories::Particle);
 			} else if (ctx.info.shader_name == "Bik") {
 				mod_shader = false;
 			}
@@ -989,7 +1012,7 @@ namespace components
 				dev->SetTransform(D3DTS_PROJECTION, &ctx.info.buffer_state.m_Transform[2]);
 			}
 			else if (ctx.info.material_name.starts_with("particle/fire_")) {
-				set_remix_emissive_intensity(dev, ctx, 10.0f);
+				model_render::set_remix_emissive_intensity(dev, 10.0f);
 			}
 		}
 
@@ -1026,8 +1049,9 @@ namespace components
 		else if (mesh->m_VertexFormat == 0x80037)
 		{
 			//lookat_vertex_decl(dev); 
-			set_remix_emissive_intensity(dev, ctx, 0.05f); 
-			set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_PARTICLE);
+			model_render::set_remix_emissive_intensity(dev, 0.05f);
+			model_render::set_remix_texture_categories(dev, InstanceCategories::Particle);
+
 
 			ctx.save_rs(dev, D3DRS_SRCBLEND);
 			ctx.save_rs(dev, D3DRS_DESTBLEND);
@@ -1364,7 +1388,7 @@ namespace components
 				ctx.save_rs(dev, D3DRS_ZENABLE);
 				dev->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-				set_remix_texture_categories(dev, ctx, REMIXAPI_INSTANCE_CATEGORY_BIT_WORLD_MATTE | REMIXAPI_INSTANCE_CATEGORY_BIT_IGNORE_OPACITY_MICROMAP);
+				model_render::set_remix_texture_categories(dev, InstanceCategories::WorldMatte | InstanceCategories::IgnoreOpacityMicromap);
 			}
 
 			if (ctx.modifiers.dual_render_texture_z_offset != 0.0f)
@@ -1373,9 +1397,8 @@ namespace components
 				dev->SetTransform(D3DTS_WORLD, &ctx.info.buffer_state.m_Transform[0]);
 			}
 
-			if (ctx.modifiers.as_water)
-			{
-				set_remix_texture_hash(dev, ctx, utils::string_hash32(ctx.info.material_name));
+			if (ctx.modifiers.as_water) {
+				model_render::set_remix_texture_hash(dev, utils::string_hash32(ctx.info.material_name));
 			}
 
 			// re-draw surface
