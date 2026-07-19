@@ -18,9 +18,6 @@ constexpr auto COMP_MOD_PRE_RELEASE_NUM = 0;
 // enable/disable benchmark logic
 //#define BENCHMARK
 
-// Version number
-#include <version.hpp>
-
 #define NOMINMAX
 #include <windows.h>
 #include <functional>
