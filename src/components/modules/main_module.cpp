@@ -1258,9 +1258,7 @@ namespace components
 		// ----------
 
 		map_settings::on_map_unload();
-
-		// reload rtx.conf
-		remix_vars::xo_vars_parse_options_fn();
+		remix_vars::on_map_unload();
 	}
 
 	HOOK_RETN_PLACE_DEF(on_host_disconnect_retn);

@@ -9,13 +9,12 @@
 # }
 
 [FOG]
-    c1m1_hotel = { density = 0.000130, color = [220, 200, 181] }
-    c1m2_streets = { density = 0.000210, color = [120, 107, 79] }
-    c2m1_highway = { distance = 5000.000000, color = [18, 171, 85] }
-    c3m2_swamp = { density = 0.000310, color = [24, 49, 91] }
-    c4m1_milltown_a = { distance = 3000, color = [100, 100, 100] }
-    c6m1_riverbank = { density = 0.000200, color = [10, 9, 9] }
-
+    c1m1_hotel = { density = 0.000130, color = [255, 255, 255] }
+    c1m2_streets = { density = 0.00030, color = [255, 255, 255] }
+    c2m1_highway = { density = 0.00026, color = [83, 130, 141] }
+    c3m2_swamp = { density = 0.00030, color = [70, 91, 104] }
+    c4m1_milltown_a = { density = 0.00050, color = [60, 90, 92] }
+    c6m1_riverbank = { density = 0.000200, color = [18, 18, 20] }
 
 
 # ##########################################################################################################################################
@@ -324,9 +323,6 @@
 
         # first storage room upper floor
         { nocull = 3, areas = [], N_leafs = [], position = [2241.26, 6028.03, 2668.20], rotation = [0.00, 0.00, 0.00], scale = [1.00, 1.00, 1.00] },
-
-        # TEST
-        { nocull = 0, trigger = { show = { sound = "weapons/pistol/", delay = 1.0 }, hide = { sound = "weapons/pistol/" }, always = true }, position = [537.72, 5652.03, 2909.78], rotation = [1.50, -66.60, 0.00], scale = [1.00, 1.00, 1.00] },
     ]
 
     c1m2_streets = [

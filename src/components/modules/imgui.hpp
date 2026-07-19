@@ -57,6 +57,8 @@ namespace components
 		float m_debug_float_vec4[4] = {};
 		int m_debug_int_vec4[4] = {};
 
+		bool m_dev_disable_infected_shader = false;
+
 	private:
 		void tab_general();
 		void tab_map_settings();

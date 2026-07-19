@@ -76,6 +76,8 @@ user*.bat
 !assets/.trex/d3d9_runtime.zip
 !assets/.trex/d3d9_runtime_pdb.zip
 
+assets/l4d2-rtx/game_settings.toml
+
 # IDA
 # =========================
 *.id0

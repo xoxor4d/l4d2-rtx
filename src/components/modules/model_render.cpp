@@ -403,9 +403,12 @@ namespace components
 				}
 			}
 
-			if (ctx.info.shader_name == "Infected" && 
-				(ctx.info.material_name.contains("/l4d2/") || 
-				 (ctx.info.material_name.contains("/l4d1/cim_") && !ctx.info.material_name.ends_with("pilot")))) // ignore "cim_fallen_survivor_l4d1_pilot.vmt"
+			const auto im = imgui::get();
+
+			if (ctx.info.shader_name == "Infected" && !im->m_dev_disable_infected_shader && (
+					ctx.info.material_name.contains("/l4d2/") || 
+					(ctx.info.material_name.contains("/l4d1/cim_") && !ctx.info.material_name.ends_with("pilot"))
+				)) // ignore "cim_fallen_survivor_l4d1_pilot.vmt"
 			{
 				//ctx.modifiers.do_not_render = true;
 

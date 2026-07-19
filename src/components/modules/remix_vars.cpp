@@ -5,6 +5,13 @@
 #include "map_settings.hpp"
 #include "remix_api.hpp"
 
+#if DEBUG
+	#define DEBUG_PRINT(str) utils::log("RemixVars DBG", (str), utils::LOG_TYPE::LOG_TYPE_STATUS);
+#else
+	#define DEBUG_PRINT(str)
+#endif
+
+
 namespace components
 {
 	// checks if str is made up of numbers only
@@ -144,7 +151,7 @@ namespace components
 				return true;
 			}
 
-			//DEBUG_PRINT("[RTX-SET-OPTION] Skipping unknown option type %d of option %s \n", (uint32_t) o->second.type, o->first.c_str());
+			DEBUG_PRINT("[set option] Skipping unknown option type: " + std::to_string(o->second.type) + " of option: " + o->first);
 		}
 
 		return false;
@@ -168,13 +175,15 @@ namespace components
 			}
 
 			// should reset modified
-			set_option(o, o->second.current);
+			set_option(o, o->second.current, false, true);
 
-			if (!o->second.modified) {
+			if (!o->second.modified) 
+			{
+				DEBUG_PRINT("[reset] Reset option: " + o->first);
 				return true;
 			}
 
-			//DEBUG_PRINT("[RTX-RESET-OPTION] Failed to reset option %s \n", o->first.c_str());
+			DEBUG_PRINT("[reset] Failed to reset option: " + o->first);
 		}
 
 		return false;
@@ -203,7 +212,7 @@ namespace components
 				}
 			}
 
-			//DEBUG_PRINT("[RTX-RESET-ALL-OPTIONS] Reset %d options \n", count);
+			DEBUG_PRINT("[reset all] Reset " + std::to_string(count) + " options");
 		}
 	}
 
@@ -361,7 +370,8 @@ namespace components
 					{
 						const auto& v = string_to_option_value(o->second.type, pair[1]);
 						remix_vars::get()->add_interpolate_entry(identifier, o, v, duration, delay, delay_transition_back, ease);
-						//DEBUG_PRINT("[VAR-LERP] Start lerping var: %s to: %s\n", o->first.c_str(), pair[1].c_str());
+
+						DEBUG_PRINT("[lerp] Start lerping var: " + o->first + " to: " + pair[1]);
 					}
 				}
 			}
@@ -583,8 +593,22 @@ namespace components
 	// main_module::on_map_load_hk
 	void remix_vars::on_map_load()
 	{
-		remix_vars::get()->custom_options.clear();
-		remix_vars::interpolate_stack.clear();
+		{
+			std::unique_lock lock(get()->mutex_);
+			remix_vars::get()->custom_options.clear();
+			remix_vars::interpolate_stack.clear();
+		}
+	}
+
+	void remix_vars::on_map_unload()
+	{
+		{
+			std::unique_lock lock(get()->mutex_);
+			remix_vars::get()->custom_options.clear();
+			remix_vars::interpolate_stack.clear();
+		}
+
+		reset_all_modified(false);
 	}
 
 	// Interpolates all variables on the 'interpolate_stack' and removes them once they reach their goal. \n
@@ -597,11 +621,9 @@ namespace components
 				// remove completed transitions - we do that in-front of the loop so that the final values (complete) can be used for the entire frame
 				auto completed_condition = [](const interpolate_entry_s& ip)
 					{
-						//if (ip._complete)
-						//{
-							//int break_me = 1;
-							//DEBUG_PRINT("[VAR-LERP] Complete: %s\n", ip.option->first.c_str());
-						//}
+						if (ip._complete) {
+							DEBUG_PRINT("[frame] Complete transition: " + ip.option->first);
+						}
 
 						return ip._complete;
 					};
@@ -798,20 +820,20 @@ namespace components
 	ConCommand xo_vars_parse_options_cmd{};
 	void remix_vars::xo_vars_parse_options_fn()
 	{
-		std::unique_lock lock(get()->mutex_);
-		remix_vars::get()->options.clear();
-		remix_vars::get()->custom_options.clear();
-		lock.unlock();
+		{
+			std::unique_lock lock(get()->mutex_);
+			remix_vars::get()->options.clear();
+			remix_vars::get()->custom_options.clear();
+		}
+
 		remix_vars::parse_rtx_options();
 
 		// reset all settings to rtx.conf level (incl. runtime settings)
 		if (remix_api::is_initialized())
 		{
 			auto& options = get()->options;
-			for (auto& o : options)
-			{
-				o.second.current = o.second.reset_level;
-				remix_vars::set_option(&o, o.second.current);
+			for (auto& o : options) {
+				remix_vars::set_option(&o, o.second.current, false, true);
 			}
 		}
 	}
@@ -819,7 +841,6 @@ namespace components
 	ConCommand xo_vars_reset_all_options_cmd{};
 	void xo_vars_reset_all_options_fn()
 	{
-		std::unique_lock lock(remix_vars::get()->mutex_);
 		remix_vars::reset_all_modified(false);
 	}
 

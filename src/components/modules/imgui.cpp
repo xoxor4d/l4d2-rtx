@@ -884,6 +884,12 @@ namespace components
 		if (ImGui::Button("c13m4_cutthroatcreek", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c13m4_cutthroatcreek"); }
 	}
 
+	void cont_general_debug()
+	{
+		const auto im = imgui::get();
+		ImGui::Checkbox("Disable Infected Shader", &im->m_dev_disable_infected_shader);
+	}
+
 	void imgui::tab_general()
 	{
 		// quick commands
@@ -908,6 +914,12 @@ namespace components
 		{
 			static float cont_maps_height = 0.0f;
 			cont_maps_height = ImGui::Widget_ContainerWithCollapsingTitle("Maps", cont_maps_height, cont_general_maps,
+				false, ICON_FA_BUILDING, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
+		}
+
+		{
+			static float cont_maps_height = 0.0f;
+			cont_maps_height = ImGui::Widget_ContainerWithCollapsingTitle("Debug", cont_maps_height, cont_general_debug,
 				false, ICON_FA_BUILDING, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 	}
@@ -1112,16 +1124,12 @@ namespace components
 		}*/
 
 		SET_CHILD_WIDGET_WIDTH;
-		if (ImGui::DragFloat("Distance", &ms.fog_dist, 1.0f, 1000.1f)) 
-		{
-			ms.fog_dist = ms.fog_dist < 1000.1f ? 1000.1f : ms.fog_dist;
+		if (ImGui::DragFloat("Distance", &ms.fog_dist, 1.0f, 0.1f, 2500.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp)) {
 			ms.fog_density = 0.0f;
 		}
 
 		SET_CHILD_WIDGET_WIDTH;
-		if (ImGui::DragFloat("Density", &ms.fog_density, 0.00001f, 0.0f, 1.0f, "%.5f")) 
-		{
-			ms.fog_density = std::clamp(ms.fog_density, 0.0f, 1.0f);
+		if (ImGui::DragFloat("Density", &ms.fog_density, 0.00001f, 0.0f, 1.0f, "%.5f", ImGuiSliderFlags_AlwaysClamp)) {
 			ms.fog_dist = 0.0f;
 		}
 
