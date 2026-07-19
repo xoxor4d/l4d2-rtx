@@ -368,8 +368,7 @@ namespace components
 							}
 
 							// ignore 'beneath'
-							else
-							{
+							else {
 								ctx.modifiers.do_not_render = true;
 							}
 						}
@@ -618,8 +617,7 @@ namespace components
 
 		// UnlitGeneric -- stride 0x20
 		// > skybox/urban_horizon_even
-		else if (mesh->m_VertexFormat == 0x80103)
-		{
+		else if (mesh->m_VertexFormat == 0x80103) {
 			ctx.modifiers.do_not_render = false; 
 		}
 
@@ -1051,10 +1049,8 @@ namespace components
 		}
 
 		// Sprite shader
-		else if (mesh->m_VertexFormat == 0x914900005) 
-		{
+		else if (mesh->m_VertexFormat == 0x914900005)  {
 			ctx.modifiers.do_not_render = false;
-			//int x = 1; 
 		}
 
 		// shader: Refract_DX90
@@ -1064,7 +1060,6 @@ namespace components
 			//lookat_vertex_decl(dev); 
 			model_render::set_remix_emissive_intensity(dev, 0.05f);
 			model_render::set_remix_texture_categories(dev, InstanceCategories::Particle);
-
 
 			ctx.save_rs(dev, D3DRS_SRCBLEND);
 			ctx.save_rs(dev, D3DRS_DESTBLEND);
@@ -1146,10 +1141,8 @@ namespace components
 			//dev->SetTexture(0, tex_addons::black);
 		}
 
-		else 
-		{
+		else {
 			ctx.modifiers.do_not_render = false; 
-			//int break_me = 1;  
 		}
 
 #if 0
@@ -1327,9 +1320,7 @@ namespace components
 
 
 				// assign basemap2 to textureslot 0
-				if (const auto basemap2 = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[7]);
-					basemap2)
-				{
+				if (const auto basemap2 = shaderapi->vtbl->GetD3DTexture(shaderapi, nullptr, ctx.info.buffer_state.m_BoundTexture[7]); basemap2) {
 					dev->SetTexture(0, basemap2);
 				}
 
@@ -1475,11 +1466,9 @@ namespace components
 		float startfadesize = 0.0f;
 		float endfadesize = 0.0f;
 
-
 		BufferedState_t buffer_state;
 		std::string mat_name;
 
-		
 		if (const auto shaderapi = game::get_shaderapi(); shaderapi)
 		{
 			shaderapi->vtbl->GetBufferedState(shaderapi, nullptr, &buffer_state);
@@ -1723,8 +1712,6 @@ namespace components
 
 				*src_vTint = D3DCOLOR_COLORVALUE(tint.x, tint.y, tint.z, tint.w);
 			}
-
-			
 		}
 	}
 
@@ -1751,8 +1738,7 @@ namespace components
 	{
 		const auto dev = game::get_d3d_device();
 
-		auto CatmullRomSpline = [](const Vector4D& a, const Vector4D& b, const Vector4D& c, const Vector4D& d, const float t)
-			{
+		auto CatmullRomSpline = [](const Vector4D& a, const Vector4D& b, const Vector4D& c, const Vector4D& d, const float t) {
 				return b + 0.5f * t * (c - a + t * (2.0f * a - 5.0f * b + 4.0f * c - d + t * (-a + 3.0f * b - 3.0f * c + d)));
 			};
 

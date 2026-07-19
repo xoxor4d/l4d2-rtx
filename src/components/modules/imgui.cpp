@@ -35,6 +35,9 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 	ImGui::SetCursorForCenteredText((text));	\
 	ImGui::TextURL((text), (link), true);
 
+constexpr float TREENODE_SPACING = 6.0f;
+constexpr float TREENODE_SPACING_INSIDE = 6.0f;
+
 namespace components
 {
 	WNDPROC g_game_wndproc = nullptr;
@@ -1128,13 +1131,7 @@ namespace components
 		if (ImGui::Button("c13m4_cutthroatcreek", ImVec2(five_row_button_size, 0))) { interfaces::get()->m_engine->execute_client_cmd_unrestricted("map c13m4_cutthroatcreek"); }
 	}
 
-	void cont_general_debug()
-	{
-		const auto im = imgui::get();
-		ImGui::Checkbox("Disable Infected Shader", &im->m_dev_disable_infected_shader);
-	}
-
-	void imgui::tab_general()
+	void imgui::tab_util()
 	{
 		// quick commands
 		{
@@ -1158,12 +1155,6 @@ namespace components
 		{
 			static float cont_maps_height = 0.0f;
 			cont_maps_height = ImGui::Widget_ContainerWithCollapsingTitle("Maps", cont_maps_height, cont_general_maps,
-				false, ICON_FA_BUILDING, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
-		}
-
-		{
-			static float cont_maps_height = 0.0f;
-			cont_maps_height = ImGui::Widget_ContainerWithCollapsingTitle("Debug", cont_maps_height, cont_general_debug,
 				false, ICON_FA_BUILDING, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 	}
@@ -1275,39 +1266,6 @@ namespace components
 			ImGui::DragFloat("Bottom Layer Offset", &ms.water_offset_bottom, 0.05f, -100.0f, 100.0f, "%.2f");
 			TT("This can offset the original water mesh along the Z-Axis (usually the surface defining water color)");
 		}
-
-#if DEBUG
-		{
-			const auto im = imgui::get();
-
-			if (ImGui::CollapsingHeader("DEBUG Build Section", ImGuiTreeNodeFlags_SpanFullWidth))
-			{
-				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Disable R_CullNode", &im->m_disable_cullnode);
-				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Enable Area Forcing", &im->m_enable_area_forcing);
-				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Disable Unbaking", &im->m_debug_disable_unbake);
-				SET_CHILD_WIDGET_WIDTH; ImGui::Checkbox("Unbake All Single Bone Meshes", &im->m_debug_unbake_all_single_bones);
-
-				SET_CHILD_WIDGET_WIDTH; ImGui::DragFloat4("Debug Float Vec", im->m_debug_float_vec4, 0.05f);
-				SET_CHILD_WIDGET_WIDTH; ImGui::DragInt4("Debug Int Vec", im->m_debug_int_vec4, 0.05f);
-
-				const auto coloredit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Float;
-
-				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ContainerBg", &im->ImGuiCol_ContainerBackground.x, coloredit_flags);
-				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ContainerBorder", &im->ImGuiCol_ContainerBorder.x, coloredit_flags);
-
-				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ButtonGreen", &im->ImGuiCol_ButtonGreen.x, coloredit_flags);
-				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ButtonYellow", &im->ImGuiCol_ButtonYellow.x, coloredit_flags);
-				SET_CHILD_WIDGET_WIDTH; ImGui::ColorEdit4("ButtonRed", &im->ImGuiCol_ButtonRed.x, coloredit_flags);
-
-				const auto glob = interfaces::get()->m_globals;
-				ImGui::Text("Realtime: %.4f", glob->realtime);
-				ImGui::Text("Curtime Abs: %.4f", glob->curtime);
-				ImGui::Text("MaxClients: %.4f", glob->maxClients);
-				ImGui::Text("Frametime Abs: %.4f", glob->absoluteframetime);
-				ImGui::Text("Frametime: %.4f", glob->frametime);
-			}
-		}
-#endif
 	}
 
 	void cont_mapsettings_fog()
@@ -4371,6 +4329,77 @@ namespace components
 	// #
 	// #
 
+	void cont_debug()
+	{
+		const auto im = imgui::get();
+
+		ImGui::Spacing(0, TREENODE_SPACING);
+		if (ImGui::CollapsingHeader("Disable Functionalities ...", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Spacing(0, TREENODE_SPACING_INSIDE);
+			ImGui::Indent(6);
+
+			ImGui::Checkbox("Disable Infected Shader", &im->m_dev_disable_infected_shader);
+			ImGui::Checkbox("Disable R_CullNode", &im->m_disable_cullnode);
+			//ImGui::Checkbox("Enable Area Forcing", &im->m_enable_area_forcing);
+			ImGui::Checkbox("Disable Unbaking", &im->m_debug_disable_unbake);
+			ImGui::Checkbox("Unbake All Single Bone Meshes", &im->m_debug_unbake_all_single_bones);
+
+			ImGui::Unindent(6);
+		}
+
+		ImGui::Spacing(0, TREENODE_SPACING);
+		if (ImGui::CollapsingHeader("Temp Values and Settings ..."))
+		{
+			ImGui::Spacing(0, TREENODE_SPACING_INSIDE);
+			ImGui::Indent(6);
+
+			ImGui::DragFloat4("Debug Float Vec", im->m_debug_float_vec4, 0.05f);
+			ImGui::DragInt4("Debug Int Vec", im->m_debug_int_vec4, 0.05f);
+			ImGui::Checkbox("Debug Bool 01", &im->m_debug_bool01);
+			ImGui::Checkbox("Debug Bool 02", &im->m_debug_bool01);
+			ImGui::Checkbox("Debug Bool 03", &im->m_debug_bool01);
+			ImGui::Checkbox("Debug Bool 04", &im->m_debug_bool01);
+
+			ImGui::Spacing(0, TREENODE_SPACING_INSIDE);
+
+			const auto coloredit_flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_PickerHueBar | ImGuiColorEditFlags_Float;
+			ImGui::ColorEdit4("ContainerBg", &im->ImGuiCol_ContainerBackground.x, coloredit_flags);
+			ImGui::ColorEdit4("ContainerBorder", &im->ImGuiCol_ContainerBorder.x, coloredit_flags);
+			ImGui::ColorEdit4("ButtonGreen", &im->ImGuiCol_ButtonGreen.x, coloredit_flags);
+			ImGui::ColorEdit4("ButtonYellow", &im->ImGuiCol_ButtonYellow.x, coloredit_flags);
+			ImGui::ColorEdit4("ButtonRed", &im->ImGuiCol_ButtonRed.x, coloredit_flags);
+
+			ImGui::Unindent(6);
+		}
+
+		ImGui::Spacing(0, TREENODE_SPACING);
+		if (ImGui::CollapsingHeader("Misc Info ..."))
+		{
+			ImGui::Spacing(0, TREENODE_SPACING_INSIDE);
+			ImGui::Indent(6);
+
+			const auto glob = interfaces::get()->m_globals;
+			ImGui::Text("Realtime: %.4f", glob->realtime);
+			ImGui::Text("Curtime Abs: %.4f", glob->curtime);
+			ImGui::Text("MaxClients: %.4f", glob->maxClients);
+			ImGui::Text("Frametime Abs: %.4f", glob->absoluteframetime);
+			ImGui::Text("Frametime: %.4f", glob->frametime);
+
+			ImGui::Unindent(6);
+		}
+	}
+
+	void imgui::tab_dev()
+	{
+		static const auto& im = imgui::get();
+		{
+			static float cont_debug_height = 0.0f;
+			cont_debug_height = ImGui::Widget_ContainerWithCollapsingTitle("DEBUG Section", cont_debug_height, cont_debug, 
+				true, ICON_FA_TERMINAL, &im->ImGuiCol_ContainerBackground, &im->ImGuiCol_ContainerBorder);
+		}
+	}
+
 	void imgui::tab_about()
 	{
 		if (tex_addons::berry)
@@ -4516,9 +4545,10 @@ namespace components
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar(1);
 
-			ADD_TAB("Dev", tab_general);
+			ADD_TAB("Util", tab_util);
 			ADD_TAB("Map Settings", tab_map_settings);
 			ADD_TAB("Game Settings", tab_game_settings);
+			ADD_TAB("Dev", tab_dev);
 			ADD_TAB("About", tab_about);
 			ImGui::EndTabBar();
 		}

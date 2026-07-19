@@ -51,18 +51,27 @@ namespace components
 		bool m_debugvis_radius = true;
 		bool m_debugvis_shaping = true;
 		bool m_debugvis_attach_bounds = true;
+		bool m_pad1 = false;
+		bool m_pad2 = false;
+		bool m_pad3 = false;
+
 		float m_debugvis_cone_height = 60.0f;
 		int m_debugvis_cone_steps = 3u;
 
 		float m_debug_float_vec4[4] = {};
 		int m_debug_int_vec4[4] = {};
+		bool m_debug_bool01 = false;
+		bool m_debug_bool02 = false;
+		bool m_debug_bool03 = false;
+		bool m_debug_bool04 = false;
 
 		bool m_dev_disable_infected_shader = false;
 
 	private:
-		void tab_general();
+		void tab_util();
 		void tab_map_settings();
 		void tab_game_settings();
+		void tab_dev();
 		void tab_about();
 		bool m_im_window_focused = false;
 		bool m_im_window_hovered = false;
