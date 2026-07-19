@@ -342,49 +342,49 @@ namespace components
 			{
 				"flashlight_radius",
 				"Radius of the remixApi flashlights.",
-				0.5f
+				0.16f
 			};
 
 			variable flashlight_angle =
 			{
 				"flashlight_angle",
 				"Angle of the remixApi flashlights. (0-180)",
-				25.0f
+				26.0f
 			};
 
 			variable flashlight_softness =
 			{
 				"flashlight_softness",
 				"Softness of the remixApi flashlights. (0-1)",
-				0.34f
+				0.3f
 			};
 
 			variable flashlight_expo =
 			{
 				"flashlight_expo",
 				"Exponent of the remixApi flashlights. (0-1)",
-				0.7f
+				0.8f
 			};
 
 			variable flashlight_inner_intensity =
 			{
 				"flashlight_inner_intensity",
 				"Intensity of the inner remixApi flashlight (player).",
-				50000.0f
+				5000.0f
 			};
 
 			variable flashlight_inner_radius =
 			{
 				"flashlight_inner_radius",
 				"Radius of the inner remixApi flashlight (player).",
-				0.6f
+				0.44f
 			};
 
 			variable flashlight_inner_angle =
 			{
 				"flashlight_inner_angle",
 				"Angle of the inner remixApi flashlight. (0-180) (player)",
-				14.0f
+				17.0f
 			};
 
 			variable flashlight_inner_softness =
