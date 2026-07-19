@@ -28,6 +28,10 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 #define SET_CHILD_WIDGET_WIDTH			ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild(80.0f));
 #define SET_CHILD_WIDGET_WIDTH_MAN(V)	ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild((V)));
 
+#define CENTER_URL(text, link)					\
+	ImGui::SetCursorForCenteredText((text));	\
+	ImGui::TextURL((text), (link), true);
+
 namespace components
 {
 	WNDPROC g_game_wndproc = nullptr;
@@ -3989,7 +3993,7 @@ namespace components
 				false, ICON_FA_PAINT_BRUSH, &ImGuiCol_ContainerBackground, &ImGuiCol_ContainerBorder);
 		}
 
-		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "\nLeaf: " + std::to_string(g_current_leaf);
+		m_devgui_custom_footer_content = "Area: " + std::to_string(g_current_area) + "  Leaf: " + std::to_string(g_current_leaf);
 	}
 
 	// #
@@ -4175,6 +4179,90 @@ namespace components
 	// #
 	// #
 
+	void imgui::tab_about()
+	{
+		if (tex_addons::berry)
+		{
+			const float cursor_y = ImGui::GetCursorPosY();
+			ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() * 0.85f, 24));
+			ImGui::Image((ImTextureID)tex_addons::berry, ImVec2(48.0f, 48.0f), ImVec2(0.03f, 0.03f), ImVec2(0.96f, 0.96f));
+			ImGui::SetCursorPosY(cursor_y);
+		}
+
+		ImGui::Spacing(0.0f, 20.0f);
+
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+		ImGui::CenterText("L4D2 - RTX REMIX COMPATIBILITY MOD");
+		ImGui::PopFont();
+		ImGui::CenterText("                      by #xoxor4d");
+
+		ImGui::Spacing(0.0f, 24.0f);
+		ImGui::CenterText("current version");
+
+		const char* version_str = nullptr;
+
+		if constexpr (COMP_MOD_PRE_RELEASE_NUM != 0)
+		{
+			version_str = utils::va("%d.%d.%d - Pre-Release %d :: %s",
+				COMP_MOD_VERSION_MAJOR, COMP_MOD_VERSION_MINOR, COMP_MOD_VERSION_PATCH, COMP_MOD_PRE_RELEASE_NUM, __DATE__);
+		}
+		else
+		{
+			version_str =utils::va("%d.%d.%d :: %s",
+				COMP_MOD_VERSION_MAJOR, COMP_MOD_VERSION_MINOR, COMP_MOD_VERSION_PATCH, __DATE__);
+		}
+
+
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+		ImGui::CenterText(version_str);
+
+#if DEBUG
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.64f, 0.23f, 0.18f, 1.0f));
+		ImGui::CenterText("DEBUG BUILD");
+		ImGui::PopStyleColor();
+#endif
+		ImGui::PopFont();
+
+		ImGui::Spacing(0.0f, 16.0f);
+		CENTER_URL("GitHub Repository", "https://github.com/xoxor4d/l4d2-rtx");
+		CENTER_URL("GitHub Project Page", "https://xoxor4d.github.io/projects/l4d2-rtx");
+		CENTER_URL("Latest build", "https://github.com/xoxor4d/l4d2-rtx/releases");
+
+		ImGui::Spacing(0.0f, 16.0f);
+		ImGui::Separator();
+		ImGui::Spacing(0.0f, 16.0f);
+
+		const char* credits_title_str = "Credits / Thanks to:";
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+		ImGui::CenterText(credits_title_str);
+		ImGui::PopFont();
+
+		ImGui::Spacing(0.0f, 8.0f);
+
+		CENTER_URL("NVIDIA - RTX Remix", "https://github.com/NVIDIAGameWorks/rtx-remix");
+		CENTER_URL("Dear Imgui", "https://github.com/ocornut/imgui");
+		CENTER_URL("Imgui Blur Effect", "https://github.com/3r4y/imgui-blur-effect");
+		CENTER_URL("Minhook", "https://github.com/TsudaKageyu/minhook");
+		CENTER_URL("Toml11", "https://github.com/ToruNiina/toml11");
+		CENTER_URL("dxwrapper", "https://github.com/elishacloud/dxwrapper");
+		CENTER_URL("Miniz", "https://github.com/richgel999/miniz");
+		CENTER_URL("l4d2-internal-base", "https://github.com/xastrix-csgo-modules/eblenix_csgo_public/tree/54a04b5f3873e35a68d7f99d2656c54251fb098d/Left%204%20Dead%202/l4d2");
+
+		CENTER_URL("Entity", "https://www.youtube.com/@paprykszadolowski8796");
+		CENTER_URL("KapibosRU", "https://www.youtube.com/channel/UCqZ2NI_fQKRN-Onypt9aIGQ");
+
+		ImGui::Spacing(0.0f, 24.0f);
+		ImGui::CenterText("And of course, all my fellow Ko-Fi and Patreon supporters");
+		ImGui::CenterText("and all the people that helped along the way.");
+		ImGui::Spacing(0.0f, 4.0f);
+		ImGui::PushFont(common::imgui::font::BOLD_LARGE);
+		ImGui::CenterText("Thank you!");
+		ImGui::PopFont();
+	}
+
+	// #
+	// #
+
 	void imgui::devgui()
 	{
 		ImGui::SetNextWindowSize(ImVec2(900, 800), ImGuiCond_FirstUseEver);
@@ -4204,10 +4292,10 @@ namespace components
 
 #define ADD_TAB(NAME, FUNC) \
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, 0)));			\
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 8));			\
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x + 12.0f, 8));	\
 	if (ImGui::BeginTabItem(NAME)) {																		\
 		ImGui::PopStyleVar(1);																				\
-		if (ImGui::BeginChild("##child_" NAME, ImVec2(0, ImGui::GetContentRegionAvail().y - 38), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_AlwaysVerticalScrollbar )) {	\
+		if (ImGui::BeginChild("##child_" NAME, ImVec2(0, ImGui::GetContentRegionAvail().y - 20), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_AlwaysVerticalScrollbar )) {	\
 			FUNC(); ImGui::EndChild();																		\
 		} else {																							\
 			ImGui::EndChild();																				\
@@ -4229,23 +4317,17 @@ namespace components
 
 		ImGui::SetCursorScreenPos(pre_tabbar_spos + ImVec2(12,8));
 
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, 8));
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x + 12.0f, 8));
 		ImGui::PushStyleColor(ImGuiCol_TabSelected, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 		if (ImGui::BeginTabBar("devgui_tabs"))
 		{
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar(1);
 
-			bool show_dev = utils::flags::has_flag("dev");
-//#ifdef DEBUG
-			show_dev = true; // always show for now
-//#endif
-			if (show_dev) {
-				ADD_TAB("Dev", tab_general);
-			}
-
+			ADD_TAB("Dev", tab_general);
 			ADD_TAB("Map Settings", tab_map_settings);
 			ADD_TAB("Game Settings", tab_game_settings);
+			ADD_TAB("About", tab_about);
 			ImGui::EndTabBar();
 		}
 		else {
@@ -4255,26 +4337,22 @@ namespace components
 #undef ADD_TAB
 
 		{
-
 			ImGui::Separator();
-			//ImGui::Spacing();
-
 			const char* movement_hint_str = "Press and Hold the Right Mouse Button outside ImGui to allow for Game Input ";
 			const auto avail_width = ImGui::GetContentRegionAvail().x;
 			float cur_pos = avail_width - 54.0f;
 
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 			{
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ImGui::GetStyle().ItemSpacing.y * 0.5f);
 				const auto spos = ImGui::GetCursorScreenPos();
 				ImGui::TextUnformatted(m_devgui_custom_footer_content.c_str());
 				ImGui::SetCursorScreenPos(spos);
 				m_devgui_custom_footer_content.clear();
 			}
-			
 
-			ImGui::SetCursorPos(ImVec2(cur_pos, ImGui::GetCursorPosY() + 2.0f));
-			if (ImGui::Button("Demo", ImVec2(50, 0))) {
+			ImGui::SetCursorPos(ImVec2(cur_pos, ImGui::GetCursorPosY()));
+			if (ImGui::TextLink("[Demo]")) {
 				im_demo_menu = !im_demo_menu;
 			}
 

@@ -63,6 +63,11 @@ namespace common::imgui
 
 namespace ImGui
 {
+	void CenterText(const char* text, bool disabled = false);
+	void AddUnterline(ImColor col);
+	void TextURL(const char* name, const char* url, bool use_are_you_sure_popup = false);
+	void SetCursorForCenteredText(const char* text);
+
 	void Spacing(const float& x, const float& y);
 	void PushFont(common::imgui::font::FONTS font);
 	void SeparatorTextLarge(const char* text, bool pre_spacing = false);
@@ -92,7 +97,6 @@ namespace ImGui
 	// #
 
 	float CalcWidgetWidthForChild(float label_width);
-	void CenterText(const char* text, bool disabled = false);
 	bool TextUnformatted_ClippedByColumnTooltip(const char* str);
 
 	void Draw3DCircle(ImDrawList* draw_list, const Vector& world_pos, const Vector& normal, float radius, bool filled, const ImColor& color, const float& thickness, int num_points = 200);

@@ -20,10 +20,11 @@ namespace components
 
 	namespace tex_addons
 	{
-		LPDIRECT3DTEXTURE9 glass_shards;
-		LPDIRECT3DTEXTURE9 rain_drop;
-		LPDIRECT3DTEXTURE9 black;
-		LPDIRECT3DTEXTURE9 white;
+		LPDIRECT3DTEXTURE9 glass_shards = nullptr;
+		LPDIRECT3DTEXTURE9 rain_drop = nullptr;
+		LPDIRECT3DTEXTURE9 black = nullptr;
+		LPDIRECT3DTEXTURE9 white = nullptr;
+		LPDIRECT3DTEXTURE9 berry = nullptr;
 	}
 
 	std::vector<Vector> g_sunoverlay_color = {};
@@ -36,14 +37,23 @@ namespace components
 			if (tex_addons::rain_drop) tex_addons::rain_drop->Release();
 			if (tex_addons::black) tex_addons::black->Release();
 			if (tex_addons::white) tex_addons::white->Release();
+			if (tex_addons::berry) tex_addons::berry->Release();
 			return;
 		}
 
+		auto load_texture = [](IDirect3DDevice9* dev, const char* path, LPDIRECT3DTEXTURE9* tex)
+			{
+				HRESULT hr;
+				hr = D3DXCreateTextureFromFileA(dev, path, tex);
+				if (FAILED(hr)) utils::log("ModelRender", std::format("Failed to load {}", path), utils::LOG_TYPE::LOG_TYPE_ERROR, true);
+			};
+
 		const auto dev = game::get_d3d_device();
-		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\glass_shards.png", &tex_addons::glass_shards);
-		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\raindrop.png", &tex_addons::rain_drop);
-		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\black.dds", &tex_addons::black);
-		D3DXCreateTextureFromFileA(dev, COMPMOD_ASSET_DIR "textures\\white.dds", &tex_addons::white);
+		load_texture(dev, COMPMOD_ASSET_DIR "textures\\glass_shards.png", &tex_addons::glass_shards);
+		load_texture(dev, COMPMOD_ASSET_DIR "textures\\raindrop.png", &tex_addons::rain_drop);
+		load_texture(dev, COMPMOD_ASSET_DIR "textures\\black.dds", &tex_addons::black);
+		load_texture(dev, COMPMOD_ASSET_DIR "textures\\white.dds", &tex_addons::white);
+		load_texture(dev, COMPMOD_ASSET_DIR "textures\\berry.png", &tex_addons::berry);
 	}
 
 	// check for specific material var and return it in 'out_var'

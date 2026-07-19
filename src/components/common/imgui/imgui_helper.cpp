@@ -193,6 +193,108 @@ namespace common::imgui
 
 namespace ImGui
 {
+	void CenterText(const char* text, bool disabled)
+	{
+		const auto text_width = CalcTextSize(text).x;
+		SetCursorPosX(GetContentRegionAvail().x * 0.5f - text_width * 0.5f);
+		if (!disabled) {
+			TextUnformatted(text);
+		}
+		else {
+			TextDisabled("%s", text);
+		}
+	}
+
+	void AddUnterline(ImColor col)
+	{
+		ImVec2 min = GetItemRectMin();
+		ImVec2 max = GetItemRectMax();
+		min.y = max.y;
+		GetWindowDrawList()->AddLine(min, max, col, 1.0f);
+	}
+
+	void TextURL(const char* name, const char* url, bool use_are_you_sure_popup)
+	{
+		TextUnformatted(name);
+		if (IsItemHovered())
+		{
+			if (IsMouseClicked(0))
+			{
+				if (use_are_you_sure_popup)
+				{
+					if (!IsPopupOpen("Are You Sure?"))
+					{
+						PushID(name);
+						OpenPopup("Are You Sure?");
+						PopID();
+					}
+				}
+				else
+				{
+					ImGuiIO& io = GetIO();
+					io.AddMouseButtonEvent(0, false);
+					io.AddMousePosEvent(0, 0);
+					ShellExecuteA(nullptr, nullptr, url, nullptr, nullptr, SW_SHOW);
+				}
+			}
+
+			AddUnterline(GetStyle().Colors[ImGuiCol_TabHovered]);
+			SetTooltip("Clicking this will open the following link:\n[%s]", url);
+		}
+		else {
+			AddUnterline(GetStyle().Colors[ImGuiCol_Button]);
+		}
+
+		PushID(name);
+		if (BeginPopupModal("Are You Sure?", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+		{
+			common::imgui::draw_background_blur();
+			Spacing(0.0f, 0.0f);
+
+			const auto half_width = GetContentRegionMax().x * 0.5f;
+			auto line1_str = "This will open the following link:";
+
+			Spacing();
+			SetCursorPosX(5.0f + half_width - (CalcTextSize(line1_str).x * 0.5f));
+			TextUnformatted(line1_str);
+
+			PushFont(common::imgui::font::BOLD);
+			SetCursorPosX(5.0f + half_width - (CalcTextSize(url).x * 0.5f));
+			TextUnformatted(url);
+
+			InvisibleButton("##spacer", ImVec2(CalcTextSize(url).x, 1));
+			PopFont();
+
+			Spacing(0, 8);
+			Spacing(0, 0); SameLine();
+
+			ImVec2 button_size(half_width - 6.0f - GetStyle().WindowPadding.x, 0.0f);
+			if (Button("Open", button_size))
+			{
+				ImGuiIO& io = GetIO();
+				io.AddMouseButtonEvent(0, false);
+				io.AddMousePosEvent(0, 0);
+				CloseCurrentPopup();
+				ShellExecuteA(nullptr, nullptr, url, nullptr, nullptr, SW_SHOW);
+			}
+
+			SameLine(0, 6.0f);
+			if (Button("Cancel", button_size)) {
+				CloseCurrentPopup();
+			}
+
+			EndPopup();
+		}
+		PopID();
+	}
+
+	void SetCursorForCenteredText(const char* text)
+	{
+		//SetCursorPosX((GetWindowSize().x - CalcTextSize(text).x) * 0.5f);
+		const auto text_width = CalcTextSize(text).x;
+		SetCursorPosX(GetContentRegionAvail().x * 0.5f - text_width * 0.5f);
+	}
+
 	void Spacing(const float& x, const float& y) {
 		Dummy(ImVec2(x, y));
 	}
@@ -462,17 +564,6 @@ namespace ImGui
 	float CalcWidgetWidthForChild(const float label_width)
 	{
 		return GetContentRegionAvail().x - 4.0f - (label_width + GetStyle().ItemInnerSpacing.x + GetStyle().FramePadding.y);
-	}
-
-	void CenterText(const char* text, bool disabled)
-	{
-		SetCursorPosX(GetContentRegionAvail().x * 0.5f - CalcTextSize(text).x * 0.5f);
-		if (!disabled) {
-			TextUnformatted(text);
-		}
-		else {
-			TextDisabled("%s", text);
-		}
 	}
 
 	bool TextUnformatted_ClippedByColumnTooltip(const char* str)

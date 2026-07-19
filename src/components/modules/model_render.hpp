@@ -511,6 +511,7 @@ namespace components
 		extern LPDIRECT3DTEXTURE9 rain_drop;
 		extern LPDIRECT3DTEXTURE9 black;
 		extern LPDIRECT3DTEXTURE9 white;
+		extern LPDIRECT3DTEXTURE9 berry;
 	}
 
 	class model_render final : public loader::component_module
