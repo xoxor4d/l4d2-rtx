@@ -657,6 +657,7 @@ namespace components
 					ext.pNext = nullptr;
 					ext.position = lpos.ToRemixFloat3D(); 
 					ext.radius = gs->flashlight_radius.get_as<float>();
+					ext.volumetricRadianceScale = gs->flashlight_volumetric_scale.get_as<float>();
 					ext.shaping_hasvalue = TRUE;
 					ext.shaping_value = {};
 					ext.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();
@@ -682,6 +683,7 @@ namespace components
 					ext_inner.pNext = nullptr;
 					ext_inner.position = lpos.ToRemixFloat3D();
 					ext_inner.radius = gs->flashlight_inner_radius.get_as<float>();
+					ext_inner.volumetricRadianceScale = gs->flashlight_inner_volumetric_scale.get_as<float>();
 					ext_inner.shaping_hasvalue = TRUE;
 					ext_inner.shaping_value = {};
 					ext_inner.shaping_value.direction = fl.def.fwd.ToRemixFloat3D();

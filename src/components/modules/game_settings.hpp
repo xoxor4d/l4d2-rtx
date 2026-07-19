@@ -338,6 +338,13 @@ namespace components
 				20000.0f
 			};
 
+			variable flashlight_volumetric_scale =
+			{
+				"flashlight_volumetric_scale",
+				"Volumetric influence of flashlights",
+				0.0f
+			};
+
 			variable flashlight_radius =
 			{
 				"flashlight_radius",
@@ -371,6 +378,13 @@ namespace components
 				"flashlight_inner_intensity",
 				"Intensity of the inner remixApi flashlight (player).",
 				5000.0f
+			};
+
+			variable flashlight_inner_volumetric_scale =
+			{
+				"flashlight_inner_volumetric_scale",
+				"Volumetric influence of inner flashlight",
+				0.0f
 			};
 
 			variable flashlight_inner_radius =

@@ -185,12 +185,14 @@ namespace components
 				ASSIGN(flashlight_offset_player);
 				ASSIGN(flashlight_offset_bot);
 				ASSIGN(flashlight_intensity);
+				ASSIGN(flashlight_volumetric_scale);
 				ASSIGN(flashlight_radius);
 				ASSIGN(flashlight_angle);
 				ASSIGN(flashlight_softness);
 				ASSIGN(flashlight_expo);
 
 				ASSIGN(flashlight_inner_intensity);
+				ASSIGN(flashlight_inner_volumetric_scale);
 				ASSIGN(flashlight_inner_radius);
 				ASSIGN(flashlight_inner_angle);
 				ASSIGN(flashlight_inner_softness);

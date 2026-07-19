@@ -4012,6 +4012,10 @@ namespace components
 		TT(gs->flashlight_intensity.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Volumetric Influence", gs->flashlight_volumetric_scale.get_as<float*>(), 0.1f);
+		TT(gs->flashlight_volumetric_scale.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Radius", gs->flashlight_radius.get_as<float*>(), 0.005f);
 		TT(gs->flashlight_radius.get_tooltip_string().c_str());
 
@@ -4035,6 +4039,10 @@ namespace components
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Intensity", gs->flashlight_inner_intensity.get_as<float*>(), 0.1f);
 		TT(gs->flashlight_inner_intensity.get_tooltip_string().c_str());
+
+		SET_CHILD_WIDGET_WIDTH_MAN(80);
+		ImGui::DragFloat("Volumetric Influence", gs->flashlight_inner_volumetric_scale.get_as<float*>(), 0.1f);
+		TT(gs->flashlight_inner_volumetric_scale.get_tooltip_string().c_str());
 
 		SET_CHILD_WIDGET_WIDTH_MAN(80);
 		ImGui::DragFloat("Radius", gs->flashlight_inner_radius.get_as<float*>(), 0.005f);
