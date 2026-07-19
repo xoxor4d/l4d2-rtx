@@ -7,7 +7,7 @@
 #include "main_module.hpp"
 #include "remix_api.hpp"
 #include "remix_lights.hpp"
-#include "components/common/toml.hpp"
+#include "components/common/toml_ext.hpp"
 
 namespace components
 {

@@ -5,7 +5,7 @@
 #include "choreo_events.hpp"
 #include "game_settings.hpp"
 #include "components/common/imgui/imgui_helper.hpp"
-#include "components/common/toml.hpp"
+#include "components/common/toml_ext.hpp"
 #include "components/common/imgui/font_awesome_solid_900.hpp"
 #include "components/common/imgui/font_defines.hpp"
 #include "components/common/imgui/font_opensans.hpp"
@@ -1146,7 +1146,7 @@ namespace components
 		if (ImGui::Button("Copy All Markers to Clipboard   " ICON_FA_SAVE, ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 		{
 			ImGui::LogToClipboard();
-			ImGui::LogText("%s", common::toml::build_map_marker_string_for_current_map(markers).c_str());
+			ImGui::LogText("%s", common::toml_ext::build_map_marker_string_for_current_map(markers).c_str());
 			ImGui::LogFinish();
 		} ImGui::PopFont();
 
@@ -1648,7 +1648,7 @@ namespace components
 		if (ImGui::Button("Copy Settings to Clipboard   " ICON_FA_SAVE "##Cull", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0)))
 		{
 			ImGui::LogToClipboard();
-			ImGui::LogText("%s", common::toml::build_culling_overrides_string_for_current_map(areas).c_str());
+			ImGui::LogText("%s", common::toml_ext::build_culling_overrides_string_for_current_map(areas).c_str());
 			ImGui::LogFinish();
 		} ImGui::PopFont();
 
@@ -2867,7 +2867,7 @@ namespace components
 				}
 
 				ImGui::LogToClipboard();
-				ImGui::LogText("%s", common::toml::build_light_string_for_single_light(temp_def).c_str());
+				ImGui::LogText("%s", common::toml_ext::build_light_string_for_single_light(temp_def).c_str());
 				ImGui::LogFinish();
 			}
 		} ImGui::PopFont();
@@ -3714,7 +3714,7 @@ namespace components
 						}
 
 						ImGui::LogToClipboard();
-						ImGui::LogText("%s", common::toml::build_light_string_for_single_light(temp_def).c_str());
+						ImGui::LogText("%s", common::toml_ext::build_light_string_for_single_light(temp_def).c_str());
 						ImGui::LogFinish();
 					}
 				} ImGui::PopFont();
@@ -4066,7 +4066,7 @@ namespace components
 	void cont_gamesettings_quick_cmd()
 	{
 		if (ImGui::Button("Save Current Settings", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0))) {
-			game_settings::write_toml();
+			game_settings::write_game_settings_toml();
 		}
 
 		ImGui::SameLine();

@@ -1,15 +1,9 @@
 #include "std_include.hpp"
-
 #include "components/modules/map_settings.hpp"
+#include "toml.hpp"
 
-namespace common::toml
+namespace common::toml_ext
 {
-	// format 2 decimals
-	inline std::string format_float(float value)
-	{
-		return std::format("{:.2f}", value);
-	}
-
 	/// Builds a toml string for the provided light definition
 	/// @param def	ref to the light def
 	/// @return		the final string in toml format

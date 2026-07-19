@@ -83,10 +83,9 @@ constexpr auto COMP_MOD_PRE_RELEASE_NUM = 0;
 #include "utils/memory.hpp"
 
 #include "components/loader.hpp"
-#include "components/common/toml.hpp"
-
 #include "game/functions.hpp"
 #include "game/l4d2.hpp"
+#include "components/common/toml_ext.hpp"
 
 #include "sdk/netvar/netvar.hpp"
 #include "sdk/client/c_base_client.hpp"
