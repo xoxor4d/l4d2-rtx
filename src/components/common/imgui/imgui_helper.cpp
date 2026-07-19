@@ -1092,14 +1092,19 @@ namespace ImGui
 
 			Indent(child_indent);
 			PushClipRect(min, max, true);
-			callback();
+			if (callback)
+			{
+				Indent(4);
+				callback();
+				Unindent(4);
+			}
 			PopClipRect();
 			Unindent(child_indent);
 
 			EndChild();
 			PopStyleVar(2);
 		}
-		SetCursorScreenPos(GetCursorScreenPos() + ImVec2(0, expanded ? 36.0f : 8.0f));
+		SetCursorScreenPos(GetCursorScreenPos() + ImVec2(0, 8.0f));
 		return GetItemRectSize().y + 6.0f/*- 28.0f*/;
 	}
 

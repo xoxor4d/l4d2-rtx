@@ -28,6 +28,9 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 #define SET_CHILD_WIDGET_WIDTH			ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild(80.0f));
 #define SET_CHILD_WIDGET_WIDTH_MAN(V)	ImGui::SetNextItemWidth(ImGui::CalcWidgetWidthForChild((V)));
 
+#define CHILD_WIDGET_WIDTH 180.0f
+#define CWIDGETWIDTH SET_CHILD_WIDGET_WIDTH_MAN(CHILD_WIDGET_WIDTH);
+
 #define CENTER_URL(text, link)					\
 	ImGui::SetCursorForCenteredText((text));	\
 	ImGui::TextURL((text), (link), true);
@@ -276,6 +279,243 @@ namespace components
 		}
 
 		return return_val;
+	}
+
+	// ------
+
+	void gamesettings_var_reset_logic(game_settings::variable& var)
+	{
+		std::string popup_id = "Reset "s + var.m_name + " ?";
+
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+		{
+			if (!ImGui::IsPopupOpen(popup_id.c_str())) {
+				ImGui::OpenPopup(popup_id.c_str());
+			}
+		}
+
+		ImGui::SetNextWindowSize(ImVec2(400.0f, 160.0f));
+		if (ImGui::BeginPopupModal(popup_id.c_str(), nullptr, ImGuiWindowFlags_NoSavedSettings))
+		{
+			ImGui::Spacing(0.0f, 0.0f);
+
+			ImGui::Spacing();
+			ImGui::CenterText("This will reset the current variable");
+
+			ImGui::PushFont(common::imgui::font::BOLD);
+			ImGui::CenterText("Are you sure?");
+			ImGui::PopFont();
+
+			ImGui::Spacing(0, 8);
+			ImGui::Spacing(0, 0); ImGui::SameLine();
+
+			const auto xpos = ImGui::GetCursorPosX();
+			ImGui::BeginGroup();
+
+			const auto half_width = ImGui::GetContentRegionAvail().x * 0.5f;
+			ImVec2 button_size(half_width - (ImGui::GetStyle().WindowPadding.x * 2.0f) - ImGui::GetStyle().ItemSpacing.x, 0.0f);
+			if (ImGui::Button("Back To Saved", button_size))
+			{
+				var.reset_base();
+				ImGui::CloseCurrentPopup();
+			} TT("Restores setting to value stored in your game_settings.toml file.");
+
+			ImGui::SameLine();
+			if (ImGui::Button("Back To Default", button_size))
+			{
+				var.reset_default();
+				ImGui::CloseCurrentPopup();
+			} TT("Restores setting to the default value defined by the compatibility mod.");
+			ImGui::EndGroup();
+			const auto group_width = ImGui::GetItemRectSize().x;
+
+			ImGui::SetCursorPosX(xpos);
+			if (ImGui::Button("Cancel", ImVec2(group_width, 0))) {
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	bool gamesettings_bool_widget(const char* desc, game_settings::variable& var)
+	{
+		CWIDGETWIDTH;
+
+		const bool colorize = var.get_temp_override_state() || var.get_dirty_state();
+		if (colorize) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.4f, 0.15f, 1.0f));
+		}
+
+		ImGui::BeginDisabled(var.get_temp_override_state());
+
+		const auto gs_var_ptr = var.get_as<bool*>();
+		const bool result = ImGui::Checkbox(desc, gs_var_ptr);
+
+		if (result) {
+			var.set_dirty(false);
+		}
+
+		TT(var.get_tooltip_string().c_str());
+		gamesettings_var_reset_logic(var);
+
+		if (colorize) {
+			ImGui::PopStyleColor();
+		}
+
+		ImGui::EndDisabled();
+		return result;
+	}
+
+	bool gamesettings_int_widget(const char* desc, game_settings::variable& var, const int& min = 0, const int& max = 0, const float& speed = 0.02f)
+	{
+		CWIDGETWIDTH;
+
+		const bool colorize = var.get_temp_override_state() || var.get_dirty_state();
+		if (colorize) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.4f, 0.15f, 1.0f));
+		}
+
+		ImGui::BeginDisabled(var.get_temp_override_state());
+
+		const auto gs_var_ptr = var.get_as<int*>();
+		const bool result = ImGui::DragInt(desc, gs_var_ptr, speed, min, max, "%d", (min != 0 || max != 0) ? ImGuiSliderFlags_AlwaysClamp : ImGuiSliderFlags_None);
+
+		if (result) {
+			var.set_dirty(false);
+		}
+
+		TT(var.get_tooltip_string().c_str());
+		gamesettings_var_reset_logic(var);
+
+		if (colorize) {
+			ImGui::PopStyleColor();
+		}
+
+		ImGui::EndDisabled();
+
+		return result;
+	}
+
+	bool gamesettings_float_widget(const char* desc, game_settings::variable& var, const float& min = 0.0f, const float& max = 0.0f, const float& speed = 0.02f, const char* fmt = "%.2f")
+	{
+		CWIDGETWIDTH;
+
+		const bool colorize = var.get_temp_override_state() || var.get_dirty_state();
+		if (colorize) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.4f, 0.15f, 1.0f));
+		}
+
+		ImGui::BeginDisabled(var.get_temp_override_state());
+
+		const auto gs_var_ptr = var.get_as<float*>();
+		const bool result = ImGui::DragFloat(desc, gs_var_ptr, speed, min, max, fmt, (min != 0.0f || max != 0.0f) ? ImGuiSliderFlags_AlwaysClamp : ImGuiSliderFlags_None);
+
+		if (result) {
+			var.set_dirty(false);
+		}
+
+		TT(var.get_tooltip_string().c_str());
+		gamesettings_var_reset_logic(var);
+
+		if (colorize) {
+			ImGui::PopStyleColor();
+		}
+
+		ImGui::EndDisabled();
+
+		return result;
+	}
+
+	bool gamesettings_vec_widget(const char* desc, game_settings::variable& var, const int& size, const float& min = 0.0f, const float& max = 0.0f, const float& speed = 0.02f)
+	{
+		CWIDGETWIDTH;
+
+		const bool colorize = var.get_temp_override_state() || var.get_dirty_state();
+		if (colorize) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.4f, 0.15f, 1.0f));
+		}
+
+		ImGui::BeginDisabled(var.get_temp_override_state());
+
+		const auto cs_var_ptr = var.get_as<float*>();
+		bool result = false;
+		switch (size)
+		{
+		case 2:
+			assert(var.get_type() == game_settings::var_type_vec2 && "Type mismatch: expected vec2");
+			result = ImGui::DragFloat2(desc, cs_var_ptr, speed, min, max, "%.2f", (min != 0.0f || max != 0.0f) ? ImGuiSliderFlags_AlwaysClamp : ImGuiSliderFlags_None);
+			break;
+
+		case 3:
+			assert(var.get_type() == game_settings::var_type_vec3 && "Type mismatch: expected vec3");
+			result = ImGui::DragFloat3(desc, cs_var_ptr, speed, min, max, "%.2f", (min != 0.0f || max != 0.0f) ? ImGuiSliderFlags_AlwaysClamp : ImGuiSliderFlags_None);
+			break;
+
+		default:
+		case 4:
+			assert(var.get_type() == game_settings::var_type_vec4 && "Type mismatch: expected vec4");
+			result = ImGui::DragFloat4(desc, cs_var_ptr, speed, min, max, "%.2f", (min != 0.0f || max != 0.0f) ? ImGuiSliderFlags_AlwaysClamp : ImGuiSliderFlags_None);
+			break;
+		}
+
+		if (result) {
+			var.set_dirty(false);
+		}
+
+		TT(var.get_tooltip_string().c_str());
+		gamesettings_var_reset_logic(var);
+
+		if (colorize) {
+			ImGui::PopStyleColor();
+		}
+
+		ImGui::EndDisabled();
+
+		return result;
+	}
+
+	bool gamesettings_color_widget(const char* desc, game_settings::variable& var, const int& size, const ImGuiColorEditFlags_& flags)
+	{
+		CWIDGETWIDTH;
+
+		const bool colorize = var.get_temp_override_state() || var.get_dirty_state();
+		if (colorize) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.4f, 0.15f, 1.0f));
+		}
+
+		ImGui::BeginDisabled(var.get_temp_override_state());
+
+		const auto cs_var_ptr = var.get_as<float*>();
+		bool result = false;
+
+		switch (size)
+		{
+		case 3:
+			assert(var.get_type() == game_settings::var_type_vec3 && "Type mismatch: expected vec3");
+			result = ImGui::ColorEdit3(desc, cs_var_ptr, flags);
+			break;
+
+		default:
+		case 4:
+			assert(var.get_type() == game_settings::var_type_vec4 && "Type mismatch: expected vec4");
+			result = ImGui::ColorEdit4(desc, cs_var_ptr, flags);
+			break;
+		}
+
+		if (result) {
+			var.set_dirty(false);
+		}
+
+		TT(var.get_tooltip_string().c_str());
+		gamesettings_var_reset_logic(var);
+
+		if (colorize) {
+			ImGui::PopStyleColor();
+		}
+
+		ImGui::EndDisabled();
+		return result;
 	}
 
 	// ------
@@ -1010,7 +1250,7 @@ namespace components
 
 		ImGui::Spacing(0, 4);
 
-		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+		CWIDGETWIDTH;
 		ImGui::SliderInt2("HUD: Area Debug Pos", &main_module::get()->m_hud_debug_node_vis_pos[0], 0, 512);
 
 		ImGui::Spacing(0, 4);
@@ -1022,16 +1262,16 @@ namespace components
 
 		if (water_header_state)
 		{
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			CWIDGETWIDTH;
 			if (ImGui::DragFloat("UV Scale##Water", &ms.water_uv_scale, 0.05f, 0.01f, FLT_MAX, "%.2f")) {
 				ms.water_uv_scale = std::clamp(ms.water_uv_scale, 0.0f, FLT_MAX);
 			}
 
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			CWIDGETWIDTH;
 			ImGui::DragFloat("Top Layer Offset", &ms.water_offset_top, 0.05f, -100.0f, 100.0f, "%.2f");
 			TT("This can offset the dual rendered water mesh along the Z-Axis (usually the animated surface)");
 
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			CWIDGETWIDTH;
 			ImGui::DragFloat("Bottom Layer Offset", &ms.water_offset_bottom, 0.05f, -100.0f, 100.0f, "%.2f");
 			TT("This can offset the original water mesh along the Z-Axis (usually the surface defining water color)");
 		}
@@ -1458,7 +1698,7 @@ namespace components
 
 						// --- choreo
 
-						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						CWIDGETWIDTH;
 						ImGui::InputText("Choreo Name", &trig.choreo_name);
 						TT("Show marker when a specified choreography (vcd) starts playing.\n"
 							"Using a show trigger will hide the marker by default until the event triggers logic.\n"
@@ -1474,17 +1714,17 @@ namespace components
 
 						if (!trig.choreo_name.empty())
 						{
-							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							CWIDGETWIDTH;
 							ImGui::InputText("Choreo Actor", &trig.choreo_actor);
 							TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should show the marker.\n"
 								"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 
-							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							CWIDGETWIDTH;
 							ImGui::InputText("Choreo Event", &trig.choreo_event);
 							TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should show the marker.\n"
 								"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
 
-							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							CWIDGETWIDTH;
 							ImGui::InputText("Choreo Param1", &trig.choreo_param1);
 							TT("Use this if the choreo name isn't enough to uniquely identify the choreo that should show the marker.\n"
 								"This can be a substring. Use cmd 'xo_debug_scene_print' to get info about playing choreo's.");
@@ -1492,7 +1732,7 @@ namespace components
 
 						// --- sound
 
-						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						CWIDGETWIDTH;
 						std::string temp_sound_hash_str = trig.sound_hash ? std::format("0x{:X}", trig.sound_hash) : "";
 
 						if (ImGui::InputText("Sound Hash", &temp_sound_hash_str, ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_EnterReturnsTrue,
@@ -1519,7 +1759,7 @@ namespace components
 							trig.choreo_name.clear();
 						}
 
-						SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+						CWIDGETWIDTH;
 						ImGui::InputText("Sound Name", &trig.sound_name);
 						TT("Show marker when a specified sound starts playing.\n"
 							"The sound trigger has LOWER precedence than choreo triggering.\n"
@@ -1535,7 +1775,7 @@ namespace components
 
 						ImGui::BeginDisabled(!trig.has_trigger());
 						{
-							SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+							CWIDGETWIDTH;
 							if (ImGui::DragFloat("Delay", &trig.delay, 0.05f, 0.0f, 1000.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp)) {
 								trig.delay = trig.delay < 0.0f ? 0.0f : trig.delay;
 							} TT("Delay show after trigger in seconds.");
@@ -2279,7 +2519,7 @@ namespace components
 
 		{
 			auto& default_nocull_dist = map_settings::get_map_settings().default_nocull_dist;
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			CWIDGETWIDTH;
 			if (ImGui::DragFloat("Def. NoCull Dist", &default_nocull_dist, 0.5f, 0.0f)) {
 				default_nocull_dist = default_nocull_dist < 0.0f ? 0.0f : default_nocull_dist;
 			}
@@ -3621,17 +3861,17 @@ namespace components
 						} TT("Offset the light direction with reference to the attached bone / entity angles. Offset in Euler Angles.");
 					}
 
-					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					CWIDGETWIDTH;
 					if (ImGui::DragFloat("Degrees", &active_point_selection->degrees, 0.25f, 0.0f, 180.0f, "%.1f")) {
 						active_point_selection->degrees = std::clamp(active_point_selection->degrees, 0.0f, 180.0f);
 					} TT("Cone Angle");
 
-					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					CWIDGETWIDTH;
 					if (ImGui::DragFloat("Softness", &active_point_selection->softness, 0.005f, 0.0f, 1.0f, "%.1f")) {
 						active_point_selection->softness = std::clamp(active_point_selection->softness, 0.0f, 1.0f);
 					} TT("Cone Softness");
 
-					SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+					CWIDGETWIDTH;
 					if (ImGui::DragFloat("Exponent", &active_point_selection->exponent, 0.005f, 0.0f, 1.0f, "%.1f")) {
 						active_point_selection->exponent = std::clamp(active_point_selection->exponent, 0.0f, 1.0f);
 					} TT("Cone Focus Exponent");
@@ -3827,7 +4067,7 @@ namespace components
 			ImGui::PopStyleVar();
 			ImGui::Spacing(0, 4);
 
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			CWIDGETWIDTH;
 			if (ImGui::DragFloat("Transition Time##1", &conf1_transition_time, 0.005f, 0.0f)) {
 				conf1_transition_time = std::clamp(conf1_transition_time, 0.0f, FLT_MAX);
 			}
@@ -3898,7 +4138,7 @@ namespace components
 			ImGui::PopStyleVar();
 			ImGui::Spacing(0, 4);
 
-			SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
+			CWIDGETWIDTH;
 			if (ImGui::DragFloat("Transition Time##2", &conf2_transition_time, 0.005f, 0.0f)) {
 				conf2_transition_time = std::clamp(conf2_transition_time, 0.0f, FLT_MAX);
 			}
@@ -4003,66 +4243,32 @@ namespace components
 	{
 		const auto gs = game_settings::get();
 
-		ImGui::Widget_PrettyDragVec3("Offsets Player", gs->flashlight_offset_player.get_as<float*>(), true, 80.0f, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
+		ImGui::Widget_PrettyDragVec3("Offsets Player", gs->flashlight_offset_player.get_as<float*>(), true, CHILD_WIDGET_WIDTH, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
 		TT(gs->flashlight_offset_player.get_tooltip_string().c_str());
 		TT(gs->flashlight_offset_player.m_desc);
 
-		ImGui::Widget_PrettyDragVec3("Offsets Bot", gs->flashlight_offset_bot.get_as<float*>(), true, 80.0f, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
+		ImGui::Widget_PrettyDragVec3("Offsets Bot", gs->flashlight_offset_bot.get_as<float*>(), true, CHILD_WIDGET_WIDTH, 0.1f, -1000.0f, 1000.0f, "F", "H", "V");
 		TT(gs->flashlight_offset_bot.get_tooltip_string().c_str());
 		TT(gs->flashlight_offset_bot.get_tooltip_string().c_str());
 
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Intensity", gs->flashlight_intensity.get_as<float*>(), 0.1f);
-		TT(gs->flashlight_intensity.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Volumetric Influence", gs->flashlight_volumetric_scale.get_as<float*>(), 0.1f);
-		TT(gs->flashlight_volumetric_scale.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Radius", gs->flashlight_radius.get_as<float*>(), 0.005f);
-		TT(gs->flashlight_radius.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Angle", gs->flashlight_angle.get_as<float*>(), 0.001f);
-		TT(gs->flashlight_angle.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Softness", gs->flashlight_softness.get_as<float*>(), 0.001f);
-		TT(gs->flashlight_softness.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Expo", gs->flashlight_expo.get_as<float*>(), 0.001f);
-		TT(gs->flashlight_expo.get_tooltip_string().c_str());
+		gamesettings_float_widget("Intensity", gs->flashlight_intensity, 0.0f, FLT_MAX, 0.1f);
+		gamesettings_float_widget("Volumetric Influence", gs->flashlight_volumetric_scale, 0.0f, 10.0f, 0.1f);
+		gamesettings_float_widget("Radius", gs->flashlight_radius, 0.0f, FLT_MAX, 0.005f);
+		gamesettings_float_widget("Spot Angle", gs->flashlight_angle, 0.0f, 360.0f, 0.001f);
+		gamesettings_float_widget("Spot Softness", gs->flashlight_softness, 0.0f, 1.0f, 0.001f);
+		gamesettings_float_widget("Spot Expo", gs->flashlight_expo, 0.0f, 1.0f, 0.001f);
 
 		//
 
 		ImGui::SeparatorText("Inner Flashlight");
 		ImGui::PushID("inner");
 
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Intensity", gs->flashlight_inner_intensity.get_as<float*>(), 0.1f);
-		TT(gs->flashlight_inner_intensity.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Volumetric Influence", gs->flashlight_inner_volumetric_scale.get_as<float*>(), 0.1f);
-		TT(gs->flashlight_inner_volumetric_scale.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Radius", gs->flashlight_inner_radius.get_as<float*>(), 0.005f);
-		TT(gs->flashlight_inner_radius.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Angle", gs->flashlight_inner_angle.get_as<float*>(), 0.001f);
-		TT(gs->flashlight_inner_angle.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Softness", gs->flashlight_inner_softness.get_as<float*>(), 0.001f);
-		TT(gs->flashlight_inner_softness.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(80);
-		ImGui::DragFloat("Spot Expo", gs->flashlight_inner_expo.get_as<float*>(), 0.001f);
-		TT(gs->flashlight_inner_expo.get_tooltip_string().c_str());
+		gamesettings_float_widget("Intensity", gs->flashlight_inner_intensity, 0.0f, FLT_MAX, 0.1f);
+		gamesettings_float_widget("Volumetric Influence", gs->flashlight_inner_volumetric_scale, 0.0f, 10.0f, 0.1f);
+		gamesettings_float_widget("Radius", gs->flashlight_inner_radius, 0.0f, FLT_MAX, 0.005f);
+		gamesettings_float_widget("Spot Angle", gs->flashlight_inner_angle, 0.0f, 360.0f, 0.001f);
+		gamesettings_float_widget("Spot Softness", gs->flashlight_inner_softness, 0.0f, 1.0f, 0.001f);
+		gamesettings_float_widget("Spot Expo", gs->flashlight_inner_expo, 0.0f, 1.0f, 0.001f);
 
 		ImGui::PopID();
 	}
@@ -4127,29 +4333,15 @@ namespace components
 	void cont_gamesettings_renderer_settings()
 	{
 		const auto gs = game_settings::get();
-		ImGui::Checkbox("Enable LOD Forcing", gs->lod_forcing.get_as<bool*>()); TT(gs->lod_forcing.get_tooltip_string().c_str());
+		gamesettings_bool_widget("Enable LOD Forcing", gs->lod_forcing);
 
-		if (ImGui::Checkbox("Enable 3D Skybox (very unstable)", gs->enable_3d_sky.get_as<bool*>())) {
-			remix_vars::set_option(remix_vars::get_option("rtx.skyAutoDetect"), remix_vars::string_to_option_value(remix_vars::OPTION_TYPE_FLOAT, gs->enable_3d_sky.get_as<bool>() ? "1" : "0"));
+		if (gamesettings_bool_widget("Enable 3D Skybox (very unstable)", gs->enable_3d_sky)) {
+			remix_vars::set_option(remix_vars::get_option("rtx.skyAutoDetect"), remix_vars::string_to_option_value(remix_vars::OPTION_TYPE_FLOAT, gs->enable_3d_sky._bool() ? "1" : "0"));
 		}
-		TT(gs->enable_3d_sky.get_tooltip_string().c_str());
 
-		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-		auto gs_nocull_dist_ptr = game_settings::get()->default_nocull_distance.get_as<float*>();
-		if (ImGui::DragFloat("Def. NoCull Dist", gs_nocull_dist_ptr, 0.5f, 0.0f, FLT_MAX, "%.2f")) 
-		{
-			*gs_nocull_dist_ptr = *gs_nocull_dist_ptr < 0.0f ? 0.0f : *gs_nocull_dist_ptr;
-			map_settings::get_map_settings().default_nocull_dist = *gs_nocull_dist_ptr;
-		}
-		TT(gs->default_nocull_distance.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-		ImGui::DragFloat("Debug Info Distance", gs->debug_info_distance.get_as<float*>(), 0.1f);
-		TT(gs->debug_info_distance.get_tooltip_string().c_str());
-
-		SET_CHILD_WIDGET_WIDTH_MAN(120.0f);
-		ImGui::DragFloat("Player Backwards Offset", gs->player_backwards_offset.get_as<float*>(), 0.01f);
-		TT(gs->player_backwards_offset.get_tooltip_string().c_str());
+		gamesettings_float_widget("Def. NoCull Dist", gs->default_nocull_distance, 0.0f, FLT_MAX, 0.5f, "%.2f");
+		gamesettings_float_widget("Debug Info Distance", gs->debug_info_distance, 0.0f, 2000.0f, 0.1f);
+		gamesettings_float_widget("Player Backwards Offset", gs->player_backwards_offset, 0.0f, 256.0f, 0.01f);
 	}
 
 	void imgui::tab_game_settings()
