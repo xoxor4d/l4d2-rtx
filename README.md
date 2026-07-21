@@ -41,19 +41,19 @@ Please keep that in mind.
 <br>
 <br>
 
-If you want to support my work,  
-consider buying me some coffee:  
+If you want to support my work,   
+consider buying me a [Coffee](https://ko-fi.com/xoxor4d) or by becoming a [Patreon](https://patreon.com/xoxor4d)
 
-[![ko-fi](https://xoxor4d.github.io/assets/img/social/kofi.png)](https://ko-fi.com/xoxor4d)
+Feel free to join the discord server: https://discord.gg/FMnfhpfZy9
+
 </div>
 
 <br>
 <br>
 
-## Usage / Installation
-- Download the latest [release](https://github.com/xoxor4d/l4d2-rtx/releases) and follow instructions found __there__.
-- Start the game by executing `run-l4d2-rtx.bat` (_start as admin if game is installed under `Program Files`_)
-- The window title should change to Left 4 Dead 2 - RTX - followed by the GitHub commit number if successful
+## Installing
+- Grab the latest [Release](https://github.com/xoxor4d/l4d2-rtx/releases) and follow the instructions found there
+
 
 <br>
 
@@ -81,7 +81,7 @@ You'll encounter some of the following:
 
 #### 🟦 Info: 
 - See the [Wiki](https://github.com/xoxor4d/l4d2-rtx/wiki) for in-depth guides on features that come with the compatibility mod 🍓
-- Current releases ship with a [custom build of the remix-dxvk runtime](https://github.com/xoxor4d/dxvk-remix/tree/combine/l4d2) which includes necessary changes for L4D2 (`bin/.trex/d3d9.dll`)
+- Current releases ship with a [custom build of the remix-dxvk runtime](https://github.com/xoxor4d/dxvk-remix/tree/game/l4d2_rebase1) which includes necessary changes for L4D2 (`bin/.trex/d3d9.dll`)
 
 #### 🟩 Remixing:  
 - Press __F5__ to open the in-game gui to tweak compatibility mod related settings or to edit [MapSettings](https://github.com/xoxor4d/l4d2-rtx/wiki/Map-Settings)
@@ -92,11 +92,15 @@ You'll encounter some of the following:
 ##  Credits
 - [Nvidia - RTX Remix](https://github.com/NVIDIAGameWorks/rtx-remix)
 - [People of the showcase discord](https://discord.gg/j6sh7JD3v9) - especially the nvidia engineers ✌️
-- [imgui-blur-effect](https://github.com/3r4y/imgui-blur-effect)
-- [l4d2-internal-base](https://github.com/gh-0x/l4d2-internal-base/tree/master)
 - [Dear ImGui](https://github.com/ocornut/imgui)
+- [imgui-blur-effect](https://github.com/3r4y/imgui-blur-effect)
 - [minhook](https://github.com/TsudaKageyu/minhook)
 - [toml11](https://github.com/ToruNiina/toml11)
+- [dxwrapper](https://github.com/elishacloud/dxwrapper)
+- [Miniz](https://github.com/richgel999/miniz)
+- [l4d2-internal-base](https://github.com/xastrix-csgo-modules/eblenix_csgo_public/tree/54a04b5f3873e35a68d7f99d2656c54251fb098d/Left%204%20Dead%202/l4d2)
+- [Entity](https://www.youtube.com/@paprykszadolowski8796)
+- [KapibosRU](https://www.youtube.com/channel/UCqZ2NI_fQKRN-Onypt9aIGQ)
 
 <br>
 

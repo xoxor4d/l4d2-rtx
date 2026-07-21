@@ -50,8 +50,8 @@
 <br>
 
 # Usage and general Info
-- Run the game using the batch file `run-l4d2-rtx.bat`
-- Alternatively, copy the following into the steam launch args for l4d2: `-insecure -steam -novid -disable_d3d9_hacks -limitvsconst -softparticlesdefaultoff -disallowhwmorph -no_compressed_verts +mat_phong 1`
+- Run the game using the batch file `run-l4d2-rtx.bat` found in the game folder
+- **Running the game from Steam is NOT supported and will NOT work**
 > - Press `Alt + X` to open the Remix menu  
 > - Press `F5` to open the Compatibility Mod menu
 
