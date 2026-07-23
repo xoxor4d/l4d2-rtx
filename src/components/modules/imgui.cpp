@@ -4461,6 +4461,7 @@ namespace components
 		ImGui::Spacing(0.0f, 8.0f);
 
 		CENTER_URL("NVIDIA - RTX Remix", "https://github.com/NVIDIAGameWorks/rtx-remix");
+		CENTER_URL("People of the showcase discord", "https://discord.gg/j6sh7JD3v9");
 		CENTER_URL("Dear Imgui", "https://github.com/ocornut/imgui");
 		CENTER_URL("Imgui Blur Effect", "https://github.com/3r4y/imgui-blur-effect");
 		CENTER_URL("Minhook", "https://github.com/TsudaKageyu/minhook");

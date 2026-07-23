@@ -405,7 +405,14 @@
         #{ conf = "chromatic_explosion.conf", trigger = { choreo = "scenes/", actor = "", event = "angry - dialogue" }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = 0x87a91fef }, mode = 2, ease = 8, duration = 0.5, delay_in = 0.0, delay_out = 0.15 },
         #{ conf = "chromatic_explosion.conf", trigger = { sound = "weapons/pistol/gunfire/pistol_fire.wav" }, mode = 2, ease = 8, duration = 0.25, delay_in = 0.0, delay_out = 0.15 },
+        
+        # fade 3d sky geo
+        { conf = "fade_3d_sky_1800.conf", trigger = { leafs = [2011] }, mode = 0, ease = 6, duration = 1.0, delay_in = 0.0 },
+
+        # doors/urb_4b_elevator_open.wav - smokey when opening door
         { conf = "fire_smokey_screen.conf", trigger = { sound = 0xda6f9ddf }, mode = 0, ease = 6, duration = 13.0, delay_in = 0.0 },
+
+        # unsmoke / re-smoke on pathway to open area leading to safe room
         { conf = "fire_smokey_screen.conf", trigger = { leafs = [4364] }, mode = 2, ease = 0, duration = 5.0, delay_in = 0.0 },
         { conf = "fire_smokey_screen_half.conf", trigger = { leafs = [4367, 4373] }, mode = 2, ease = 0, duration = 5.0, delay_in = 0.0 },
         { conf = "fire_smokey_screen_half_quarter.conf", trigger = { leafs = [4371] }, mode = 2, ease = 0, duration = 5.0, delay_in = 0.0 },
