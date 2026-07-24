@@ -61,6 +61,12 @@ In addition, it makes the global decal offset index grow slower and thus it mini
 These materials will be blended over the materials underneath them when decal material blending is enabled.
 A small configurable offset is applied to each flat/co-planar part of these decals to prevent coplanar geometric cases (which poses problems for ray tracing)."""
     )
+    bool remix_category:hair_cards = 0 (
+        displayGroup = "Remix Categories"
+        displayName = "Hair Cards"
+        doc = """Textures on draw calls that should be treated as alpha-tested hair cards.
+Tagged materials preserve fine texture detail, render as cutouts instead of alpha blends, and disable backface culling."""
+    )
     bool remix_category:hidden = 0 (
         displayGroup = "Remix Categories"
         displayName = "Hidden"
