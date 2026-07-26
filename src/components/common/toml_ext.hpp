@@ -4,7 +4,7 @@
 #include "toml.hpp"
 
 #define TOML_ERROR(TITLE, ENTRY, MSG, ...) \
-	utils::log("MapSettings", toml::format_error(toml::make_error_info(#TITLE, (ENTRY), utils::va(#MSG, __VA_ARGS__))) + "\n", utils::LOG_TYPE::LOG_TYPE_ERROR, true); \
+	utils::log("Toml", toml::format_error(toml::make_error_info(#TITLE, (ENTRY), utils::va(#MSG, __VA_ARGS__))) + "\n", utils::LOG_TYPE::LOG_TYPE_ERROR, true); \
 
 #define TOML_CATCH_ERROR_WHAT	{ utils::log("Toml", std::format("{}", err.what()), utils::LOG_TYPE::LOG_TYPE_ERROR, true); }
 

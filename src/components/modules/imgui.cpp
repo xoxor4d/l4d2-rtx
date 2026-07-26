@@ -668,11 +668,6 @@ namespace components
 		ImGui::SameLine();
 		imgui::cvar_toggle_button_bool("sv_infinite_ammo", "Infinite Ammo", four_row_button_size, "sv_infinite_ammo :: Enables and disable infinite ammo");
 
-		
-		
-		
-
-
 	}
 
 	void cont_general_infected()

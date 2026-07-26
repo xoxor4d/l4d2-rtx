@@ -79,8 +79,7 @@ namespace utils
 							pattern_bytes.push_back(hex_to_byte(signature[i], signature[i + 1]));
 							mask.push_back(false);
 							i += 2;
-						}
-						else {
+						} else {
 							throw std::runtime_error("Malformed signature");
 						}
 					}
@@ -115,8 +114,7 @@ namespace utils
 							break;
 						}
 					}
-				}
-				else {
+				} else {
 					found = memcmp(base + i, pattern_bytes.data(), pattern_length) == 0;
 				}
 
@@ -145,7 +143,7 @@ namespace utils
 		DWORD find_pattern(module_info& module_info, const std::string_view& signature, const DWORD& offset, const char* description, const bool is_active, const DWORD& inactive_offset)
 		{
 			if (!is_active) {
-				return inactive_offset + offset;
+				return module_info.handle + inactive_offset + offset;
 			}
 
 			if (!module_info.handle) {
